@@ -2,7 +2,6 @@ package software.larsartmann.webphone.call
 
 import android.content.ComponentName
 import android.content.Context
-import android.net.Uri
 import android.telecom.Connection
 import android.telecom.ConnectionRequest
 import android.telecom.ConnectionService
@@ -89,11 +88,7 @@ class CallConnectionService : ConnectionService() {
             val telecom = context.getSystemService(TelecomManager::class.java)
             telecom.registerPhoneAccount(
                 PhoneAccount.builder(resolved, "WebPhone")
-                    .setCapabilities(
-                        PhoneAccount.CAPABILITY_SELF_MANAGED or
-                            PhoneAccount.CAPABILITY_SUPPORTS_VIDEO_CALLING_REGISTRATION,
-                    )
-                    .setUri(Uri.parse("tel:webphone"))
+                    .setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
                     .build(),
             )
             handle = resolved

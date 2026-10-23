@@ -27,7 +27,11 @@ data class SipMessage(
 
     fun cseq(): Pair<Long, String>? = header("CSeq")?.let { raw ->
         val parts = raw.trim().split(" ", limit = 2)
-        if (parts.size == 2) parts[0].toLongOrNull() to parts[1].trim().uppercase() else null
+        if (parts.size == 2) {
+            parts[0].toLongOrNull()?.let { n -> n to parts[1].trim().uppercase() }
+        } else {
+            null
+        }
     }
 
     fun callId(): String = header("Call-ID").orEmpty()

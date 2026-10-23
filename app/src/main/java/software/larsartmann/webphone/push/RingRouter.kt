@@ -4,9 +4,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
-import android.telecom.ConnectionRequest
 import android.telecom.TelecomManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -45,12 +43,10 @@ object RingEvent {
             putString(EXTRA_FROM, from)
             putString(EXTRA_CALL_ID, callId)
         }
-        telecom.addNewIncomingCall(
-            CallConnectionService.accountHandle(context),
-            ConnectionRequest.Builder(Uri.fromParts("tel", from, null))
-                .setExtras(extras)
-                .build(),
-        )
+        // The classic self-managed incoming-call API: account handle +
+        // extras bundle; the system builds the ConnectionRequest and
+        // routes it to our ConnectionService.
+        telecom.addNewIncomingCall(CallConnectionService.accountHandle(context), extras)
 
         val fullScreen = PendingIntent.getActivity(
             context,

@@ -9,7 +9,17 @@
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
+        pkgs = import nixpkgs {
+          inherit system;
+          # The Android SDK family is unfree (Google's terms — the
+          # same terms every Android Studio install accepts). This
+          # shell builds an Android app; allowUnfree scopes to exactly
+          # that toolchain and accepts the SDK license.
+          config = {
+            allowUnfree = true;
+            android_sdk.accept_license = true;
+          };
+        };
         android = pkgs.androidenv.composeAndroidPackages {
           platformVersions = [ "36" ];
           buildToolsVersions = [ "34.0.0" ];

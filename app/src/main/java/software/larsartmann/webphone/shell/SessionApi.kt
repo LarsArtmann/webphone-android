@@ -5,6 +5,7 @@ import android.util.Log
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -136,7 +137,7 @@ object SessionApi {
     }
 
     private fun sessionCookieHeader(): String {
-        val url = runCatching { HttpUrl.parse(App.origin) }.getOrNull() ?: return ""
+        val url = App.origin.toHttpUrlOrNull() ?: return ""
         return cookieJar.loadForRequest(url).joinToString("; ") { "${it.name}=${it.value}" }
     }
 }

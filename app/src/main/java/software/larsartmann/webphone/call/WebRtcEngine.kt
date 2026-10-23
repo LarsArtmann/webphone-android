@@ -3,15 +3,12 @@ package software.larsartmann.webphone.call
 import android.content.Context
 import org.webrtc.AudioSource
 import org.webrtc.AudioTrack
-import org.webrtc.DefaultVideoDecoderFactory
-import org.webrtc.DefaultVideoEncoderFactory
 import org.webrtc.MediaConstraints
 import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
-import java.util.concurrent.CountDownLatch
 
 /**
  * The native WebRTC audio layer (stream-webrtc-android's libwebrtc):
@@ -31,8 +28,6 @@ object WebRtcEngine {
                 .createInitializationOptions(),
         )
         factory = PeerConnectionFactory.builder()
-            .setVideoEncoderFactory(DefaultVideoEncoderFactory(context, true, true))
-            .setVideoDecoderFactory(DefaultVideoDecoderFactory(context))
             .createPeerConnectionFactory()
     }
 
