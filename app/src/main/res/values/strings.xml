@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WebPhone</string>
+    <string name="channel_calls">Calls</string>
+    <string name="channel_push">Push subscription</string>
+    <string name="incoming_call">Incoming call</string>
+    <string name="answer">Answer</string>
+    <string name="decline">Decline</string>
+    <string name="hang_up">Hang up</string>
+    <string name="mute">Mute</string>
+    <string name="speaker">Speaker</string>
+    <string name="hold">Hold</string>
+    <string name="ntfy_subscription_active">Push connection active</string>
+    <string name="call_active">Call in progress</string>
+</resources>

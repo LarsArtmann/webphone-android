@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_PHONE_CALL" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <uses-feature android:name="android.hardware.microphone" android:required="true" />
+
+    <application
+        android:name=".App"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/Theme.WebPhone"
+        android:usesCleartextTraffic="false"
+        android:enableOnBackInvokedCallback="true">
+
+        <activity
+            android:name=".shell.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- The in-call surface: CallStyle notifications and the
+             full-screen incoming-call intent land here. -->
+        <activity
+            android:name=".call.CallActivity"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
+
+        <!-- Self-managed Telecom integration: the app owns its call UI,
+             the OS gets call-state integration (BT/watches, audio
+             focus, Do Not Disturb) through the ConnectionService. -->
+        <service
+            android:name=".call.CallConnectionService"
+            android:exported="false"
+            android:permission="android.permission.BIND_TELECOM_CONNECTION_SERVICE">
+            <intent-filter>
+                <action android:name="android.telecom.ConnectionService" />
+            </intent-filter>
+        </service>
+
+        <!-- The call's foreground service: typed microphone+phoneCall,
+             started only from user interaction (the push → full-screen
+             intent → answer flow is the legitimate launch path; a mic
+             FGS cannot start from the background). -->
+        <service
+            android:name=".call.CallService"
+            android:exported="false"
+            android:foregroundServiceType="microphone|phoneCall" />
+
+        <!-- The ntfy lane's subscription socket: a low-cost dataSync
+             FGS holding the websocket to the self-hosted ntfy server
+             (the de-Googled device's push transport). -->
+        <service
+            android:name=".push.NtfySubscriptionService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- The FCM lane: Google Play services delivers; no service of
+             our own runs (the receiver wakes the RingRouter). -->
+        <service
+            android:name=".push.FcmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- No google-services plugin by default: a GMS build drops in
+             google-services.json and enables the plugin. The ntfy lane
+             works without any Google dependency. -->
+    </application>
+</manifest>

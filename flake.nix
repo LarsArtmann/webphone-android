@@ -1,0 +1,32 @@
+{
+  description = "webphone-android: the Android native-call shell for webphone";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+  };
+
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+        android = pkgs.androidenv.composeAndroidPackages {
+          platformVersions = [ "36" ];
+          buildToolsVersions = [ "34.0.0" ];
+          includeEmulator = false;
+          includeSystemImages = false;
+        };
+      in
+      {
+        devShells.default = pkgs.mkShell {
+          packages = [
+            pkgs.jdk21
+            pkgs.gradle
+            android.androidsdk
+          ];
+          ANDROID_HOME = "${android.androidsdk}/libexec/android-sdk";
+          ANDROID_SDK_ROOT = "${android.androidsdk}/libexec/android-sdk";
+          JAVA_HOME = pkgs.jdk21.home;
+        };
+      });
+}

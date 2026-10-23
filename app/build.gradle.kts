@@ -1,0 +1,58 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+}
+
+android {
+    namespace = "software.larsartmann.webphone"
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = "software.larsartmann.webphone"
+        minSdk = 31
+        targetSdk = 36
+        versionCode = 1
+        versionName = "0.1.0"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
+    // Android 16 (API 36): every bundled native library must be 16 KB
+    // page-aligned (Play blocks unaligned apps targeting API 35+ from
+    // 2027-02; sideload shows the compat dialog). stream-webrtc-android
+    // ships the aligned libwebrtc since 1.3.10 — verify per release
+    // with `zipalign -c -P 16` on the merged APK (decision doc,
+    // docs/planning/2026-10-23_16-13 in the webphone repo).
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+    buildFeatures {
+        viewBinding = true
+    }
+}
+
+dependencies {
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.lifecycle.runtime)
+    implementation(libs.okhttp)
+    implementation(libs.coroutines)
+    implementation(libs.webrtc)
+    implementation(libs.firebase.messaging)
+}

@@ -1,0 +1,494 @@
+package software.larsartmann.webphone.sip
+
+import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
+
+/**
+ * The SIP-over-WSS user agent — the native re-owning of the island's
+ * call contract: REGISTER (digest-challenged), outbound INVITE with
+ * WebRTC SDP, 180/200/ACK, hold re-INVITE (sendonly/sendrecv), BYE,
+ * DTMF over INFO (`application/dtmf-relay`, the EQUALS form — the
+ * colon form is 200-OK'd by FreeSWITCH and silently dropped), REFER
+ * with NOTIFY sipfrag verdict parsing, and the bounded watchdog the
+ * web island learned the hard way (sip.js 0.x hangs in reconnect; the
+ * engine must re-REGISTER explicitly and set UI state explicitly —
+ * the socket layer never does it for us).
+ *
+ * v0 (this scaffold): REGISTER + outbound call + BYE + DTMF + hold
+ * are implemented; incoming INVITE answering and REFER/NOTIFY ride
+ * the same dispatch and are marked UNTESTED against live FreeSWITCH
+ * until the first device train.
+ */
+class SipEngine(
+    private val scope: CoroutineScope,
+    private val config: Config,
+) {
+
+    data class Config(
+        val wsUrl: String,
+        val sipDomain: String,
+        val extension: String,
+        val password: String,
+        val displayName: String = "WebPhone",
+    )
+
+    interface Listener {
+        fun onRegistrationState(registered: Boolean)
+        fun onIncomingCall(invite: IncomingInvite)
+        fun onCallProgress(callId: String, ringing: Boolean)
+        fun onCallEstablished(callId: String, remoteSdp: String)
+        fun onCallEnded(callId: String)
+        /** A NOTIFY sipfrag body from a REFER we sent: the transfer
+         *  verdict (SIP/2.0 200 OK = success; the server executes the
+         *  transfer — we only report the verdict). */
+        fun onTransferVerdict(callId: String, verdict: String)
+    }
+
+    data class IncomingInvite(
+        val callId: String,
+        val fromUser: String,
+        val fromDisplay: String,
+        val sdp: String,
+        val respondWith: (status: Int, sdp: String?) -> Unit,
+    )
+
+    var listener: Listener? = null
+
+    private val client = OkHttpClient.Builder()
+        .pingInterval(20, TimeUnit.SECONDS)
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .build()
+
+    private var socket: WebSocket? = null
+    private val cseq = AtomicLong(0)
+    private val localTag = UUID.randomUUID().toString().substring(0, 8)
+    private val callLegs = ConcurrentHashMap<String, Leg>()
+    private var refreshJob: Job? = null
+    private var watchdogJob: Job? = null
+    @Volatile private var registered = false
+    @Volatile private var lastActivity = 0L
+
+    private class Leg(
+        val callId: String,
+        var inviteCseq: Long,
+        var remoteTarget: String,
+        var fromHeader: String,
+        var toHeader: String,
+    )
+
+    // -- lifecycle -------------------------------------------------
+
+    fun connect() {
+        disconnect()
+        val request = Request.Builder().url(config.wsUrl).build()
+        socket = client.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                Log.i(TAG, "wss open")
+                register()
+            }
+
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                lastActivity = System.currentTimeMillis()
+                receive(text)
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                Log.w(TAG, "wss failure: ${t.message}")
+                onLinkLost()
+            }
+
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                Log.i(TAG, "wss closed: $code")
+                onLinkLost()
+            }
+        })
+    }
+
+    fun disconnect() {
+        refreshJob?.cancel()
+        watchdogJob?.cancel()
+        socket?.close(1000, "shutdown")
+        socket = null
+        setRegistered(false)
+    }
+
+    /**
+     * The bounded watchdog: the registration must be REFRESHED
+     * (expires/2) and REBUILT on silence — a wedged socket that never
+     * fires callbacks must not leave the UI believing it is reachable
+     * (the island's connection.js lesson, ported).
+     */
+    private fun onLinkLost() {
+        setRegistered(false)
+        watchdogJob?.cancel()
+        watchdogJob = scope.launch {
+            delay(RECONNECT_BACKOFF_MS)
+            connect()
+        }
+    }
+
+    private fun setRegistered(value: Boolean) {
+        if (registered == value) return
+        registered = value
+        listener?.onRegistrationState(value)
+    }
+
+    // -- REGISTER --------------------------------------------------
+
+    private fun register(authorization: String? = null) {
+        val uri = "sip:${config.sipDomain}"
+        val seq = cseq.incrementAndGet()
+        val callId = UUID.randomUUID().toString()
+        val request = SipMessage(
+            isRequest = true, method = "REGISTER", uri = uri, statusCode = 0, reason = "",
+            headers = buildList {
+                add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                add(SipHeader("Max-Forwards", "70"))
+                add(SipHeader("From", "<sip:${config.extension}@${config.sipDomain}>;tag=$localTag"))
+                add(SipHeader("To", "<sip:${config.extension}@${config.sipDomain}>"))
+                add(SipHeader("Call-ID", callId))
+                add(SipHeader("CSeq", "$seq REGISTER"))
+                add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>;expires=$REGISTER_EXPIRES"))
+                add(SipHeader("Allow", "INVITE, ACK, CANCEL, BYE, REFER, INFO, NOTIFY, OPTIONS"))
+                if (authorization != null) add(SipHeader("Authorization", authorization))
+            },
+            body = "",
+        )
+        pendingAuth = callId
+        send(request)
+    }
+
+    @Volatile private var pendingAuth: String? = null
+
+    // -- outbound call ---------------------------------------------
+
+    fun invite(destination: String, offerSdp: String, onLocalAnswerNeeded: (callId: String) -> Unit): String {
+        val callId = UUID.randomUUID().toString()
+        val seq = cseq.incrementAndGet()
+        val target = "sip:$destination@${config.sipDomain}"
+        val leg = Leg(
+            callId = callId,
+            inviteCseq = seq,
+            remoteTarget = target,
+            fromHeader = "\"${config.displayName}\" <sip:${config.extension}@${config.sipDomain}>;tag=${UUID.randomUUID().toString().take(8)}",
+            toHeader = "<$target>",
+        )
+        callLegs[callId] = leg
+        val request = SipMessage(
+            isRequest = true, method = "INVITE", uri = target, statusCode = 0, reason = "",
+            headers = buildList {
+                add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                add(SipHeader("Max-Forwards", "70"))
+                add(SipHeader("From", leg.fromHeader))
+                add(SipHeader("To", leg.toHeader))
+                add(SipHeader("Call-ID", callId))
+                add(SipHeader("CSeq", "$seq INVITE"))
+                add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
+                add(SipHeader("Content-Type", "application/sdp"))
+            },
+            body = offerSdp,
+        )
+        send(request)
+        return callId
+    }
+
+    fun ack(callId: String, toHeaderOverride: String? = null) {
+        val leg = callLegs[callId] ?: return
+        send(
+            SipMessage(
+                isRequest = true, method = "ACK", uri = leg.remoteTarget, statusCode = 0, reason = "",
+                headers = buildList {
+                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                    add(SipHeader("Max-Forwards", "70"))
+                    add(SipHeader("From", leg.fromHeader))
+                    add(SipHeader("To", toHeaderOverride ?: leg.toHeader))
+                    add(SipHeader("Call-ID", callId))
+                    add(SipHeader("CSeq", "${leg.inviteCseq} ACK"))
+                },
+                body = "",
+            ),
+        )
+    }
+
+    /** Hold/resume re-INVITE: sendonly pauses the stream toward the
+     *  network (no silence to hallucinate on, on the ASR seam too). */
+    fun reinvite(callId: String, sdp: String, hold: Boolean) {
+        val leg = callLegs[callId] ?: return
+        val seq = cseq.incrementAndGet()
+        leg.inviteCseq = seq
+        val direction = if (hold) "sendonly" else "sendrecv"
+        val munged = sdp.replace(Regex("a=(sendrecv|sendonly|recvonly|inactive)"), "a=$direction")
+        send(
+            SipMessage(
+                isRequest = true, method = "INVITE", uri = leg.remoteTarget, statusCode = 0, reason = "",
+                headers = buildList {
+                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                    add(SipHeader("Max-Forwards", "70"))
+                    add(SipHeader("From", leg.fromHeader))
+                    add(SipHeader("To", leg.toHeader))
+                    add(SipHeader("Call-ID", callId))
+                    add(SipHeader("CSeq", "$seq INVITE"))
+                    add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
+                    add(SipHeader("Content-Type", "application/sdp"))
+                },
+                body = munged,
+            ),
+        )
+    }
+
+    fun bye(callId: String) {
+        val leg = callLegs.remove(callId) ?: return
+        val seq = cseq.incrementAndGet()
+        send(
+            SipMessage(
+                isRequest = true, method = "BYE", uri = leg.remoteTarget, statusCode = 0, reason = "",
+                headers = buildList {
+                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                    add(SipHeader("Max-Forwards", "70"))
+                    add(SipHeader("From", leg.fromHeader))
+                    add(SipHeader("To", leg.toHeader))
+                    add(SipHeader("Call-ID", callId))
+                    add(SipHeader("CSeq", "$seq BYE"))
+                },
+                body = "",
+            ),
+        )
+    }
+
+    /** DTMF: the EQUALS form of application/dtmf-relay. Never the
+     *  colon form — FreeSWITCH 200-OKs it and drops the digit. */
+    fun dtmf(callId: String, digit: Char) {
+        val leg = callLegs[callId] ?: return
+        val seq = cseq.incrementAndGet()
+        val body = "Signal=$digit\r\nDuration=160"
+        send(
+            SipMessage(
+                isRequest = true, method = "INFO", uri = leg.remoteTarget, statusCode = 0, reason = "",
+                headers = buildList {
+                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                    add(SipHeader("Max-Forwards", "70"))
+                    add(SipHeader("From", leg.fromHeader))
+                    add(SipHeader("To", leg.toHeader))
+                    add(SipHeader("Call-ID", callId))
+                    add(SipHeader("CSeq", "$seq INFO"))
+                    add(SipHeader("Content-Type", "application/dtmf-relay"))
+                },
+                body = body,
+            ),
+        )
+    }
+
+    /** Attended/blind transfer: REFER; the server executes it, the
+     *  verdict arrives as NOTIFY sipfrag (see the dispatch below).
+     *  UNTESTED against live FreeSWITCH (v0 marker). */
+    fun refer(callId: String, target: String) {
+        val leg = callLegs[callId] ?: return
+        val seq = cseq.incrementAndGet()
+        send(
+            SipMessage(
+                isRequest = true, method = "REFER", uri = leg.remoteTarget, statusCode = 0, reason = "",
+                headers = buildList {
+                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                    add(SipHeader("Max-Forwards", "70"))
+                    add(SipHeader("From", leg.fromHeader))
+                    add(SipHeader("To", leg.toHeader))
+                    add(SipHeader("Call-ID", callId))
+                    add(SipHeader("CSeq", "$seq REFER"))
+                    add(SipHeader("Refer-To", "<sip:$target@${config.sipDomain}>"))
+                    add(SipHeader("Supported", "replaces"))
+                },
+                body = "",
+            ),
+        )
+    }
+
+    // -- inbound dispatch ------------------------------------------
+
+    private fun receive(raw: String) {
+        val message = SipMessage.parse(raw) ?: return
+        if (message.isRequest) {
+            receiveRequest(message)
+        } else {
+            receiveResponse(message)
+        }
+    }
+
+    private fun receiveRequest(message: SipMessage) {
+        when (message.method) {
+            "INVITE" -> receiveInvite(message)
+            "BYE" -> {
+                respond(message, 200)
+                val callId = message.callId()
+                callLegs.remove(callId)
+                listener?.onCallEnded(callId)
+            }
+            "NOTIFY" -> {
+                // sipfrag body carries the REFER verdict
+                // ("Content-Type: message/sipfrag;version=2.0").
+                respond(message, 200)
+                val sipfrag = message.body.lineSequence()
+                    .firstOrNull { it.startsWith("SIP/2.0") }
+                if (sipfrag != null) {
+                    listener?.onTransferVerdict(message.callId(), sipfrag.removePrefix("SIP/2.0").trim())
+                }
+            }
+            "INFO" -> respond(message, 200)
+            "OPTIONS" -> respond(message, 200)
+            "ACK" -> Unit
+            else -> respond(message, 200)
+        }
+    }
+
+    private fun receiveInvite(message: SipMessage) {
+        val from = message.header("From").orEmpty()
+        val user = Regex("sip:([^@>]+)").find(from)?.groupValues?.get(1).orEmpty()
+        val display = Regex("\"([^\"]*)\"").find(from)?.groupValues?.get(1).orEmpty()
+        listener?.onIncomingCall(
+            IncomingInvite(
+                callId = message.callId(),
+                fromUser = user,
+                fromDisplay = display.ifEmpty { user },
+                sdp = message.body,
+                respondWith = { status, sdp ->
+                    respondToInvite(message, status, sdp)
+                },
+            ),
+        )
+    }
+
+    private fun respondToInvite(invite: SipMessage, status: Int, sdp: String?) {
+        val headers = buildList {
+            add(SipHeader("Via", invite.headersOf("Via").joinToString(", ")))
+            add(SipHeader("From", invite.header("From").orEmpty()))
+            add(SipHeader("To", invite.header("To").orEmpty() + ";tag=${UUID.randomUUID().toString().take(8)}"))
+            add(SipHeader("Call-ID", invite.callId()))
+            add(SipHeader("CSeq", invite.header("CSeq").orEmpty()))
+            add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
+            if (sdp != null) add(SipHeader("Content-Type", "application/sdp"))
+        }
+        send(
+            SipMessage(
+                isRequest = false, method = "", uri = "", statusCode = status,
+                reason = reasonPhrase(status), headers = headers, body = sdp.orEmpty(),
+            ),
+        )
+        if (status >= 200) {
+            callLegs[invite.callId()] = Leg(
+                callId = invite.callId(),
+                inviteCseq = invite.cseq()?.first ?: 1,
+                remoteTarget = invite.uri,
+                fromHeader = invite.header("To").orEmpty(),
+                toHeader = invite.header("From").orEmpty(),
+            )
+        }
+    }
+
+    private fun receiveResponse(message: SipMessage) {
+        val callId = message.callId()
+        val cseq = message.cseq()
+        when {
+            // REGISTER ladder: challenge → authorized → registered.
+            cseq?.second == "REGISTER" -> when (message.statusCode) {
+                401, 407 -> {
+                    val challenge = Digest.parseChallenge(
+                        message.header("WWW-Authenticate") ?: message.header("Proxy-Authenticate").orEmpty(),
+                    ) ?: return
+                    val authorization = Digest.authorization(
+                        method = "REGISTER",
+                        uri = "sip:${config.sipDomain}",
+                        username = config.extension,
+                        password = config.password,
+                        challenge = challenge,
+                    )
+                    register(authorization)
+                }
+                200 -> {
+                    setRegistered(true)
+                    scheduleRefresh()
+                }
+                else -> setRegistered(false)
+            }
+            // INVITE ladder: ring → answer → ACK; failure tears down.
+            cseq?.second == "INVITE" -> when {
+                message.statusCode == 180 || message.statusCode == 183 ->
+                    listener?.onCallProgress(callId, ringing = true)
+                message.statusCode == 200 -> {
+                    val leg = callLegs[callId]
+                    if (leg != null) {
+                        leg.toHeader = message.header("To") ?: leg.toHeader
+                        val contact = message.header("Contact")
+                        if (contact != null) leg.remoteTarget = contact.substringAfter('<').substringBefore('>')
+                    }
+                    ack(callId, toHeaderOverride = message.header("To"))
+                    listener?.onCallEstablished(callId, message.body)
+                }
+                message.statusCode >= 300 -> {
+                    callLegs.remove(callId)
+                    listener?.onCallEnded(callId)
+                }
+            }
+            // BYE/REFER/INFO responses need no ladder (fire-and-confirm).
+        }
+    }
+
+    private fun respond(request: SipMessage, status: Int) {
+        send(
+            SipMessage(
+                isRequest = false, method = "", uri = "", statusCode = status,
+                reason = reasonPhrase(status),
+                headers = buildList {
+                    add(SipHeader("Via", request.headersOf("Via").joinToString(", ")))
+                    add(SipHeader("From", request.header("From").orEmpty()))
+                    add(SipHeader("To", request.header("To").orEmpty()))
+                    add(SipHeader("Call-ID", request.callId()))
+                    add(SipHeader("CSeq", request.header("CSeq").orEmpty()))
+                },
+                body = "",
+            ),
+        )
+    }
+
+    private fun scheduleRefresh() {
+        refreshJob?.cancel()
+        refreshJob = scope.launch {
+            delay(REGISTER_EXPIRES * 1000L / 2)
+            if (registered) register() else connect()
+        }
+    }
+
+    private fun send(message: SipMessage) {
+        socket?.send(message.render())
+    }
+
+    private fun hostToken(): String = UUID.randomUUID().toString().take(12) + ".invalid"
+
+    private companion object {
+        const val TAG = "SipEngine"
+        const val REGISTER_EXPIRES = 600
+        const val RECONNECT_BACKOFF_MS = 3_000L
+
+        fun reasonPhrase(status: Int): String = when (status) {
+            100 -> "Trying"
+            180 -> "Ringing"
+            183 -> "Session Progress"
+            200 -> "OK"
+            486 -> "Busy Here"
+            487 -> "Request Terminated"
+            500 -> "Server Internal Error"
+            603 -> "Decline"
+            else -> ""
+        }
+    }
+}
