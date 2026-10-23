@@ -6,6 +6,10 @@ plugins {
 android {
     namespace = "software.larsartmann.webphone"
     compileSdk = 36
+    // build-tools 35: its zipalign carries -P 16 — the packaging step
+    // must produce 16 KB page-aligned uncompressed .so files (the
+    // Android 16 constraint; verified per release in CI).
+    buildToolsVersion = "35.0.0"
 
     defaultConfig {
         applicationId = "software.larsartmann.webphone"

@@ -27,8 +27,11 @@ implemented; the markers below are the honesty contract — what is
   against the stack's WSS gateway** (Caddy-fronted `/sip`).
 - Incoming INVITE answering and REFER/NOTIFY transfer: implemented in
   the dispatch, **explicitly UNTESTED**.
-- stream-webrtc-android 16 KB page alignment: **verify per release**
-  (`zipalign -c -P 16` on the merged APK) before pinning a version.
+- stream-webrtc-android 16 KB page alignment: **VERIFIED at 1.3.10**
+  (2026-10-23): `zipalign -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk`
+  passes on the assembled debug APK with build-tools 35 packaging.
+  Re-verify per release bump (the check needs build-tools ≥ 35 — the
+  `-P` flag does not exist in 34).
 - The `/api/session` + `/api/push-devices` contracts mirror the server
   seam that landed 2026-10-23 (webphone `internal/push`); field-name
   drift is caught at the first device boot, not before.

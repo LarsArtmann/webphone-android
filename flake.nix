@@ -22,7 +22,10 @@
         };
         android = pkgs.androidenv.composeAndroidPackages {
           platformVersions = [ "36" ];
-          buildToolsVersions = [ "34.0.0" ];
+          # 34.0.0: AGP 8.7's packaging default; 35.0.0: the first
+          # zipalign carrying the -P 16 flag (the 16 KB page-size
+          # verification the platform decision mandates per release).
+          buildToolsVersions = [ "34.0.0" "35.0.0" ];
           includeEmulator = false;
           includeSystemImages = false;
         };
