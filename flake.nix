@@ -29,6 +29,20 @@
           includeEmulator = false;
           includeSystemImages = false;
         };
+        # The self-serve device train (scripts/emulator-train.sh): a
+        # SEPARATE shell so the everyday build shell stays lean —
+        # emulator + system image weigh gigabytes. Enter it only when
+        # training: `nix develop .#emulator -c bash scripts/emulator-train.sh`
+        # (KVM required; on hosts without /dev/kvm the script is the
+        # documentation of what a real device train does).
+        emulatorSdk = pkgs.androidenv.composeAndroidPackages {
+          platformVersions = [ "36" ];
+          buildToolsVersions = [ "35.0.0" ];
+          includeEmulator = true;
+          includeSystemImages = true;
+          systemImageTypes = [ "google_apis" ];
+          abiVersions = [ "x86_64" ];
+        };
       in
       {
         devShells.default = pkgs.mkShell {
@@ -39,6 +53,15 @@
           ];
           ANDROID_HOME = "${android.androidsdk}/libexec/android-sdk";
           ANDROID_SDK_ROOT = "${android.androidsdk}/libexec/android-sdk";
+          JAVA_HOME = pkgs.jdk21.home;
+        };
+        devShells.emulator = pkgs.mkShell {
+          packages = [
+            pkgs.jdk21
+            emulatorSdk.androidsdk
+          ];
+          ANDROID_HOME = "${emulatorSdk.androidsdk}/libexec/android-sdk";
+          ANDROID_SDK_ROOT = "${emulatorSdk.androidsdk}/libexec/android-sdk";
           JAVA_HOME = pkgs.jdk21.home;
         };
       });

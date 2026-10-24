@@ -59,6 +59,10 @@ object SessionApi {
         val websocketUrl: String,
     )
 
+    /** Is the session cookie still alive? (The CallLayer watcher's
+     *  heartbeat — 401 after an island logout.) */
+    fun sessionAlive(): Boolean = call("GET", "/api/session", null) != null
+
     /** Resume the session cookie into SIP credentials (the island's
      *  boot resume path). 401 = not signed in (the WebView must show
      *  the login first). */

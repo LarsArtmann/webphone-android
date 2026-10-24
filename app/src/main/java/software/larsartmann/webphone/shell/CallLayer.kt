@@ -5,7 +5,10 @@ import com.google.android.gms.tasks.Tasks
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.call.CallEngine
@@ -27,6 +30,7 @@ object CallLayer {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var engine: SipEngine? = null
+    private var sessionWatch: Job? = null
 
     fun ensureWired(context: Context) {
         if (engine != null) return
@@ -54,6 +58,29 @@ object CallLayer {
                 App.origin,
                 DeviceIdentity.ntfyTopic(appContext),
             )
+            startSessionWatch(appContext)
+        }
+    }
+
+    /** The session watcher: while wired, poll the session seam. A
+     *  dead session means the island logged out — stop ringing for an
+     *  account we can no longer resume: drop the ntfy lane, tear the
+     *  engine down. The server-side device row deregistration is BEST
+     *  EFFORT here (the logout usually already killed the cookie, so
+     *  the DELETE runs unauthorized — the JS-bridge alternative in the
+     *  plan needs the operator's pick; until then the shell at least
+     *  stops listening). */
+    private fun startSessionWatch(appContext: Context) {
+        sessionWatch?.cancel()
+        sessionWatch = scope.launch {
+            while (isActive && engine != null) {
+                delay(SESSION_WATCH_INTERVAL_MS)
+                if (SessionApi.sessionAlive()) continue
+                runCatching { SessionApi.deregisterPushDevice(appContext) }
+                NtfySubscriptionService.stop(appContext)
+                shutdown()
+                break
+            }
         }
     }
 
@@ -76,7 +103,13 @@ object CallLayer {
     }
 
     fun shutdown() {
+        sessionWatch?.cancel()
+        sessionWatch = null
         CallEngine.detach()
         engine = null
+    }
+
+    private companion object {
+        const val SESSION_WATCH_INTERVAL_MS = 10 * 60 * 1000L
     }
 }

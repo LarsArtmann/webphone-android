@@ -53,12 +53,17 @@ class NtfySubscriptionService : Service() {
             return START_NOT_STICKY
         }
 
-        val server = intent?.getStringExtra(EXTRA_SERVER)
-        val topic = intent?.getStringExtra(EXTRA_TOPIC)
+        // Sticky restart delivers a NULL intent — the server/topic
+        // must survive in prefs or the de-Googled push lane dies
+        // silently on the first system restart (the v0.1 defect).
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val server = intent?.getStringExtra(EXTRA_SERVER) ?: prefs.getString(KEY_SERVER, null)
+        val topic = intent?.getStringExtra(EXTRA_TOPIC) ?: prefs.getString(KEY_TOPIC, null)
         if (server.isNullOrEmpty() || topic.isNullOrEmpty()) {
             stopSelf()
             return START_NOT_STICKY
         }
+        prefs.edit().putString(KEY_SERVER, server).putString(KEY_TOPIC, topic).apply()
         subscribe(server, topic)
         return START_STICKY
     }
@@ -138,6 +143,9 @@ class NtfySubscriptionService : Service() {
         private const val ACTION_STOP = "software.larsartmann.webphone.push.STOP"
         private const val EXTRA_SERVER = "server"
         private const val EXTRA_TOPIC = "topic"
+        private const val PREFS = "webphone-ntfy"
+        private const val KEY_SERVER = "server"
+        private const val KEY_TOPIC = "topic"
 
         fun start(context: Context, server: String, topic: String) {
             context.startForegroundService(
