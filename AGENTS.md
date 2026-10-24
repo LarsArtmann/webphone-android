@@ -201,6 +201,16 @@ events: `ring` and `ring_end`.
   `CallEngine.registration` is `REGISTERED` (the dialer shows the
   same state the shell badge does); dialing unregistered would no-op
   silently.
+- **Two adb trees, one server**: the default devShell and the
+  `.#emulator` devShell ship different `adb` versions sharing port
+  5037 — an adb server started by one is killed by the other, and a
+  mid-flight script then hangs in `adb wait-for-device`. Drive the
+  emulator from ONE adb per session (the emulator shell's own).
+- **WebView cookie gate**: `CookieManager.setAcceptThirdPartyCookies`
+  CRASHES (`NullPointerException` inside the Chromium glue) when
+  passed a null WebView — always pass the real `webView` (found by
+  the first emulator smoke, 2026-10-24; Robolectric's shadow does not
+  reproduce it, so this class of bug only surfaces on a real stack).
 - dprint formats Markdown tables BETWEEN edits — re-view any `.md`
   file before `edit`/`multiedit` or exact matches fail. Run
   `nix run nixpkgs#dprint -- fmt` on touched `.md`/`.yml` files before

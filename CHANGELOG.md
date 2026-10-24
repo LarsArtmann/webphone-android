@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 - Dependabot dependency updates (`.github/dependabot.yml`)
 - Dialer entry: numpad activity with mic-permission gate and single-call
-  guard, plus a dial button on the shell (`call/DialpadActivity.kt`)
+  guard, plus a dial button on the shell
 - Idempotent call-layer wire (`shell/CallLayer.kt`) — one SIP engine per
   process, shared by the resume loop AND ring pushes while closed
 - Push-device registration: ntfy topic always, FCM token best-effort,
@@ -23,9 +23,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   ringing state cancelled
 - Full-screen-intent runtime check with heads-up degradation
   (`canUseFullScreenIntent()`)
-- `POST_NOTIFICATIONS` runtime request on first launch (API 33+)
-- Hang-up control during outgoing ring-out; BT/watch answer path starts
-  the call foreground service
+- Settings surface: the stack origin is now user-configurable —
+  persisted (`SettingsActivity`, `https://`-validated), loaded at
+  process start, and a first-run prompt routes to Settings when the
+  app still points at the shipped placeholder
+- SIP registration state surfaced end-to-end: `CallEngine.registration`
+  (OFF/CONNECTING/REGISTERED), a shell badge, and a dialer that
+  disables the Call button while unregistered
+- Outbound calls ride Telecom on API 34+ (`TelecomManager.addCall` +
+  `CallControl` state mirroring — the classic `placeCall` entry is
+  gone from the API 36 stubs); API 31-33 and Telecom rejections fall
+  back to a direct dial
+- CANCEL support: hang-up during ring-out sends a spec-correct CANCEL
+  (the INVITE's own Via branch + CSeq + provisional To tag, RFC 3261
+  §9.1); a confirmed dialog refuses CANCEL and ends via BYE; non-2xx
+  INVITE finals are ACKed (487 teardown is clean, not an error)
+- ntfy lane persistence: server/topic survive a sticky restart
+  (null-intent restarts resubscribe from prefs)
+- Session watcher: a dead session (island logout) stops the ntfy lane
+  and tears the engine down, best-effort deregistering the device
+- Test suite: 26 JVM tests — SIP codec round-trips and malformed-input
+  rejection, digest credentials against the RFC 2617 §3.5 vector
+  (independently re-computed), CANCEL/BYE/487/ACK wire sequences,
+  device-identity topic shape, plus Robolectric smoke for the push
+  router (Telecom + notification shadows) and the shell launch
+- CI workflow (`.github/workflows/ci.yml`): debug build, unit tests,
+  16 KB zipalign gate, dprint check (first run awaits a git remote)
+- Self-serve device train: `.#emulator` devShell (API 36 emulator +
+  system image) with `scripts/emulator-train.sh` / `emulator-smoke.sh`
+- Speaker toggle (earpiece ⇄ speaker, communication-device API),
+  dialpad recents (last 5 numbers), long-press backspace clear,
+  floating-action styling, 48dp touch targets, extracted strings,
+  ended-call auto-finish, re-ring intent refresh
 
 ### Fixed
 
@@ -37,10 +66,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Engine churn: repeated resumes no longer stack WSS connections
 - ntfy subscription: no duplicate websockets per resume; reconnect loop
   no longer double-fires or deadlocks on a stale socket reference
+- Startup crash on real WebView stacks: `setAcceptThirdPartyCookies`
+  NPEs under the Chromium glue when passed a null WebView (found by
+  the first emulator smoke, 2026-10-24)
+- FSI auto-answer: opening the incoming-call screen answered the call
+  without any user tap; answering now requires an explicit Answer tap
+  (or the Telecom/BT answer path)
+- The WebView follows an origin change immediately on resume (saving a
+  new origin used to leave the old origin's page on screen)
+- Digest challenges advertising a qop LIST (`"auth,auth-int"`) are now
+  hashed and answered with the CHOSEN qop (`auth`), not the raw list;
+  challenge parsing handles unquoted values (`algorithm=SHA-256` no
+  longer swallows the rest of the header)
+- SIP parser rejects non-`SIP/2.0` request lines and out-of-range
+  status codes instead of parsing garbage into messages
+- Telecom connections are destroyed when the remote side ends the call
+  (previously a zombie connection survived a remote BYE)
+- Notification permission is requested in context (post-registration)
+  instead of on a cold launch
 
 ### Changed
 
 - Formatting baseline via dprint (JSON/YAML/Markdown/Dockerfile; `dprint.json`)
+- Call end attribution modeled explicitly (`CallState.endedBy`:
+  local/remote/failed) and rendered as Telecom DisconnectCauses
 
 ## [0.1.0] - 2026-10-23
 

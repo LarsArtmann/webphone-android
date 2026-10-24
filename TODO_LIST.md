@@ -10,7 +10,7 @@
 ## Status legend
 
 | Status           | Meaning                                                     |
-| ---------------- | ----------------------------------------------------------- |
+| ---------------- | ------------------------------------------------------------ |
 | 🔴 `TODO`        | Not started. Needs doing.                                   |
 | 🟡 `IN_PROGRESS` | Actively being worked on.                                   |
 | 🔵 `BLOCKED`     | Cannot proceed, external dependency or decision needed.     |
@@ -18,29 +18,28 @@
 
 ## High Impact
 
-| Task                                                              | Status    | Impact | Effort | Evidence                                                                                                                                                                                                        |
-| ----------------------------------------------------------------- | --------- | ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| First device train: exercise the app end-to-end against the stack | 🔴 `TODO` | High   | 1 day  | Dial (numpad → INVITE → audio), answer (push → FSI → 200), DTMF, hold, ring/ring_end; incoming INVITE + REFER/NOTIFY explicitly UNTESTED (`sip/SipEngine.kt:29-32`)                                             |
-| Verify the answer-path race                                       | 🔴 `TODO` | High   | 2h     | A ring push while closed rings via Telecom immediately; the SIP INVITE needs `CallLayer.ensureWired` to win the race (`push/RingRouter.kt` ring, `shell/CallLayer.kt`) — does the server re-invite long enough? |
-| Wire outbound calls through Telecom                               | 🔴 `TODO` | High   | 2-4h   | `call/CallConnectionService.kt` `onCreateOutgoingConnection` — zero callers; dialing bypasses Telecom, so BT/watches never see outbound calls. Integrate (`placeCall`) or delete the ghost                      |
-| Fix FSI auto-answer (explicit Answer tap)                         | 🔴 `TODO` | High   | 1h     | `call/CallActivity.kt` `startCall()` answers RINGING_IN the moment the activity opens with mic granted — no user tap; product decision pending (status report 2026-10-24_17-44, Q3)                             |
+| Task                                                                     | Status    | Impact | Effort | Evidence                                                                                                                              |
+| ------------------------------------------------------------------------- | -------- | ------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| First device train: exercise the app end-to-end against the live stack   | 🔵 `BLOCKED` | High | 1 day  | Needs operator: stack origin + test extension (Q1). The self-serve part is done: emulator kit + smoke passed 2026-10-24               |
+| Verify the answer-path race (push → FSI vs INVITE)                       | 🔵 `BLOCKED` | High | 2h     | Needs the live stack (Q1); does the server re-invite long enough? Plan task F013 measures it                                          |
+| Thread-confinement audit: `_state`/`pendingInvite` writes across threads | 🔴 `TODO` | High   | 2h     | `CallEngine` is written from WebRTC callbacks, OkHttp WS thread, and the UI thread; `MutableStateFlow` is atomic but `pendingInvite`/`media` are plain fields |
 
 ## Medium Impact
 
-| Task                                              | Status    | Impact | Effort | Evidence                                                                                                                        |
-| ------------------------------------------------- | --------- | ------ | ------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Hook logout → `deregisterPushDevice`              | 🔴 `TODO` | Med    | 1-2h   | `shell/SessionApi.kt:103` — zero callers; needs a WebView logout signal (JS bridge or cookie poll)                              |
-| Settings surface for the stack origin             | 🔴 `TODO` | Med    | 2-4h   | `App.kt:45` — hardcoded `https://pbx.example.org`; README says this lands with the first device train                           |
-| Add CI: build + 16 KB zipalign gate               | 🔴 `TODO` | Med    | 1-2h   | `app/build.gradle.kts:11` claims "verified per release in CI" — no workflows exist (`.github/` holds only `dependabot.yml`)     |
-| Expose SIP registration state in the UI           | 🔴 `TODO` | Med    | 1-2h   | `call/CallEngine.kt` `onRegistrationState` = `Unit` — the user never sees whether the extension is registered                   |
-| Persist ntfy server/topic; survive sticky restart | 🔴 `TODO` | Med    | 1h     | `push/NtfySubscriptionService.kt` — START_STICKY restart delivers null intent → stopSelf → lane silently dead until next resume |
-| Add CANCEL for hang-up during outgoing ring-out   | 🔴 `TODO` | Med    | 1h     | `sip/SipEngine.kt` `bye()` is sent before the 200 OK; SIP prescribes CANCEL pre-answer                                          |
-| Dialpad: preserve typed number across rotation    | 🔴 `TODO` | Med    | 30min  | `call/DialpadActivity.kt` — programmatic EditText without `android:id`, no `configChanges`                                      |
-| Run `assembleRelease` once; verify R8 keeps       | 🔴 `TODO` | Med    | 30min  | `app/proguard-rules.pro` keeps only `org.webrtc.**` + `FcmReceiver`; release never built                                        |
+| Task                                                          | Status    | Impact | Effort | Evidence                                                                                                    |
+| --------------------------------------------------------------- | -------- | -------- | ------ | -------------------------------------------------------------------------------------------------------- |
+| Logout deregistration: cookie-poll (shipped) vs JS bridge      | 🔵 `BLOCKED` | Med | 1h     | Operator picks (plan F063). Cookie-poll watcher shipped (`CallLayer.startSessionWatch`) but cannot deregister after the cookie is dead |
+| CallStyle-composed incoming + ongoing notifications            | 🔴 `TODO` | Med    | 2-4h   | Plan T21; needs a run device train first (T01/T02) to verify against both ring paths                       |
+| INVITE 401 re-auth ladder + silence watchdog re-register       | 🔴 `TODO` | Med    | 2h     | Only REGISTER is challenge-handled (`SipEngine.receiveResponse`); PBXs that challenge INVITE break outbound calls. `SipEngineTest` seams are ready |
+| Second-incoming-call UX: suppress FSI when busy + heads-up      | 🔴 `TODO` | Med    | 1h     | `CallEngine.onIncomingCall` 486s silently; a "line busy" heads-up is plan F095-F096                        |
+| `CallLayer.shutdown` vs in-flight `ensureWired` race decision  | 🔴 `TODO` | Med    | 30min  | `attachOnce` serializes attach, but a wire completing AFTER shutdown leaves an orphan engine (`engine` re-set by the launch block) |
+| Live contract checks: `/api/session` fields, push payload, CSRF | 🔵 `BLOCKED` | Med | 1h     | Needs the live stack (Q1); field-drift class of bugs (plan T16)                                            |
 
 ## Low Impact
 
-| Task                                         | Status    | Impact | Effort | Evidence                                                                                                           |
-| -------------------------------------------- | --------- | ------ | ------ | ------------------------------------------------------------------------------------------------------------------ |
-| CallStyle-composed in-call notification      | 🔴 `TODO` | Low    | 2-4h   | `call/CallActivity.kt:22` — "arrives with the first device train"; current UI is programmatic                      |
-| Refresh file:line citations in FEATURES/TODO | 🔴 `TODO` | Low    | 30min  | `SessionApi.kt`/`CallEngine.kt` citations shifted by this session's rewrites (status report 2026-10-24_17-44, d-2) |
+| Task                                             | Status    | Impact | Effort | Evidence                                                                                  |
+| -------------------------------------------------- | -------- | -------- | ------ | -------------------------------------------------------------------------------------------- |
+| Real adaptive icon artwork + LICENSE + repo polish | 🔴 `TODO` | Low    | 1h     | Plan T24 (icon is the placeholder teal; no LICENSE file)                                    |
+| Cookie-expiry mid-call behavior check              | 🔵 `BLOCKED` | Low | 30min  | Needs the live stack (plan F106)                                                            |
+| TLS-pinning consideration memo                     | 🔴 `TODO` | Low    | 30min  | Decide pin-or-not, record why (plan F107)                                                   |
+| Retire honesty markers post-train                  | 🔵 `BLOCKED` | Low | 1h     | Needs both device trains green (plan T26)                                                   |

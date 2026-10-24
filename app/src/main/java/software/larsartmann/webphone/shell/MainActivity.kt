@@ -46,6 +46,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var statusBadge: TextView
+    private var loadedOrigin: String? = null
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -55,7 +56,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         CookieManager.getInstance().setAcceptCookie(true)
-        CookieManager.getInstance().setAcceptThirdPartyCookies(null, false)
 
         webView = WebView(this)
         webView.layoutParams = ViewGroup.LayoutParams(
@@ -66,6 +66,10 @@ class MainActivity : AppCompatActivity() {
         webView.settings.domStorageEnabled = true
         webView.settings.mediaPlaybackRequiresUserGesture = false
         webView.webViewClient = WebViewClient()
+        // Third-party cookies are OFF per-WebView — the call needs the
+        // WebView param and CRASHES on null under the Chromium glue
+        // (found by the first emulator smoke, 2026-10-24).
+        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false)
 
         statusBadge = TextView(this).apply { textSize = 14f }
         val dial = Button(this).apply {
@@ -95,7 +99,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         setContentView(root)
-        webView.loadUrl(App.origin)
+        loadOriginIfChanged()
         dial.setOnClickListener { startActivity(Intent(this, DialpadActivity::class.java)) }
         settings.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
 
@@ -115,7 +119,21 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::webView.isInitialized) CallLayer.ensureWired(this)
+        if (::webView.isInitialized) {
+            // Settings may have changed the origin while we were away:
+            // the shell MUST follow it (the save-teardown re-wires the
+            // call layer; this re-aims the WebView). Found by walking
+            // the settings flow on the emulator, 2026-10-24.
+            loadOriginIfChanged()
+            CallLayer.ensureWired(this)
+        }
+    }
+
+    private fun loadOriginIfChanged() {
+        if (App.origin != loadedOrigin) {
+            webView.loadUrl(App.origin)
+            loadedOrigin = App.origin
+        }
     }
 
     private fun renderRegistration(registration: CallEngine.Registration) {

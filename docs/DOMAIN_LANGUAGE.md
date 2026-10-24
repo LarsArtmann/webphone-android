@@ -30,6 +30,14 @@
 | de-Googled               | Devices without Play services; the ntfy lane exists for them with zero Google dependencies                                                              | README, `push/NtfySubscriptionService.kt`                                       |
 | sideload lane            | Distribution outside Play; keeps the default full-screen-intent grant that Play would re-audit                                                          | README "Distribution", `push/RingRouter.kt`                                     |
 | upsert by device id      | The push-registry row model: token rotation replaces the row keyed by the stable per-install `device_id`                                                | `shell/SessionApi.kt:76`, `shell/DeviceIdentity.kt`                             |
+| CallLayer                | The idempotent process-level wire: session resume → SIP engine → push lanes → session watcher; callable from any wake path, never stacked                | `shell/CallLayer.kt`                                                            |
+| stand-down               | The `ring_end` retreat: cancel the ring notification, tear the Telecom connection, refuse the pending invite — everywhere at once, no half-rings         | `push/RingEvent.kt`, `call/CallEngine.cancelRinging`                            |
+| bootstrap race           | The ring push wakes the process BEFORE the SIP INVITE lands; `CallLayer.ensureWired` must bring the leg up in time — whether the server re-invites long enough is the open question the first live train answers | `shell/CallLayer.kt`, `push/RingEvent.ring` KDoc |
+| registration state       | The OFF/CONNECTING/REGISTERED fact the badge and the dialer's Call gate render — the user sees the PBX, instead of flying blind                          | `call/CallEngine.kt`, `shell/MainActivity.kt`, `call/DialpadActivity.kt`        |
+| addCall session          | The modern Telecom VoIP path (API 34+): `TelecomManager.addCall` returns a `CallControl` the app mirrors engine state onto; the classic self-managed OUTGOING entry no longer exists in the API 36 stubs | `call/TelecomOutgoing.kt` |
+| endedBy                  | Who ended the call (LOCAL/REMOTE/FAILED) — the Telecom DisconnectCause's source of truth                                                                 | `call/CallEngine.CallState`, `call/CallConnectionService.kt`                    |
+| origin                   | Shorthand for the stack origin; persisted in Settings, first-run prompt when still the placeholder                                                       | `App.kt`, `shell/SettingsActivity.kt`                                           |
+| train kit                | The self-serve device loop: `.#emulator` devShell + `scripts/emulator-train.sh` (boot/install/launch/screenshot) — the no-operator smoke                 | `flake.nix`, `scripts/`                                                         |
 
 ## Bounded contexts
 
