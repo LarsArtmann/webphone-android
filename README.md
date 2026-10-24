@@ -9,13 +9,13 @@ the stack's own web pages in a session-sharing WebView.
 
 ## What runs where
 
-| Layer | Home | Why |
-| --- | --- | --- |
-| Call signaling (SIP over WSS: REGISTER, INVITE, hold re-INVITE, BYE, DTMF `application/dtmf-relay` equals-form, REFER + NOTIFY sipfrag) | `sip/SipEngine.kt` | The browser engine cannot ring a closed app; Kotlin owns the leg. |
-| Call audio (WebRTC, libwebrtc AudioProcessing) | `call/WebRtcEngine.kt` (stream-webrtc-android) | The same AEC/NS desktop Chrome ships — best in class on Android. |
-| OS call integration (self-managed Telecom ConnectionService, typed `microphone\|phoneCall` FGS, full-screen intent) | `call/*` | Ring while CLOSED (the hard requirement), screen-off survival, BT/watch answer. |
-| Ring-while-closed push | `push/*` | BOTH transports by owner decision: FCM (GMS devices) + ntfy websocket subscription (de-Googled). The server fan-out lives in webphone `internal/push` (`/hooks/ring` → `/api/push-devices`). |
-| Every other surface | The WebView into the stack origin | 100% reuse of the proven island + tab partials; the session cookie is the seam. |
+| Layer                                                                                                                                   | Home                                           | Why                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Call signaling (SIP over WSS: REGISTER, INVITE, hold re-INVITE, BYE, DTMF `application/dtmf-relay` equals-form, REFER + NOTIFY sipfrag) | `sip/SipEngine.kt`                             | The browser engine cannot ring a closed app; Kotlin owns the leg.                                                                                                                            |
+| Call audio (WebRTC, libwebrtc AudioProcessing)                                                                                          | `call/WebRtcEngine.kt` (stream-webrtc-android) | The same AEC/NS desktop Chrome ships — best in class on Android.                                                                                                                             |
+| OS call integration (self-managed Telecom ConnectionService, typed `microphone\|phoneCall` FGS, full-screen intent)                     | `call/*`                                       | Ring while CLOSED (the hard requirement), screen-off survival, BT/watch answer.                                                                                                              |
+| Ring-while-closed push                                                                                                                  | `push/*`                                       | BOTH transports by owner decision: FCM (GMS devices) + ntfy websocket subscription (de-Googled). The server fan-out lives in webphone `internal/push` (`/hooks/ring` → `/api/push-devices`). |
+| Every other surface                                                                                                                     | The WebView into the stack origin              | 100% reuse of the proven island + tab partials; the session cookie is the seam.                                                                                                              |
 
 ## Status: v0.1 scaffold
 
