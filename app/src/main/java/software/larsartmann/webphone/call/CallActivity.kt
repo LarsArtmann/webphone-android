@@ -1,6 +1,7 @@
 package software.larsartmann.webphone.call
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -14,6 +15,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.push.RingEvent
@@ -32,6 +35,7 @@ class CallActivity : AppCompatActivity() {
     private lateinit var controls: LinearLayout
 
     private var answerWhenMicGranted = false
+    private var autoFinish: Job? = null
 
     private val micPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -65,6 +69,14 @@ class CallActivity : AppCompatActivity() {
                 CallEngine.state.collect { render(it) }
             }
         }
+    }
+
+    /** Re-ring while alive: the full-screen intent on a singleInstance
+     *  activity lands here — refresh the displayed party (the state
+     *  collector re-renders the controls on its own). */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.getStringExtra(RingEvent.EXTRA_FROM)?.let { partyView.text = it }
     }
 
     /** The ONLY answer path on this surface: an explicit Answer tap.
@@ -130,6 +142,17 @@ class CallActivity : AppCompatActivity() {
         }
         if (state.phase == CallEngine.Phase.ENDED) {
             CallService.stop(this)
+            scheduleEndAutoFinish()
+        }
+    }
+
+    /** An ended call screen must not linger: auto-close after a beat
+     *  (the Close button stays for the user who wants to read it). */
+    private fun scheduleEndAutoFinish() {
+        if (autoFinish?.isActive == true) return
+        autoFinish = lifecycleScope.launch {
+            delay(3_000)
+            if (CallEngine.state.value.phase == CallEngine.Phase.ENDED && !isFinishing) finish()
         }
     }
 

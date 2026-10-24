@@ -9,18 +9,31 @@ Settings) is the stack origin's own web pages in a session-sharing
 WebView. Single-call by product decision: a second call waits, it never
 silently replaces.
 
-**Status: v0.1 scaffold.** Load-bearing code is implemented but
-untested against live infrastructure (the README "honesty contract"
-section lists the markers). There is no test source set, no CI, and no
-Kotlin formatter/linter configured — don't invent test commands; there
-are none.
+**Status: v0.1 scaffold, first runtime smoke done.** Load-bearing code is
+implemented but untested against LIVE infrastructure (the README
+"honesty contract" section lists the markers). There IS now: a JVM test
+source set (26 tests: protocol unit tests + Robolectric smoke) and a CI
+workflow (never run — no git remote configured). First emulator smoke
+(install + launch) passed 2026-10-24.
 
-## Build
+## Build and verify
 
 ```console
 nix develop                        # JDK 21 + Android SDK (platform 36, build-tools 34+35)
-./gradlew assembleDebug            # debug APK
-./gradlew assembleRelease          # minified + resource-shrunk (R8, proguard-rules.pro)
+nix develop -c ./gradlew assembleDebug      # debug APK
+nix develop -c ./gradlew assembleRelease    # minified + resource-shrunk (R8, proguard-rules.pro)
+nix develop -c ./gradlew testDebugUnitTest  # JVM unit tests (protocol + Robolectric smoke)
+```
+
+The verification gate after every code change: `assembleDebug` green +
+`zipalign -c -P 16 4` on the debug APK + `testDebugUnitTest` green.
+
+The self-serve device train (headless API 36 emulator, requires
+`/dev/kvm`; the AVD lives in `.avd/`):
+
+```console
+nix develop .#emulator -c bash scripts/emulator-train.sh   # boot+install+launch+screenshot, exits
+nix develop .#emulator -c bash scripts/emulator-smoke.sh   # keeps the emulator up for iterating
 ```
 
 - The dev environment comes only from `flake.nix` (unfree license
@@ -48,29 +61,45 @@ Single `:app` module, package-per-concern under
 
 | Package  | Contents                                                                                                | Role                                                                                                       |
 | -------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `shell/` | `MainActivity`, `CallLayer`, `SessionApi`, `DeviceIdentity`                                             | The WebView shell + the idempotent call-layer wire + the origin's HTTP session seam + per-install identity |
-| `sip/`   | `SipEngine`, `SipMessage`, `Digest`                                                                     | SIP-over-WSS user agent: REGISTER (digest), INVITE/re-INVITE/BYE, DTMF INFO, REFER/NOTIFY                  |
-| `call/`  | `CallEngine`, `WebRtcEngine`, `CallService`, `CallConnectionService`, `CallActivity`, `DialpadActivity` | Call orchestration, WebRTC audio, typed FGS, Telecom integration, in-call UI, dialer entry                 |
+| `shell/` | `MainActivity`, `CallLayer`, `SessionApi`, `DeviceIdentity`, `SettingsActivity`                          | The WebView shell + the idempotent call-layer wire + the origin's HTTP session seam + per-install identity + the persisted stack-origin settings |
+| `sip/`   | `SipEngine`, `SipMessage`, `Digest`                                                                     | SIP-over-WSS user agent: REGISTER (digest), INVITE/re-INVITE/CANCEL/BYE, DTMF INFO, REFER/NOTIFY           |
+| `call/`  | `CallEngine`, `WebRtcEngine`, `CallService`, `CallConnectionService`, `TelecomOutgoing`, `CallActivity`, `DialpadActivity` | Call orchestration (incl. registration state), WebRTC audio, typed FGS, inbound Telecom integration, outbound addCall bridge (API 34+), in-call UI, dialer entry |
 | `push/`  | `RingEvent` (the router), `FcmReceiver`, `NtfySubscriptionService`                                      | The two ring-while-closed transports, both converging on `RingEvent.route`                                 |
+| `ui/`    | `Fab` (styleAsFab)                                                                                      | The one floating-action look shared by the shell dial button and the dialer call button                    |
+
+Unit tests live under `app/src/test/` mirroring the packages; Robolectric
+tests MUST set `@Config(application = Application::class)` — the manifest
+`App` initializes WebRTC's native factory, which
+`UnsatisfiedLinkError`s on the JVM.
 
 ### Control flow
 
-1. **Session**: `MainActivity` loads `App.origin` in the WebView; the
-   island's login mints the session cookie. `CallLayer.ensureWired`
-   (idempotent, callable from any wake path) resumes the session
-   (`SessionApi.resumeSession()`, GET `/api/session`), creates the
-   `SipEngine`, attaches it to the `CallEngine` singleton, registers
-   the push lanes, and starts the ntfy subscription. A ring push while
-   closed calls the same entry point — the SIP leg must come up for
-   the INVITE to land (the bootstrap races it).
-2. **Outbound call**: `DialpadActivity` → `CallEngine.dial` → WebRTC
-   offer → `SipEngine.invite` → 180/200/ACK ladder →
-   `onCallEstablished` applies the remote answer.
+1. **Session**: `MainActivity` loads `App.origin` (persisted in
+   Settings — `SettingsActivity` validates `https://`, saves to prefs,
+   and tears the call layer down so the next resume re-wires) in the
+   WebView; the island's login mints the session cookie.
+   `CallLayer.ensureWired` (idempotent, callable from any wake path)
+   resumes the session (`SessionApi.resumeSession()`, GET
+   `/api/session`), creates the `SipEngine`, attaches it to the
+   `CallEngine` singleton, registers the push lanes, starts the ntfy
+   subscription, and starts a 10-minute session watcher (dead session
+   → best-effort deregister + lane stop + engine teardown). A ring
+   push while closed calls the same entry point — the SIP leg must
+   come up for the INVITE to land (the bootstrap races it).
+2. **Outbound call**: `DialpadActivity` →
+   `CallConnectionService.placeOutgoingCall` → on API 34+
+   `TelecomOutgoing.place` (`TelecomManager.addCall`, the modern VoIP
+   session — a `CallControl` mirrors engine ACTIVE/HELD/ENDED) →
+   `CallEngine.dial` → WebRTC offer → `SipEngine.invite` →
+   180/200/ACK ladder → `onCallEstablished` applies the remote
+   answer. Pre-34 devices (and Telecom rejections) fall back to a
+   direct `CallEngine.dial`.
 3. **Inbound call (ring while closed)**: push arrives (FCM data message
    or ntfy websocket JSON, same `{event, from, call_id}` payload) →
    `RingEvent.route` → `telecom.addNewIncomingCall` (self-managed
    connection) + full-screen-intent notification → `CallActivity` →
-   `CallEngine.answer`.
+   explicit Answer tap → `CallEngine.answer`. The FSI opening NEVER
+   answers by itself; Telecom/BT `onAnswer` is the other explicit path.
 4. `CallEngine` is the single orchestrator: it implements
    `SipEngine.Listener`, exposes `StateFlow<CallState>`, and is the only
    writer of call state. Telecom callbacks
@@ -92,10 +121,18 @@ events: `ring` and `ring_end`.
 - **DTMF**: always the EQUALS form of `application/dtmf-relay`
   (`Signal=5`). Never the colon form — FreeSWITCH 200-OKs it and
   silently drops the digit.
-- **`App.origin`** is a hardcoded `@Volatile var` in `App.kt`
-  (`https://pbx.example.org`) — the settings UI doesn't exist yet; set
-  it before any real device run. Cleartext is disabled
-  (`usesCleartextTraffic="false"`), so the origin must be HTTPS.
+- **Telecom outbound on API 36 (compileSdk)**: the classic self-managed
+  outgoing entry `TelecomManager.placeCall(handle, uri, extras)` is
+  GONE from the API 36 stubs — `onCreateOutgoingConnection` cannot fire
+  and was deleted. Outbound rides `TelecomManager.addCall` (API 34+,
+  `CallAttributes`/`CallControl`); API 31-33 dials directly (no OS
+  surface). NEVER reintroduce `placeCall` — it does not compile against
+  platform 36. Inbound stays classic (`addNewIncomingCall`, all APIs).
+- **Stack origin**: persisted in Settings (`webphone-settings` prefs;
+  `SettingsActivity` validates `https://` and tears the call layer
+  down on save). The shipped default `https://pbx.example.org` is a
+  NON-place; first run prompts for the real origin. Cleartext is
+  disabled (`usesCleartextTraffic="false"`), so the origin must be HTTPS.
 - **One cookie store**: `SessionApi`'s OkHttp client bridges through the
   WebView's `CookieManager` (read AND write). The island login mints
   there; API calls read the same jar. Never add a second cookie store
@@ -132,10 +169,16 @@ events: `ring` and `ring_end`.
   state must always follow `onRegistrationState`, never the socket
   callback (the web island's sip.js hang lesson, ported).
 - **REGISTER digest**: answer with whatever algorithm the challenge
-  names (MD5 or SHA-256), like the island's sip.js does.
-- `POST_NOTIFICATIONS` is declared in the manifest but no runtime
-  request code exists yet — expected to matter on the first device
-  train (API 33+).
+  names (MD5 or SHA-256), like the island's sip.js does. A multi-qop
+  challenge (`"auth,auth-int"`) is hashed with the CHOSEN qop
+  (`auth`), never the raw list — the RFC 2617 §3.5 vector is a unit
+  test (`DigestTest`).
+- **Hang-up discipline**: CANCEL while the ring is out (the INVITE's
+  own Via branch + CSeq, RFC 3261 §9.1), BYE only on a confirmed
+  dialog, 603 for an inbound ring. `SipEngineTest` pins the message
+  sequences; a CANCEL after 200 is a protocol crime the guard refuses.
+- `POST_NOTIFICATIONS` is requested in context — once registration
+  proves the session works — not on a cold launch (API 33+).
 
 ## Conventions
 
@@ -154,3 +197,11 @@ events: `ring` and `ring_end`.
   planned, not present. `minSdk = 31`, `targetSdk/compileSdk = 36`.
 - Intents carry the ring fact under `RingEvent.EXTRA_FROM` /
   `EXTRA_CALL_ID` action-namespaced extras.
+- Dialer honesty: the Call button is disabled unless
+  `CallEngine.registration` is `REGISTERED` (the dialer shows the
+  same state the shell badge does); dialing unregistered would no-op
+  silently.
+- dprint formats Markdown tables BETWEEN edits — re-view any `.md`
+  file before `edit`/`multiedit` or exact matches fail. Run
+  `nix run nixpkgs#dprint -- fmt` on touched `.md`/`.yml` files before
+  finishing (CI runs `dprint check`).
