@@ -18,10 +18,10 @@ import software.larsartmann.webphone.call.CallConnectionService
  * {event, from, call_id} — this is the ONE place it becomes a system
  * call. `ring` wires a self-managed incoming Telecom connection and
  * posts the full-screen-intent heads-up (USE_FULL_SCREEN_INTENT: the
- * sideload lane keeps the default grant; runtime-check
+ * sideload lane keeps the default grant; planned: runtime-check
  * canUseFullScreenIntent() and degrade to the heads-up pill — the
- * graceful path the platform decision requires). `ring_end` stands
- * the ring down (answered elsewhere, caller gave up).
+ * graceful path the platform decision requires, not yet implemented).
+ * `ring_end` stands the ring down (answered elsewhere, caller gave up).
  */
 object RingEvent {
     const val EXTRA_FROM = "software.larsartmann.webphone.extra.FROM"

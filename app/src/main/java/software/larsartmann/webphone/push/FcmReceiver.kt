@@ -28,6 +28,7 @@ class FcmReceiver : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         // Rotation: the registry upserts by stable device id, so the
         // new token replaces the old row on the next register pass
-        // (SessionApi.registerPushDevice, kicked from MainActivity).
+        // (SessionApi.registerPushDevice — not yet wired from anywhere,
+        // see TODO_LIST.md "Wire push-device registration").
     }
 }
