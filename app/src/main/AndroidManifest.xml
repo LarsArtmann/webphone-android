@@ -45,9 +45,18 @@
             android:turnScreenOn="true"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
 
-        <!-- The dialer entry: number in, mic permission, dial. -->
+        <!-- The dialer entry: number in, mic permission, dial. The
+             configChanges set preserves the typed number across
+             rotation (house pattern, same as the other surfaces). -->
         <activity
             android:name=".call.DialpadActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
+
+        <!-- Settings: the stack origin (the one fact the app cannot
+             guess) lives here. -->
+        <activity
+            android:name=".shell.SettingsActivity"
             android:exported="false" />
 
         <!-- Self-managed Telecom integration: the app owns its call UI,

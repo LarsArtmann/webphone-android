@@ -9,10 +9,15 @@ import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.push.RingEvent
 
@@ -71,6 +76,10 @@ class DialpadActivity : AppCompatActivity() {
         }
 
         val call = Button(this).apply { text = getString(R.string.call) }
+        val registrationHint = TextView(this).apply {
+            gravity = Gravity.CENTER
+            textSize = 14f
+        }
         val backspace = Button(this).apply {
             text = "\u232B"
             setOnClickListener {
@@ -86,12 +95,40 @@ class DialpadActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(48, 96, 48, 48)
             addView(numberView)
+            addView(registrationHint)
             addView(keys)
             addView(actions)
         }
         setContentView(root)
 
         call.setOnClickListener { maybePlaceCall() }
+
+        // The dialer is honest about the PBX: no Call button while the
+        // SIP registration is down (dialing would no-op silently).
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                CallEngine.registration.collect { registration ->
+                    call.isEnabled = registration == CallEngine.Registration.REGISTERED
+                    registrationHint.text = getString(
+                        when (registration) {
+                            CallEngine.Registration.REGISTERED -> R.string.registration_registered
+                            CallEngine.Registration.CONNECTING -> R.string.registration_connecting
+                            CallEngine.Registration.OFF -> R.string.registration_off
+                        },
+                    )
+                    registrationHint.setTextColor(
+                        ContextCompat.getColor(
+                            this@DialpadActivity,
+                            if (registration == CallEngine.Registration.REGISTERED) {
+                                R.color.status_connected
+                            } else {
+                                R.color.status_pending
+                            },
+                        ),
+                    )
+                }
+            }
+        }
     }
 
     private fun maybePlaceCall() {
@@ -122,7 +159,11 @@ class DialpadActivity : AppCompatActivity() {
     private fun placeCall() {
         val number = numberView.text.toString().trim()
         if (number.isEmpty()) return
-        CallEngine.dial(number)
+        // The Telecom path IS the outbound path now: the OS builds the
+        // call (BT/watches/audio routing see it) and the
+        // ConnectionService dials through CallEngine — no duplicate
+        // direct-dial here.
+        CallConnectionService.placeOutgoingCall(this, number)
         // The mic FGS launch path: dialing IS the user interaction.
         CallService.start(this)
         startActivity(

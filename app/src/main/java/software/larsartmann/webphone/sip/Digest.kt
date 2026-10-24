@@ -51,12 +51,19 @@ object Digest {
         val ha1 = hex(md5ish(algo, "$username:${challenge.realm}:$password"))
         val ha2 = hex(md5ish(algo, "$method:$uri"))
         val ncHex = "%08x".format(nc)
-        val response = if (challenge.qop != null) {
-            hex(md5ish(algo, "$ha1:${challenge.nonce}:$ncHex:$cnonce:${challenge.qop}:$ha2"))
+        // The challenge may advertise a qop LIST ("auth,auth-int");
+        // the hash and the echoed qop must be the CHOSEN protection
+        // quality ("auth" when offered), never the raw list — the RFC
+        // 2617 §3.2.2.1 example is the contract.
+        val qop = challenge.qop?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.let { options ->
+            options.firstOrNull { it.equals("auth", ignoreCase = true) } ?: options.first()
+        }
+        val response = if (qop != null) {
+            hex(md5ish(algo, "$ha1:${challenge.nonce}:$ncHex:$cnonce:$qop:$ha2"))
         } else {
             hex(md5ish(algo, "$ha1:${challenge.nonce}:$ha2"))
         }
-        val qopPart = if (challenge.qop != null) ", qop=${challenge.qop}, nc=$ncHex, cnonce=\"$cnonce\"" else ""
+        val qopPart = if (qop != null) ", qop=$qop, nc=$ncHex, cnonce=\"$cnonce\"" else ""
         val opaquePart = if (challenge.opaque != null) ", opaque=\"${challenge.opaque}\"" else ""
         return "Digest username=\"$username\", realm=\"${challenge.realm}\", nonce=\"${challenge.nonce}\", uri=$uri" +
             ", algorithm=${challenge.algorithm}, response=\"$response\"$qopPart$opaquePart"

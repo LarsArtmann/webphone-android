@@ -34,14 +34,35 @@ class App : Application() {
             ),
         )
         WebRtcEngine.initialize(this)
+        origin = prefs().getString(KEY_ORIGIN, DEFAULT_ORIGIN) ?: DEFAULT_ORIGIN
     }
+
+    private fun prefs() = getSharedPreferences(PREFS_SETTINGS, MODE_PRIVATE)
 
     companion object {
         const val CHANNEL_CALLS = "calls"
         const val CHANNEL_PUSH = "push"
 
-        /** The operator sets the stack origin once (Settings in v0.1:
-         *  a BuildConfig-free constant until the settings UI lands). */
-        @Volatile var origin: String = "https://pbx.example.org"
+        const val PREFS_SETTINGS = "webphone-settings"
+        private const val KEY_ORIGIN = "origin"
+
+        /** The shipped fallback: never a real stack. The operator sets
+         *  the origin once in Settings (persisted; read back at process
+         *  start). A saved origin wins over this constant. */
+        const val DEFAULT_ORIGIN = "https://pbx.example.org"
+
+        /** The stack origin every island request, the SIP WSS URL and
+         *  the ntfy lane hang off. Volatile: Settings rewrites it
+         *  mid-process and CallLayer's next wire must see the new one. */
+        @Volatile var origin: String = DEFAULT_ORIGIN
+
+        fun originIsDefault(): Boolean = origin == DEFAULT_ORIGIN
+
+        /** Persist a validated origin and make it live immediately. */
+        fun saveOrigin(context: Context, value: String) {
+            origin = value
+            context.getSharedPreferences(PREFS_SETTINGS, MODE_PRIVATE)
+                .edit().putString(KEY_ORIGIN, value).apply()
+        }
     }
 }

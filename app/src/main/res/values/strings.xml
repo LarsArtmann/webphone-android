@@ -16,4 +16,18 @@
     <string name="call">Call</string>
     <string name="dialing">Calling…</string>
     <string name="enter_a_number">Enter a number</string>
+    <string name="registration_registered">Connected</string>
+    <string name="registration_connecting">Connecting…</string>
+    <string name="registration_off">Not connected</string>
+    <string name="settings">Settings</string>
+    <string name="settings_title">Stack origin</string>
+    <string name="settings_hint">https://your-stack.example.org</string>
+    <string name="settings_save">Save</string>
+    <string name="settings_saved">Origin saved — reconnecting</string>
+    <string name="settings_invalid">Origin must be an https:// URL</string>
+    <string name="settings_explanation">The app loads your phone system from this address. Sign in there once; calls ride the native call layer.</string>
+    <string name="first_run_title">Welcome to WebPhone</string>
+    <string name="first_run_message">Set the address of your phone system to begin. You can change it later in Settings.</string>
+    <string name="first_run_set_origin">Set origin</string>
+    <string name="later">Later</string>
 </resources>

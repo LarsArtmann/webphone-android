@@ -49,6 +49,15 @@ android {
     buildFeatures {
         viewBinding = true
     }
+
+    // JVM unit tests ride the host JVM: android.jar method stubs must
+    // not throw, and Robolectric (T15's smoke tests) needs resources.
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -59,4 +68,9 @@ dependencies {
     implementation(libs.coroutines)
     implementation(libs.webrtc)
     implementation(libs.firebase.messaging)
+
+    testImplementation(kotlin("test"))
+    testImplementation(libs.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }

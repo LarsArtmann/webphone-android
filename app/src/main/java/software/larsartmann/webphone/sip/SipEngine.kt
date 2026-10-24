@@ -34,6 +34,9 @@ import java.util.concurrent.atomic.AtomicLong
 class SipEngine(
     private val scope: CoroutineScope,
     private val config: Config,
+    /** Test seam: when set, every outbound frame is handed here
+     *  instead of the websocket (the protocol tests ride it). */
+    private val sender: ((String) -> Unit)? = null,
 ) {
 
     data class Config(
@@ -86,6 +89,13 @@ class SipEngine(
         var remoteTarget: String,
         var fromHeader: String,
         var toHeader: String,
+        /** The INVITE's own Via (branch included): CANCEL must reuse it
+         *  verbatim, or the server matches the CANCEL to no transaction
+         *  and the ring-out never stops. */
+        var inviteVia: String,
+        /** A CANCEL after a final response is a protocol crime — the
+         *  dialog is confirmed, only BYE may end it. */
+        var confirmed: Boolean,
     )
 
     // -- lifecycle -------------------------------------------------
@@ -178,18 +188,21 @@ class SipEngine(
         val callId = UUID.randomUUID().toString()
         val seq = cseq.incrementAndGet()
         val target = "sip:$destination@${config.sipDomain}"
+        val via = "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"
         val leg = Leg(
             callId = callId,
             inviteCseq = seq,
             remoteTarget = target,
             fromHeader = "\"${config.displayName}\" <sip:${config.extension}@${config.sipDomain}>;tag=${UUID.randomUUID().toString().take(8)}",
             toHeader = "<$target>",
+            inviteVia = via,
+            confirmed = false,
         )
         callLegs[callId] = leg
         val request = SipMessage(
             isRequest = true, method = "INVITE", uri = target, statusCode = 0, reason = "",
             headers = buildList {
-                add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                add(SipHeader("Via", via))
                 add(SipHeader("Max-Forwards", "70"))
                 add(SipHeader("From", leg.fromHeader))
                 add(SipHeader("To", leg.toHeader))
@@ -210,7 +223,7 @@ class SipEngine(
             SipMessage(
                 isRequest = true, method = "ACK", uri = leg.remoteTarget, statusCode = 0, reason = "",
                 headers = buildList {
-                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                    add(SipHeader("Via", leg.inviteVia))
                     add(SipHeader("Max-Forwards", "70"))
                     add(SipHeader("From", leg.fromHeader))
                     add(SipHeader("To", toHeaderOverride ?: leg.toHeader))
@@ -228,13 +241,14 @@ class SipEngine(
         val leg = callLegs[callId] ?: return
         val seq = cseq.incrementAndGet()
         leg.inviteCseq = seq
+        leg.inviteVia = "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"
         val direction = if (hold) "sendonly" else "sendrecv"
         val munged = sdp.replace(Regex("a=(sendrecv|sendonly|recvonly|inactive)"), "a=$direction")
         send(
             SipMessage(
                 isRequest = true, method = "INVITE", uri = leg.remoteTarget, statusCode = 0, reason = "",
                 headers = buildList {
-                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
+                    add(SipHeader("Via", leg.inviteVia))
                     add(SipHeader("Max-Forwards", "70"))
                     add(SipHeader("From", leg.fromHeader))
                     add(SipHeader("To", leg.toHeader))
@@ -244,6 +258,30 @@ class SipEngine(
                     add(SipHeader("Content-Type", "application/sdp"))
                 },
                 body = munged,
+            ),
+        )
+    }
+
+    /** Ring-out abort: CANCEL the pending INVITE (same Call-ID, same
+     *  CSeq number with method CANCEL, the INVITE's own Via, and the
+     *  To tag from any provisional response — RFC 3261 §9.1). After a
+     *  final response the guard refuses: only BYE may end a confirmed
+     *  dialog. Unknown/removed leg: no-op. */
+    fun cancel(callId: String) {
+        val leg = callLegs[callId] ?: return
+        if (leg.confirmed) return
+        send(
+            SipMessage(
+                isRequest = true, method = "CANCEL", uri = leg.remoteTarget, statusCode = 0, reason = "",
+                headers = buildList {
+                    add(SipHeader("Via", leg.inviteVia))
+                    add(SipHeader("Max-Forwards", "70"))
+                    add(SipHeader("From", leg.fromHeader))
+                    add(SipHeader("To", leg.toHeader))
+                    add(SipHeader("Call-ID", leg.callId))
+                    add(SipHeader("CSeq", "${leg.inviteCseq} CANCEL"))
+                },
+                body = "",
             ),
         )
     }
@@ -316,7 +354,7 @@ class SipEngine(
 
     // -- inbound dispatch ------------------------------------------
 
-    private fun receive(raw: String) {
+    internal fun receive(raw: String) {
         val message = SipMessage.parse(raw) ?: return
         if (message.isRequest) {
             receiveRequest(message)
@@ -421,25 +459,39 @@ class SipEngine(
                 else -> setRegistered(false)
             }
             // INVITE ladder: ring → answer → ACK; failure tears down.
-            cseq?.second == "INVITE" -> when {
-                message.statusCode == 180 || message.statusCode == 183 ->
-                    listener?.onCallProgress(callId, ringing = true)
-                message.statusCode == 200 -> {
-                    val leg = callLegs[callId]
-                    if (leg != null) {
-                        leg.toHeader = message.header("To") ?: leg.toHeader
-                        val contact = message.header("Contact")
-                        if (contact != null) leg.remoteTarget = contact.substringAfter('<').substringBefore('>')
+            cseq?.second == "INVITE" -> {
+                val leg = callLegs[callId]
+                when {
+                    message.statusCode == 180 || message.statusCode == 183 -> {
+                        // The provisional response's To tag belongs to
+                        // this dialog now (CANCEL/BYE must carry it).
+                        if (leg != null) {
+                            message.header("To")?.let { leg.toHeader = it }
+                        }
+                        listener?.onCallProgress(callId, ringing = true)
                     }
-                    ack(callId, toHeaderOverride = message.header("To"))
-                    listener?.onCallEstablished(callId, message.body)
-                }
-                message.statusCode >= 300 -> {
-                    callLegs.remove(callId)
-                    listener?.onCallEnded(callId)
+                    message.statusCode == 200 -> {
+                        leg?.confirmed = true
+                        if (leg != null) {
+                            leg.toHeader = message.header("To") ?: leg.toHeader
+                            val contact = message.header("Contact")
+                            if (contact != null) leg.remoteTarget = contact.substringAfter('<').substringBefore('>')
+                        }
+                        ack(callId, toHeaderOverride = message.header("To"))
+                        listener?.onCallEstablished(callId, message.body)
+                    }
+                    message.statusCode >= 300 -> {
+                        // A UAC must ACK non-2xx finals too (RFC 3261
+                        // §17.1.1.2) — the 487 after our CANCEL is the
+                        // everyday case; without the ACK FreeSWITCH
+                        // keeps the INVITE transaction open.
+                        if (leg != null) ack(callId, toHeaderOverride = message.header("To"))
+                        callLegs.remove(callId)
+                        listener?.onCallEnded(callId)
+                    }
                 }
             }
-            // BYE/REFER/INFO responses need no ladder (fire-and-confirm).
+            // BYE/REFER/INFO/CANCEL responses need no ladder (fire-and-confirm).
         }
     }
 
@@ -469,7 +521,12 @@ class SipEngine(
     }
 
     private fun send(message: SipMessage) {
-        socket?.send(message.render())
+        val raw = message.render()
+        if (sender != null) {
+            sender.invoke(raw)
+        } else {
+            socket?.send(raw)
+        }
     }
 
     private fun hostToken(): String = UUID.randomUUID().toString().take(12) + ".invalid"

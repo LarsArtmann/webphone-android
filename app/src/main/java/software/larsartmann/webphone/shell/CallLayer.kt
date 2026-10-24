@@ -32,7 +32,11 @@ object CallLayer {
         if (engine != null) return
         val appContext = context.applicationContext
         scope.launch {
-            val identity = SessionApi.resumeSession() ?: return@launch
+            CallEngine.registrationWiringStarted()
+            val identity = SessionApi.resumeSession() ?: run {
+                CallEngine.registrationWiringFailed()
+                return@launch
+            }
             val created = SipEngine(
                 scope,
                 SipEngine.Config(

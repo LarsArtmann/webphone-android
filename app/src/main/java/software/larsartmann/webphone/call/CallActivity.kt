@@ -29,9 +29,15 @@ class CallActivity : AppCompatActivity() {
     private lateinit var partyView: TextView
     private lateinit var controls: LinearLayout
 
+    private var answerWhenMicGranted = false
+
     private val micPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) startCall()
+            if (granted && answerWhenMicGranted) {
+                answerWhenMicGranted = false
+                CallEngine.answer()
+                CallService.start(this)
+            }
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,21 +63,22 @@ class CallActivity : AppCompatActivity() {
                 CallEngine.state.collect { render(it) }
             }
         }
-
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-            == PackageManager.PERMISSION_GRANTED
-        ) {
-            startCall()
-        } else {
-            micPermission.launch(Manifest.permission.RECORD_AUDIO)
-        }
     }
 
-    private fun startCall() {
-        when (CallEngine.state.value.phase) {
-            CallEngine.Phase.RINGING_IN -> CallEngine.answer()
-            else -> Unit
+    /** The ONLY answer path on this surface: an explicit Answer tap.
+     *  The full-screen intent merely opens this screen — a pocket-wake
+     *  must never pick up the call by itself (the v0.1 auto-answer
+     *  defect). The Telecom/BT answer path bypasses this method and is
+     *  equally explicit (Connection.onAnswer). */
+    private fun answerCall() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            answerWhenMicGranted = true
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+            return
         }
+        CallEngine.answer()
         CallService.start(this)
     }
 
@@ -89,7 +96,7 @@ class CallActivity : AppCompatActivity() {
         controls.removeAllViews()
         when (state.phase) {
             CallEngine.Phase.RINGING_IN -> {
-                controls.addView(button(getString(R.string.answer)) { CallEngine.answer(); CallService.start(this) })
+                controls.addView(button(getString(R.string.answer)) { answerCall() })
                 controls.addView(button(getString(R.string.decline)) { CallEngine.decline(); finish() })
             }
             CallEngine.Phase.DIALLING -> {

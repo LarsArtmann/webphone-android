@@ -11,24 +11,53 @@ import software.larsartmann.webphone.sip.SipEngine
  * WebRtcEngine.CallMedia (audio) + the state the Telecom surfaces and
  * the in-call UI render. Single-call by product decision (a personal
  * extension line) — a second call waits, it never silently replaces.
+ * Also owns the SIP registration state (the "connected to the PBX"
+ * fact the shell badge and the dialer's call gate render — until this
+ * existed, the UI flew blind while unregistered).
  */
 object CallEngine : SipEngine.Listener {
 
     enum class Phase { IDLE, DIALLING, RINGING_IN, ACTIVE, HELD, ENDED }
+
+    /** Who ended the call — the Telecom connection renders this as
+     *  its DisconnectCause (LOCAL/REMOTE/ERROR), the UI shows it raw. */
+    enum class EndedBy { NONE, LOCAL, REMOTE, FAILED }
+
+    /** The SIP registration fact, three states because OFF and
+     *  "still wiring" render differently (the dialer must not offer a
+     *  Call button that would no-op). */
+    enum class Registration { OFF, CONNECTING, REGISTERED }
 
     data class CallState(
         val phase: Phase = Phase.IDLE,
         val callId: String = "",
         val remoteParty: String = "",
         val muted: Boolean = false,
+        val endedBy: EndedBy = EndedBy.NONE,
     )
 
     private val _state = MutableStateFlow(CallState())
     val state: StateFlow<CallState> = _state
 
+    private val _registration = MutableStateFlow(Registration.OFF)
+    val registration: StateFlow<Registration> = _registration
+
+    /** CallLayer wiring started (session resume in flight) — the badge
+     *  earns its CONNECTING look from here, not from the engine. */
+    fun registrationWiringStarted() {
+        _registration.value = Registration.CONNECTING
+    }
+
+    /** Wiring failed before an engine existed (no session) — the
+     *  honest state is OFF, not a forever-CONNECTING badge. */
+    fun registrationWiringFailed() {
+        _registration.value = Registration.OFF
+    }
+
     private var sip: SipEngine? = null
     private var media: WebRtcEngine.CallMedia? = null
     private var pendingInvite: SipEngine.IncomingInvite? = null
+    private var cancelledLocally = false
 
     fun attach(engine: SipEngine) {
         sip = engine
@@ -39,6 +68,7 @@ object CallEngine : SipEngine.Listener {
         sip?.listener = null
         sip?.disconnect()
         sip = null
+        _registration.value = Registration.OFF
         teardown()
     }
 
@@ -49,7 +79,7 @@ object CallEngine : SipEngine.Listener {
         if (_state.value.phase != Phase.RINGING_IN) return
         pendingInvite?.respondWith(486, null)
         pendingInvite = null
-        _state.value = CallState(Phase.ENDED)
+        teardown(EndedBy.LOCAL)
     }
 
     private fun rtcConfig(): PeerConnection.RTCConfiguration {
@@ -62,12 +92,13 @@ object CallEngine : SipEngine.Listener {
 
     fun dial(destination: String) {
         if (_state.value.phase != Phase.IDLE) return
+        cancelledLocally = false
         val engine = sip ?: return
         val callMedia = WebRtcEngine.CallMedia(rtcConfig())
         media = callMedia
         callMedia.createOffer { offer ->
             if (offer == null) {
-                teardown()
+                teardown(EndedBy.FAILED)
                 return@createOffer
             }
             val callId = engine.invite(destination, offer.description) { }
@@ -93,7 +124,7 @@ object CallEngine : SipEngine.Listener {
         callMedia.acceptOfferThenAnswer(SessionDescription(SessionDescription.Type.OFFER, invite.sdp)) { answer ->
             if (answer == null) {
                 invite.respondWith(603, null)
-                teardown()
+                teardown(EndedBy.FAILED)
                 return@acceptOfferThenAnswer
             }
             invite.respondWith(200, answer.description)
@@ -105,16 +136,32 @@ object CallEngine : SipEngine.Listener {
         val invite = pendingInvite ?: return
         invite.respondWith(603, null)
         pendingInvite = null
-        _state.value = CallState(Phase.ENDED)
+        teardown(EndedBy.LOCAL)
     }
 
     // -- in-call -----------------------------------------------------
 
+    /** The honest end: CANCEL while the ring is still out (pre-200,
+     *  RFC 3261 §9.1), BYE on a confirmed dialog, a decline when an
+     *  inbound call is still ringing. Never BYE-before-200 — servers
+     *  200-OK the BYE of an unconfirmed dialog and keep ringing. */
     fun hangUp() {
-        val callId = _state.value.callId
-        if (callId.isNotEmpty()) sip?.bye(callId)
+        when (_state.value.phase) {
+            Phase.RINGING_IN -> {
+                decline()
+                return
+            }
+            Phase.DIALLING -> {
+                cancelledLocally = true
+                sip?.cancel(_state.value.callId)
+            }
+            else -> {
+                val callId = _state.value.callId
+                if (callId.isNotEmpty()) sip?.bye(callId)
+            }
+        }
         pendingInvite = null
-        teardown()
+        teardown(EndedBy.LOCAL)
     }
 
     fun toggleMute(): Boolean {
@@ -150,7 +197,9 @@ object CallEngine : SipEngine.Listener {
 
     // -- SipEngine.Listener ------------------------------------------
 
-    override fun onRegistrationState(registered: Boolean) = Unit
+    override fun onRegistrationState(registered: Boolean) {
+        _registration.value = if (registered) Registration.REGISTERED else Registration.OFF
+    }
 
     override fun onCallProgress(callId: String, ringing: Boolean) {
         if (_state.value.callId == callId && ringing) {
@@ -165,8 +214,10 @@ object CallEngine : SipEngine.Listener {
 
     override fun onCallEnded(callId: String) {
         if (_state.value.callId == callId) {
+            val by = if (cancelledLocally) EndedBy.LOCAL else EndedBy.REMOTE
+            cancelledLocally = false
             pendingInvite = null
-            teardown()
+            teardown(by)
         }
     }
 
@@ -177,9 +228,9 @@ object CallEngine : SipEngine.Listener {
         }
     }
 
-    private fun teardown() {
+    private fun teardown(endedBy: EndedBy = EndedBy.REMOTE) {
         media?.close()
         media = null
-        _state.value = CallState(Phase.ENDED)
+        _state.value = CallState(Phase.ENDED, endedBy = endedBy)
     }
 }
