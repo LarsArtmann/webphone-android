@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
  * here must fail before a device train does.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
+@Config(sdk = [34], application = Application::class)
 class RingEventRouteTest {
 
     private fun grantedApp(): Application {

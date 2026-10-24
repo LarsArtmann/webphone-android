@@ -65,13 +65,17 @@ data class SipMessage(
             var reason = ""
             if (isRequest) {
                 val parts = first.split(" ")
-                if (parts.size < 3) return null
+                // A request line is METHOD SP URI SP "SIP/2.0" — any 3
+                // tokens is not a request ("garbage without structure"
+                // used to parse as an INVITE-shaped nothing).
+                if (parts.size < 3 || parts[2] != "SIP/2.0") return null
                 method = parts[0]
                 uri = parts[1]
             } else {
                 val parts = first.split(" ", limit = 3)
                 if (parts.size < 2) return null
                 statusCode = parts[1].toIntOrNull() ?: return null
+                if (statusCode !in 100..699) return null
                 reason = if (parts.size == 3) parts[2] else ""
             }
 

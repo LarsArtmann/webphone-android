@@ -1,14 +1,16 @@
 package software.larsartmann.webphone.shell
 
-import androidx.test.core.app.ApplicationProvider
+import android.app.Application
+import android.content.Context
+import android.view.ViewGroup
 import androidx.test.core.app.ActivityScenario
+import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
-import android.app.AlertDialog
-import android.app.Application
+import org.robolectric.shadows.ShadowDialog
+import software.larsartmann.webphone.App
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -29,7 +31,7 @@ class MainActivityLaunchTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 assertNotNull(activity.window)
-                val decor = activity.window.decorView
+                val decor = activity.window.decorView as ViewGroup
                 assertTrue(decor.childCount > 0, "the shell must render content")
             }
         }
@@ -38,10 +40,13 @@ class MainActivityLaunchTest {
     @Test
     fun `first run with the default origin prompts for the stack origin`() {
         val app = ApplicationProvider.getApplicationContext<Application>()
+        // Deterministic first-run: whatever a sibling test did with the
+        // settings file, this test starts with a clean slate.
+        app.getSharedPreferences(App.PREFS_SETTINGS, Context.MODE_PRIVATE).edit().clear().commit()
         assertEquals(App.DEFAULT_ORIGIN, App.origin)
         ActivityScenario.launch(MainActivity::class.java).use { }
 
-        val dialog = ShadowAlertDialog.getLatestAlertDialog() as AlertDialog?
+        val dialog = ShadowDialog.getLatestDialog()
         assertNotNull(dialog, "first run must prompt for the stack origin")
         assertTrue(dialog.isShowing)
     }

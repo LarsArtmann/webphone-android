@@ -164,7 +164,9 @@ class SipEngineTest {
         assertEquals("2 BYE", bye.header("CSeq"))
         assertEquals(callId, bye.callId())
         assertTrue(bye.header("To").orEmpty().contains("callee9"))
-        assertEquals(listOf(callId), listener.ended)
+        // BYE is the LOCAL end — the engine does not report it back as
+        // an onCallEnded event (that channel is for the remote side).
+        assertEquals(emptyList(), listener.ended)
     }
 
     @Test
@@ -208,6 +210,9 @@ class SipEngineTest {
         assertEquals(603, decline.statusCode)
         assertEquals("inbound-1", decline.callId())
         assertEquals("5 INVITE", decline.header("CSeq"))
-        assertTrue(decline.header("To").orEmpty().contains("fstag"))
+        // The roles are mirrored on an inbound dialog: the remote's
+        // tag rides From, OUR tag was added to To (RFC 3261 §12.1.2).
+        assertTrue(decline.header("To").orEmpty().contains("tag="), "our To tag must be added: ${decline.header("To")}")
+        assertTrue(decline.header("From").orEmpty().contains("fstag"))
     }
 }

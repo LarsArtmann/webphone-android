@@ -22,9 +22,14 @@ object Digest {
     fun parseChallenge(wwwAuthenticate: String): Challenge? {
         val params = mutableMapOf<String, String>()
         val body = wwwAuthenticate.substringAfter("Digest", "").trim()
-        val regex = Regex("(\\w+)=\"?([^\"]*)\"?")
+        // Quoted values may contain commas/spaces (realms do); unquoted
+        // values end at the first comma or whitespace — one regex, both
+        // shapes, so `algorithm=SHA-256` parses as SHA-256 and never as
+        // "SHA-256, qop=" (the greedy-char-class bug the tests caught).
+        val regex = Regex("(\\w+)=(?:\"([^\"]*)\"|([^,\\s]+))")
         for (match in regex.findAll(body)) {
-            params[match.groupValues[1].lowercase()] = match.groupValues[2]
+            val value = match.groupValues[2].ifEmpty { match.groupValues[3] }
+            if (value.isNotEmpty()) params[match.groupValues[1].lowercase()] = value
         }
         val realm = params["realm"] ?: return null
         val nonce = params["nonce"] ?: return null
