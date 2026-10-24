@@ -59,13 +59,13 @@ nix develop .#emulator -c bash scripts/emulator-smoke.sh   # keeps the emulator 
 Single `:app` module, package-per-concern under
 `software.larsartmann.webphone`:
 
-| Package  | Contents                                                                                                | Role                                                                                                       |
-| -------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `shell/` | `MainActivity`, `CallLayer`, `SessionApi`, `DeviceIdentity`, `SettingsActivity`                          | The WebView shell + the idempotent call-layer wire + the origin's HTTP session seam + per-install identity + the persisted stack-origin settings |
-| `sip/`   | `SipEngine`, `SipMessage`, `Digest`                                                                     | SIP-over-WSS user agent: REGISTER (digest), INVITE/re-INVITE/CANCEL/BYE, DTMF INFO, REFER/NOTIFY           |
+| Package  | Contents                                                                                                                   | Role                                                                                                                                                             |
+| -------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shell/` | `MainActivity`, `CallLayer`, `SessionApi`, `DeviceIdentity`, `SettingsActivity`                                            | The WebView shell + the idempotent call-layer wire + the origin's HTTP session seam + per-install identity + the persisted stack-origin settings                 |
+| `sip/`   | `SipEngine`, `SipMessage`, `Digest`                                                                                        | SIP-over-WSS user agent: REGISTER (digest), INVITE/re-INVITE/CANCEL/BYE, DTMF INFO, REFER/NOTIFY                                                                 |
 | `call/`  | `CallEngine`, `WebRtcEngine`, `CallService`, `CallConnectionService`, `TelecomOutgoing`, `CallActivity`, `DialpadActivity` | Call orchestration (incl. registration state), WebRTC audio, typed FGS, inbound Telecom integration, outbound addCall bridge (API 34+), in-call UI, dialer entry |
-| `push/`  | `RingEvent` (the router), `FcmReceiver`, `NtfySubscriptionService`                                      | The two ring-while-closed transports, both converging on `RingEvent.route`                                 |
-| `ui/`    | `Fab` (styleAsFab)                                                                                      | The one floating-action look shared by the shell dial button and the dialer call button                    |
+| `push/`  | `RingEvent` (the router), `FcmReceiver`, `NtfySubscriptionService`                                                         | The two ring-while-closed transports, both converging on `RingEvent.route`                                                                                       |
+| `ui/`    | `Fab` (styleAsFab)                                                                                                         | The one floating-action look shared by the shell dial button and the dialer call button                                                                          |
 
 Unit tests live under `app/src/test/` mirroring the packages; Robolectric
 tests MUST set `@Config(application = Application::class)` — the manifest

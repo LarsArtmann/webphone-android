@@ -17,38 +17,48 @@ the stack's own web pages in a session-sharing WebView.
 | Ring-while-closed push                                                                                                                  | `push/*`                                       | BOTH transports by owner decision: FCM (GMS devices) + ntfy websocket subscription (de-Googled). The server fan-out lives in webphone `internal/push` (`/hooks/ring` → `/api/push-devices`). |
 | Every other surface                                                                                                                     | The WebView into the stack origin              | 100% reuse of the proven island + tab partials; the session cookie is the seam.                                                                                                              |
 
-## Status: v0.1 scaffold
+## Status: v0.1 scaffold, first device smoke done
 
 The architecture is complete and the load-bearing parts are
 implemented; the markers below are the honesty contract — what is
-**untested against live infrastructure** until the first device train:
+**untested against live infrastructure** until a device train against
+a real stack:
 
 - SIP REGISTER/INVITE/BYE/DTMF/hold: implemented, **not yet exercised
-  against the stack's WSS gateway** (Caddy-fronted `/sip`).
+  against the stack's WSS gateway** (Caddy-fronted `/sip`). The
+  protocol layer itself (message codec, digest credentials against the
+  RFC 2617 §3.5 vector, CANCEL/BYE/487 wire sequences) is unit-tested.
 - Incoming INVITE answering and REFER/NOTIFY transfer: implemented in
-  the dispatch, **explicitly UNTESTED**.
+  the dispatch, **explicitly UNTESTED** against live FreeSWITCH.
+- Ring-while-closed E2E (push → FSI → answer): implemented, untested
+  against the live push fan-out.
+- Install/launch/configure smoke: **VERIFIED on the API 36 emulator**
+  (2026-10-24): debug and R8 release builds install, launch, render,
+  persist the origin, and show the honest offline state. Find a real
+  bug the shadows could not see — see `docs/status/`.
 - stream-webrtc-android 16 KB page alignment: **VERIFIED at 1.3.10**
-  (2026-10-23): `zipalign -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk`
-  passes on the assembled debug APK with build-tools 35 packaging.
-  Re-verify per release bump (the check needs build-tools ≥ 35 — the
-  `-P` flag does not exist in 34).
+  on BOTH debug and release APKs (`zipalign -c -P 16 4`, build-tools
+  35). Re-verify per release bump (the check needs build-tools ≥ 35 —
+  the `-P` flag does not exist in 34).
 - The `/api/session` + `/api/push-devices` contracts mirror the server
   seam that landed 2026-10-23 (webphone `internal/push`); field-name
   drift is caught at the first device boot, not before.
 
-## Build
+## Build and verify
 
 ```console
-nix develop          # JDK 21 + Android SDK (platform 36, build-tools)
-./gradlew assembleDebug
+nix develop                        # JDK 21 + Android SDK (platform 36, build-tools)
+nix develop -c ./gradlew assembleDebug      # debug APK
+nix develop -c ./gradlew testDebugUnitTest  # protocol + Robolectric tests
+nix develop .#emulator -c bash scripts/emulator-train.sh   # self-serve device smoke
 ```
 
 The FCM lane activates when `app/google-services.json` exists (drop
 in + add the google-services plugin); the ntfy lane works with zero
 Google dependencies.
 
-Set the stack origin in `App.origin` (the settings surface lands with
-the first device train).
+Set the stack origin in the app's Settings screen (persisted; first
+run prompts for it).
 
 ## Distribution
 

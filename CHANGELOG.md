@@ -90,6 +90,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Formatting baseline via dprint (JSON/YAML/Markdown/Dockerfile; `dprint.json`)
 - Call end attribution modeled explicitly (`CallState.endedBy`:
   local/remote/failed) and rendered as Telecom DisconnectCauses
+- Gradle configuration cache enabled; Dependabot config de-duplicated
+  (two identical `gradle /` entries — Dependabot rejects that file) and
+  extended with the `github-actions` ecosystem
 
 ## [0.1.0] - 2026-10-23
 
