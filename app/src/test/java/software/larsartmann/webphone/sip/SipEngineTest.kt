@@ -89,7 +89,7 @@ class SipEngineTest {
         val listener = RecordingListener()
         val engine = engineWith(recorder, listener)
 
-        val callId = engine.invite("100", "v=0\r\no=- 1 1 IN IP4 0.0.0.0")
+        val callId = engine.invite("100", "v=0\r\no=- 1 1 IN IP4 0.0.0.0") {}
         assertEquals(1, recorder.frames.size)
         val invite = assertNotNull(SipMessage.parse(recorder.frames[0]))
         val inviteBranch = branchOf(invite.header("Via"))
@@ -119,7 +119,7 @@ class SipEngineTest {
         val listener = RecordingListener()
         val engine = engineWith(recorder, listener)
 
-        val callId = engine.invite("100", "v=0")
+        val callId = engine.invite("100", "v=0") {}
         engine.receive(response(200, "OK", callId, "1 INVITE", toTag = "callee9"))
         // The 200 ladder ACKed and established.
         assertEquals(2, recorder.frames.size)
@@ -135,7 +135,7 @@ class SipEngineTest {
         val listener = RecordingListener()
         val engine = engineWith(recorder, listener)
 
-        val callId = engine.invite("100", "v=0")
+        val callId = engine.invite("100", "v=0") {}
         engine.receive(response(180, "Ringing", callId, "1 INVITE", toTag = "callee9"))
         engine.cancel(callId)
         engine.receive(response(487, "Request Terminated", callId, "1 INVITE", toTag = "callee9"))
@@ -154,7 +154,7 @@ class SipEngineTest {
         val listener = RecordingListener()
         val engine = engineWith(recorder, listener)
 
-        val callId = engine.invite("100", "v=0")
+        val callId = engine.invite("100", "v=0") {}
         engine.receive(response(200, "OK", callId, "1 INVITE", toTag = "callee9"))
         engine.bye(callId)
 

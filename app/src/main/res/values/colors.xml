@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#0f766e</color>
+    <color name="accent">#0f766e</color>
     <color name="status_connected">#4ade80</color>
     <color name="status_pending">#9ca3af</color>
 </resources>

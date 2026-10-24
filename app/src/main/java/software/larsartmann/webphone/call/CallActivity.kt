@@ -2,6 +2,8 @@ package software.larsartmann.webphone.call
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
 import android.os.Bundle
 import android.widget.Button
 import android.widget.LinearLayout
@@ -56,7 +58,7 @@ class CallActivity : AppCompatActivity() {
         }
         setContentView(root)
 
-        partyView.text = intent.getStringExtra(RingEvent.EXTRA_FROM) ?: "Unknown"
+        partyView.text = intent.getStringExtra(RingEvent.EXTRA_FROM) ?: getString(R.string.unknown_caller)
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -87,9 +89,13 @@ class CallActivity : AppCompatActivity() {
             CallEngine.Phase.IDLE -> ""
             CallEngine.Phase.DIALLING -> getString(R.string.dialing)
             CallEngine.Phase.RINGING_IN -> getString(R.string.incoming_call)
-            CallEngine.Phase.ACTIVE -> if (state.muted) "Muted" else "Active"
+            CallEngine.Phase.ACTIVE -> if (state.muted) {
+                getString(R.string.status_muted)
+            } else {
+                getString(R.string.status_active)
+            }
             CallEngine.Phase.HELD -> getString(R.string.hold)
-            CallEngine.Phase.ENDED -> "Ended"
+            CallEngine.Phase.ENDED -> getString(R.string.status_ended)
         }
         if (state.remoteParty.isNotEmpty()) partyView.text = state.remoteParty
 
@@ -108,6 +114,7 @@ class CallActivity : AppCompatActivity() {
             }
             CallEngine.Phase.ACTIVE, CallEngine.Phase.HELD -> {
                 controls.addView(button(getString(R.string.mute)) { CallEngine.toggleMute() })
+                controls.addView(button(getString(R.string.speaker)) { toggleSpeaker() })
                 controls.addView(button(getString(R.string.hold)) { CallEngine.toggleHold() })
                 dtmfRow()
                 controls.addView(button(getString(R.string.hang_up)) {
@@ -116,12 +123,33 @@ class CallActivity : AppCompatActivity() {
                     finish()
                 })
             }
-            CallEngine.Phase.ENDED -> controls.addView(button("Close") { finish() })
+            CallEngine.Phase.ENDED -> {
+                controls.addView(button(getString(R.string.close)) { finish() })
+            }
             else -> Unit
         }
         if (state.phase == CallEngine.Phase.ENDED) {
             CallService.stop(this)
         }
+    }
+
+    /** Audio output routing: the speakerpiece ⇄ built-in speaker
+     *  switch rides AudioManager's communication-device API (API 31+
+     *  — no deprecated isSpeakerphoneOn). Audio FOCUS is NOT touched
+     *  here or in CallService: this is a self-managed Telecom call —
+     *  the system granted focus when the connection went active; a
+     *  second request would fight the very integration the platform
+     *  decision bought. */
+    private fun toggleSpeaker(): Boolean {
+        val audio = getSystemService(AudioManager::class.java) ?: return false
+        val speakingNow = audio.communicationDevice?.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+        val wanted = if (speakingNow) {
+            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
+        } else {
+            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+        }
+        val device = audio.availableCommunicationDevices.firstOrNull { it.type == wanted } ?: return false
+        return audio.setCommunicationDevice(device)
     }
 
     private fun dtmfRow() {
@@ -131,6 +159,8 @@ class CallActivity : AppCompatActivity() {
                 Button(this).apply {
                     text = digit.toString()
                     setOnClickListener { CallEngine.sendDtmf(digit) }
+                    minimumWidth = touchTarget()
+                    minimumHeight = touchTarget()
                 },
             )
         }
@@ -141,5 +171,12 @@ class CallActivity : AppCompatActivity() {
         Button(this).apply {
             text = label
             setOnClickListener { onClick() }
+            minimumWidth = touchTarget()
+            minimumHeight = touchTarget()
         }
+
+    /** The accessibility floor: 48dp square touch targets (Android's
+     *  minimum recommended for touch). */
+    private fun touchTarget(): Int =
+        (48 * resources.displayMetrics.density).toInt()
 }

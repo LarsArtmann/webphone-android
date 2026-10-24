@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: Build, test, align, format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Unit tests (protocol + wiring)
+        run: ./gradlew testDebugUnitTest
+
+      # The 16 KB page-size gate: build-tools 35's zipalign carries
+      # -P 16 (the Android 16 constraint — non-negotiable per release).
+      - name: 16 KB page-alignment gate
+        run: '"$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk'
+
+      - name: Formatting gate (dprint)
+        run: npx --yes dprint@0.64.3 check

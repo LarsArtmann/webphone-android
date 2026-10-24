@@ -27,6 +27,7 @@ import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.call.DialpadActivity
+import software.larsartmann.webphone.ui.styleAsFab
 
 /**
  * The shell: the stack origin's own pages render in the WebView (the
@@ -67,7 +68,10 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = WebViewClient()
 
         statusBadge = TextView(this).apply { textSize = 14f }
-        val dial = Button(this).apply { text = getString(R.string.dial) }
+        val dial = Button(this).apply {
+            text = getString(R.string.dial)
+            styleAsFab()
+        }
         val settings = Button(this).apply {
             text = getString(R.string.settings)
             textSize = 12f

@@ -32,6 +32,8 @@ object CallLayer {
     @Volatile private var engine: SipEngine? = null
     private var sessionWatch: Job? = null
 
+    private const val SESSION_WATCH_INTERVAL_MS = 10 * 60 * 1000L
+
     fun ensureWired(context: Context) {
         if (engine != null) return
         val appContext = context.applicationContext
@@ -107,9 +109,5 @@ object CallLayer {
         sessionWatch = null
         CallEngine.detach()
         engine = null
-    }
-
-    private companion object {
-        const val SESSION_WATCH_INTERVAL_MS = 10 * 60 * 1000L
     }
 }

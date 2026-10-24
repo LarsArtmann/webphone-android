@@ -429,6 +429,8 @@ class SipEngine(
                 remoteTarget = invite.uri,
                 fromHeader = invite.header("To").orEmpty(),
                 toHeader = invite.header("From").orEmpty(),
+                inviteVia = "",
+                confirmed = true,
             )
         }
     }

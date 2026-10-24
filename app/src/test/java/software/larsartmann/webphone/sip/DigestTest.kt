@@ -3,6 +3,7 @@ package software.larsartmann.webphone.sip
 import java.security.MessageDigest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -93,16 +94,10 @@ class DigestTest {
 
     @Test
     fun `unquoted parameters and missing realm`() {
-        val parsed = Digest.parseChallenge("Digest realm=r nonce=n")
-        assertNotNull(parsed)
+        val parsed = assertNotNull(Digest.parseChallenge("Digest realm=r nonce=n"))
         assertEquals("r", parsed.realm)
         assertNull(Digest.parseChallenge("Digest nonce=\"n\""))
         assertNull(Digest.parseChallenge("Basic realm=\"x\""))
-    }
-
-    private fun assertNotNull(value: Digest.Challenge?): Digest.Challenge {
-        assertTrue(value != null, "challenge must parse")
-        return value
     }
 
     private fun md5(input: String): String =

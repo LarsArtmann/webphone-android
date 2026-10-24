@@ -2,8 +2,6 @@ package software.larsartmann.webphone.call
 
 import android.content.ComponentName
 import android.content.Context
-import android.net.Uri
-import android.os.Bundle
 import android.telecom.Connection
 import android.telecom.ConnectionRequest
 import android.telecom.ConnectionService
@@ -19,15 +17,15 @@ import kotlinx.coroutines.launch
 import software.larsartmann.webphone.push.RingEvent
 
 /**
- * The self-managed Telecom integration: the OS learns call state
- * (audio focus, Bluetooth/wired routing, Do Not Disturb, watches)
- * while the app owns its UI — the platform decision's core value over
- * every web-only shape. BOTH directions ride this service now: the
- * dialer places calls through `placeCall` (the OS builds the request,
- * `onCreateOutgoingConnection` routes it into `CallEngine.dial` — the
- * direct dial path is gone, no duplicate), and inbound rings land via
- * `addNewIncomingCall`.
- */
+ * The self-managed Telecom integration for INBOUND calls: the OS
+ * learns call state (audio focus, Bluetooth/wired routing, Do Not
+ * Disturb, watches) while the app owns its UI — the platform
+ * decision's core value over every web-only shape. Rings land via
+ * `addNewIncomingCall` (works on every supported API level); the
+ * OUTBOUND direction rides `TelecomOutgoing` (`addCall`, API 34+)
+ * because the classic self-managed outgoing entry was removed from
+ * the API 36 stubs — `onCreateOutgoingConnection` cannot fire and is
+ * deleted (a ghost stays deleted, never polished). */
 class CallConnectionService : ConnectionService() {
 
     override fun onCreateIncomingConnection(
@@ -46,37 +44,10 @@ class CallConnectionService : ConnectionService() {
         return connection
     }
 
-    override fun onCreateOutgoingConnection(
-        connectionManagerPhoneAccount: PhoneAccountHandle?,
-        request: ConnectionRequest,
-    ): Connection {
-        val number = request.extras?.getString(RingEvent.EXTRA_FROM)
-            ?: request.address?.schemeSpecificPart
-            ?: "Unknown"
-        val current = CallEngine.state.value
-        if (current.phase != CallEngine.Phase.IDLE && current.phase != CallEngine.Phase.ENDED) {
-            // The single-call policy, Telecom-facing: a second outbound
-            // attempt while a call is live fails BUSY instead of
-            // silently replacing.
-            return SelfManagedConnection(applicationContext).apply {
-                connectionProperties = Connection.PROPERTY_SELF_MANAGED
-                terminate(DisconnectCause.BUSY)
-            }
-        }
-        val connection = SelfManagedConnection(applicationContext)
-        connection.connectionProperties = Connection.PROPERTY_SELF_MANAGED
-        connection.setDialing()
-        connection.setCallerDisplayName(number, TelecomManager.PRESENTATION_ALLOWED)
-        activeConnection = connection
-        connection.watchCallState(connectionScope)
-        CallEngine.dial(number)
-        return connection
-    }
-
     /** The bridge between the Telecom world and our CallEngine. */
     private class SelfManagedConnection(private val appContext: Context) : Connection() {
 
-        private var watcher: Job? = null
+        internal var watcher: Job? = null
         private var lastPhase: CallEngine.Phase? = null
         private var terminated = false
 
@@ -155,18 +126,17 @@ class CallConnectionService : ConnectionService() {
         @Volatile private var activeConnection: SelfManagedConnection? = null
         private val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-        /** The outbound entry: the dialer's ONLY call path. The OS
-         *  builds the ConnectionRequest and onCreateOutgoingConnection
-         *  dials through CallEngine — so BT/watches/audio routing see
-         *  the call from the first instant. */
+        /** The outbound entry: the dialer's ONLY call path. API 34+
+         *  rides the modern addCall session (BT/watches/audio routing
+         *  see the call); older devices dial directly. */
         fun placeOutgoingCall(context: Context, number: String) {
-            val telecom = context.getSystemService(TelecomManager::class.java) ?: return
-            val extras = Bundle().apply { putString(RingEvent.EXTRA_FROM, number) }
-            telecom.placeCall(
-                accountHandle(context),
-                Uri.fromParts("webphone", number, null),
-                extras,
-            )
+            val current = CallEngine.state.value
+            if (current.phase != CallEngine.Phase.IDLE && current.phase != CallEngine.Phase.ENDED) {
+                return // The single-call policy; the dialer already guards.
+            }
+            if (!TelecomOutgoing.place(context, number)) {
+                CallEngine.dial(number)
+            }
         }
 
         /** ring_end: the ring stands down (answered elsewhere, caller
