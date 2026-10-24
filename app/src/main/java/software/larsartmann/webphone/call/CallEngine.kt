@@ -37,8 +37,19 @@ object CallEngine : SipEngine.Listener {
 
     fun detach() {
         sip?.listener = null
+        sip?.disconnect()
         sip = null
         teardown()
+    }
+
+    /** ring_end: the push lane's ring stands down (answered elsewhere,
+     *  caller gave up) — refuse any pending invite and end the ringing
+     *  state. No-op outside RINGING_IN. */
+    fun cancelRinging() {
+        if (_state.value.phase != Phase.RINGING_IN) return
+        pendingInvite?.respondWith(486, null)
+        pendingInvite = null
+        _state.value = CallState(Phase.ENDED)
     }
 
     private fun rtcConfig(): PeerConnection.RTCConfiguration {

@@ -2,17 +2,16 @@ package software.larsartmann.webphone.shell
 
 import android.content.Context
 import android.util.Log
+import android.webkit.CookieManager
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import software.larsartmann.webphone.App
-import java.util.Collections
 
 /**
  * The origin's session seam, from the island's contract: the WebView
@@ -28,15 +27,24 @@ object SessionApi {
     private const val TAG = "SessionApi"
     private val json = "application/json".toMediaType()
 
-    /** The session cookie the WebView holds, shared with OkHttp. */
-    val cookieJar = object : CookieJar {
-        private val store = Collections.synchronizedMap(mutableMapOf<String, List<Cookie>>())
-
+    /** ONE cookie store: the WebView's CookieManager. The island login
+     *  mints there; OkHttp reads and writes the same jar so the
+     *  session is genuinely shared (no second, drift-prone store that
+     *  never sees the login cookie — the v0.1 gap, closed). */
+    private val cookieJar = object : CookieJar {
         override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-            store[url.host] = cookies
+            val manager = CookieManager.getInstance()
+            for (cookie in cookies) {
+                runCatching { manager.setCookie(url.toString(), cookie.toString()) }
+            }
+            runCatching { manager.flush() }
         }
 
-        override fun loadForRequest(url: HttpUrl): List<Cookie> = store[url.host].orEmpty()
+        override fun loadForRequest(url: HttpUrl): List<Cookie> {
+            val raw = runCatching { CookieManager.getInstance().getCookie(url.toString()) }
+                .getOrNull() ?: return emptyList()
+            return raw.split(";").mapNotNull { Cookie.parse(url, it.trim()) }
+        }
     }
 
     private val client = OkHttpClient.Builder()
@@ -136,8 +144,6 @@ object SessionApi {
         }.getOrNull()
     }
 
-    private fun sessionCookieHeader(): String {
-        val url = App.origin.toHttpUrlOrNull() ?: return ""
-        return cookieJar.loadForRequest(url).joinToString("; ") { "${it.name}=${it.value}" }
-    }
+    private fun sessionCookieHeader(): String =
+        runCatching { CookieManager.getInstance().getCookie(App.origin) }.getOrNull().orEmpty()
 }

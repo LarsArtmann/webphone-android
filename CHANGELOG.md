@@ -13,6 +13,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Added
 
 - Dependabot dependency updates (`.github/dependabot.yml`)
+- Dialer entry: numpad activity with mic-permission gate and single-call
+  guard, plus a dial button on the shell (`call/DialpadActivity.kt`)
+- Idempotent call-layer wire (`shell/CallLayer.kt`) — one SIP engine per
+  process, shared by the resume loop AND ring pushes while closed
+- Push-device registration: ntfy topic always, FCM token best-effort,
+  on every session resume and token rotation
+- `ring_end` stands the ring down: Telecom connection disconnected,
+  ringing state cancelled
+- Full-screen-intent runtime check with heads-up degradation
+  (`canUseFullScreenIntent()`)
+- `POST_NOTIFICATIONS` runtime request on first launch (API 33+)
+- Hang-up control during outgoing ring-out; BT/watch answer path starts
+  the call foreground service
+
+### Fixed
+
+- Session seam: OkHttp now bridges through the WebView's `CookieManager`
+  — the login cookie actually reaches `/api/session` (was a private
+  in-memory jar that never saw it)
+- SipEngine leak: `CallEngine.detach()` now disconnects the socket and
+  cancels refresh/watchdog jobs
+- Engine churn: repeated resumes no longer stack WSS connections
+- ntfy subscription: no duplicate websockets per resume; reconnect loop
+  no longer double-fires or deadlocks on a stale socket reference
 
 ### Changed
 

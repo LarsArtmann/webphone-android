@@ -9,8 +9,11 @@ import android.telecom.TelecomManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import software.larsartmann.webphone.App
+import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallActivity
 import software.larsartmann.webphone.call.CallConnectionService
+import software.larsartmann.webphone.call.CallEngine
+import software.larsartmann.webphone.shell.CallLayer
 
 /**
  * The push-payload router: both transports (FCM data messages, the
@@ -18,10 +21,10 @@ import software.larsartmann.webphone.call.CallConnectionService
  * {event, from, call_id} — this is the ONE place it becomes a system
  * call. `ring` wires a self-managed incoming Telecom connection and
  * posts the full-screen-intent heads-up (USE_FULL_SCREEN_INTENT: the
- * sideload lane keeps the default grant; planned: runtime-check
- * canUseFullScreenIntent() and degrade to the heads-up pill — the
- * graceful path the platform decision requires, not yet implemented).
- * `ring_end` stands the ring down (answered elsewhere, caller gave up).
+ * sideload lane keeps the default grant; the runtime check degrades
+ * to the plain heads-up pill when the grant is absent — the graceful
+ * path the platform decision requires). `ring_end` stands the ring
+ * down (answered elsewhere, caller gave up).
  */
 object RingEvent {
     const val EXTRA_FROM = "software.larsartmann.webphone.extra.FROM"
@@ -30,10 +33,7 @@ object RingEvent {
     fun route(context: Context, event: String, from: String?, callId: String?) {
         when (event) {
             "ring" -> ring(context, from ?: "Unknown", callId ?: "")
-            "ring_end" -> {
-                val notifications = context.getSystemService(NotificationManager::class.java)
-                notifications.cancel(NOTIFICATION_ID_INCOMING)
-            }
+            "ring_end" -> standDown(context)
         }
     }
 
@@ -48,6 +48,10 @@ object RingEvent {
         // routes it to our ConnectionService.
         telecom.addNewIncomingCall(CallConnectionService.accountHandle(context), extras)
 
+        // Ringing while closed needs the SIP leg up for the INVITE to
+        // land on (the push rings first; the bootstrap races it).
+        CallLayer.ensureWired(context)
+
         val fullScreen = PendingIntent.getActivity(
             context,
             0,
@@ -57,16 +61,27 @@ object RingEvent {
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = NotificationCompat.Builder(context, App.CHANNEL_CALLS)
+        val builder = NotificationCompat.Builder(context, App.CHANNEL_CALLS)
             .setSmallIcon(android.R.drawable.sym_call_incoming)
-            .setContentTitle(context.getString(software.larsartmann.webphone.R.string.incoming_call))
+            .setContentTitle(context.getString(R.string.incoming_call))
             .setContentText(from)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setOngoing(true)
-            .setFullScreenIntent(fullScreen, true)
-            .build()
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_INCOMING, notification)
+        val notifications = context.getSystemService(NotificationManager::class.java) ?: return
+        if (notifications.canUseFullScreenIntent()) {
+            builder.setFullScreenIntent(fullScreen, true)
+        }
+        val compat = NotificationManagerCompat.from(context)
+        if (compat.areNotificationsEnabled()) {
+            compat.notify(NOTIFICATION_ID_INCOMING, builder.build())
+        }
+    }
+
+    private fun standDown(context: Context) {
+        context.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID_INCOMING)
+        CallConnectionService.standDownRinging()
+        CallEngine.cancelRinging()
     }
 
     private const val NOTIFICATION_ID_INCOMING = 1001

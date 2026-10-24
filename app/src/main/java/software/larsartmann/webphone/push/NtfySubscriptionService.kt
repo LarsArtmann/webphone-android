@@ -32,6 +32,7 @@ class NtfySubscriptionService : Service() {
 
     private var socket: WebSocket? = null
     private var reconnectAttempts = 0
+    @Volatile private var reconnecting = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -46,6 +47,7 @@ class NtfySubscriptionService : Service() {
 
         if (intent?.action == ACTION_STOP) {
             socket?.close(1000, "stopped")
+            socket = null
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
@@ -62,6 +64,9 @@ class NtfySubscriptionService : Service() {
     }
 
     private fun subscribe(server: String, topic: String) {
+        // Idempotent: start() is re-invoked on every MainActivity
+        // resume; one socket per service instance is the contract.
+        if (socket != null) return
         val client = OkHttpClient.Builder()
             .pingInterval(25, TimeUnit.SECONDS)
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -81,10 +86,12 @@ class NtfySubscriptionService : Service() {
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 Log.w(TAG, "ntfy subscription failure: ${t.message}")
+                socket = null
                 scheduleReconnect(server, topic)
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                socket = null
                 scheduleReconnect(server, topic)
             }
         })
@@ -108,11 +115,14 @@ class NtfySubscriptionService : Service() {
     }
 
     private fun scheduleReconnect(server: String, topic: String) {
+        if (reconnecting) return
+        reconnecting = true
         reconnectAttempts += 1
         val backoff = minOf(60_000L, 1_000L shl (reconnectAttempts - 1).coerceAtMost(6))
         Thread {
             Thread.sleep(backoff)
-            if (socket != null) subscribe(server, topic)
+            reconnecting = false
+            if (socket == null) subscribe(server, topic)
         }.start()
     }
 

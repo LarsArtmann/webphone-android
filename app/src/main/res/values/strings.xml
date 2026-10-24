@@ -12,4 +12,8 @@
     <string name="hold">Hold</string>
     <string name="ntfy_subscription_active">Push connection active</string>
     <string name="call_active">Call in progress</string>
+    <string name="dial">Dial</string>
+    <string name="call">Call</string>
+    <string name="dialing">Calling…</string>
+    <string name="enter_a_number">Enter a number</string>
 </resources>

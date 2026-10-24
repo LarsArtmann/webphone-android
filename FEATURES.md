@@ -28,14 +28,14 @@ not?
 
 ## Signaling (SIP over WSS)
 
-| Feature                                      | Status                    | Evidence                                                                          | Notes                                                                            |
-| -------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| SIP registration (digest, refresh, watchdog) | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:93` (connect), `:150` (REGISTER), `:463` (refresh at expires/2) | Untested against the live WSS gateway; digest answers MD5 or SHA-256             |
-| Outbound calling (INVITE/180/ACK ladder)     | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:177` (invite), `:424` (response ladder)                         | No UI entry point — `CallEngine.dial` (`call/CallEngine.kt:52`) has zero callers |
-| Incoming call answering                      | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:354` (receiveInvite), `call/CallEngine.kt:69` (answer)          | Explicitly marked UNTESTED in `SipEngine.kt:29` KDoc                             |
-| Hold/resume (re-INVITE sendonly/sendrecv)    | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:227`                                                            | Untested                                                                         |
-| DTMF (INFO, equals form)                     | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:272`                                                            | Untested                                                                         |
-| Transfer (REFER + NOTIFY sipfrag verdict)    | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:296` (refer), `:337` (NOTIFY dispatch)                          | UNTESTED marker at `SipEngine.kt:295`                                            |
+| Feature                                      | Status                    | Evidence                                                                          | Notes                                                                 |
+| -------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| SIP registration (digest, refresh, watchdog) | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:93` (connect), `:150` (REGISTER), `:463` (refresh at expires/2) | Untested against the live WSS gateway; digest answers MD5 or SHA-256  |
+| Outbound calling (INVITE/180/ACK ladder)     | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:177` (invite), `:424` (response ladder)                         | Dialer entry `call/DialpadActivity.kt`; untested against live gateway |
+| Incoming call answering                      | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:354` (receiveInvite), `call/CallEngine.kt:69` (answer)          | Explicitly marked UNTESTED in `SipEngine.kt:29` KDoc                  |
+| Hold/resume (re-INVITE sendonly/sendrecv)    | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:227`                                                            | Untested                                                              |
+| DTMF (INFO, equals form)                     | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:272`                                                            | Untested                                                              |
+| Transfer (REFER + NOTIFY sipfrag verdict)    | 🟡 `PARTIALLY_FUNCTIONAL` | `sip/SipEngine.kt:296` (refer), `:337` (NOTIFY dispatch)                          | UNTESTED marker at `SipEngine.kt:295`                                 |
 
 ## Call audio (WebRTC)
 
@@ -46,30 +46,30 @@ not?
 
 ## OS call integration (Telecom)
 
-| Feature                                                 | Status                    | Evidence                                           | Notes                                                                         |
-| ------------------------------------------------------- | ------------------------- | -------------------------------------------------- | ----------------------------------------------------------------------------- |
-| Self-managed Telecom connection                         | 🟡 `PARTIALLY_FUNCTIONAL` | `call/CallConnectionService.kt:20`                 | BT/watch/audio-focus integration via the OS; untested                         |
-| Typed call foreground service (`microphone\|phoneCall`) | 🟡 `PARTIALLY_FUNCTIONAL` | `call/CallService.kt:24`                           | Started only from user interaction (Android 15+ mic-FGS background-start ban) |
-| Full-screen incoming-call intent                        | 🟡 `PARTIALLY_FUNCTIONAL` | `push/RingRouter.kt:40` (ring)                     | Uses the sideload lane's default `USE_FULL_SCREEN_INTENT` grant               |
-| FSI runtime check + heads-up degrade                    | ⚪ `PLANNED`              | Described in `push/RingRouter.kt:22` KDoc; no code | `canUseFullScreenIntent()` never called                                       |
+| Feature                                                 | Status                    | Evidence                                               | Notes                                                                         |
+| ------------------------------------------------------- | ------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Self-managed Telecom connection                         | 🟡 `PARTIALLY_FUNCTIONAL` | `call/CallConnectionService.kt:20`                     | BT/watch/audio-focus integration via the OS; untested                         |
+| Typed call foreground service (`microphone\|phoneCall`) | 🟡 `PARTIALLY_FUNCTIONAL` | `call/CallService.kt:24`                               | Started only from user interaction (Android 15+ mic-FGS background-start ban) |
+| Full-screen incoming-call intent                        | 🟡 `PARTIALLY_FUNCTIONAL` | `push/RingRouter.kt` (ring)                            | Uses the sideload lane's default `USE_FULL_SCREEN_INTENT` grant               |
+| FSI runtime check + heads-up degrade                    | 🟡 `PARTIALLY_FUNCTIONAL` | `push/RingRouter.kt` (`canUseFullScreenIntent()` gate) | Implemented; untested on device                                               |
 
 ## Ring-while-closed push
 
-| Feature                                           | Status                    | Evidence                                                                                               | Notes                                                                                                                                |
-| ------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Push device registration (server fan-out address) | 🔴 `BROKEN`               | `shell/SessionApi.kt:76` (`registerPushDevice`) and `:103` (`deregisterPushDevice`) — **zero callers** | Without the register call the server never learns the wake address; ring-while-closed cannot fire end-to-end even against live infra |
-| ntfy websocket lane (de-Googled)                  | 🟡 `PARTIALLY_FUNCTIONAL` | `push/NtfySubscriptionService.kt:31`                                                                   | Bounded exponential reconnect; Doze variance accepted by owner decision                                                              |
-| FCM lane (GMS devices)                            | 🔵 `DISABLED`             | `push/FcmReceiver.kt:16`                                                                               | Awaits `google-services.json` drop-in + plugin; code complete, never receives                                                        |
-| Push payload routing (`ring`/`ring_end`)          | 🟡 `PARTIALLY_FUNCTIONAL` | `push/RingRouter.kt:30` (route)                                                                        | Both transports converge here; untested                                                                                              |
+| Feature                                           | Status                    | Evidence                                                                 | Notes                                                                               |
+| ------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| Push device registration (server fan-out address) | 🟡 `PARTIALLY_FUNCTIONAL` | `shell/CallLayer.kt` (`registerPushLanes`: ntfy always, FCM best-effort) | Wired from every session resume and FCM token rotation; untested against live stack |
+| ntfy websocket lane (de-Googled)                  | 🟡 `PARTIALLY_FUNCTIONAL` | `push/NtfySubscriptionService.kt:31`                                     | Bounded exponential reconnect; Doze variance accepted by owner decision             |
+| FCM lane (GMS devices)                            | 🔵 `DISABLED`             | `push/FcmReceiver.kt:16`                                                 | Awaits `google-services.json` drop-in + plugin; code complete, never receives       |
+| Push payload routing (`ring`/`ring_end`)          | 🟡 `PARTIALLY_FUNCTIONAL` | `push/RingRouter.kt:30` (route)                                          | Both transports converge here; untested                                             |
 
 ## Web shell
 
-| Feature                                             | Status                    | Evidence                                                        | Notes                                                                        |
-| --------------------------------------------------- | ------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| WebView tab surfaces (Messages/Fax/Voicemail/…)     | 🟡 `PARTIALLY_FUNCTIONAL` | `shell/MainActivity.kt:28`                                      | Plain WebView; no JS bridge to the native layer                              |
-| Session resume (cookie → SIP credentials)           | 🟡 `PARTIALLY_FUNCTIONAL` | `shell/SessionApi.kt:57` (resumeSession), `:32` (in-memory jar) | OkHttp cookie jar is separate from the WebView `CookieManager`; no sync code |
-| Outbound dialer entry (start a call from the shell) | ⚪ `PLANNED`              | No code; `CallEngine.dial` unreached                            |                                                                              |
-| Logout deregistration                               | 🔴 `BROKEN`               | `shell/SessionApi.kt:103` — zero callers                        | Island logout has no path to native deregistration (no JS bridge)            |
+| Feature                                             | Status                    | Evidence                                                               | Notes                                                                         |
+| --------------------------------------------------- | ------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| WebView tab surfaces (Messages/Fax/Voicemail/…)     | 🟡 `PARTIALLY_FUNCTIONAL` | `shell/MainActivity.kt:28`                                             | Plain WebView; no JS bridge to the native layer                               |
+| Session resume (cookie → SIP credentials)           | 🟡 `PARTIALLY_FUNCTIONAL` | `shell/SessionApi.kt:57` (resumeSession), `:32` (CookieManager bridge) | One cookie store (the WebView's `CookieManager`); untested against live stack |
+| Outbound dialer entry (start a call from the shell) | 🟡 `PARTIALLY_FUNCTIONAL` | `call/DialpadActivity.kt`; dial button in `shell/MainActivity.kt`      | Single-call guard: a live call opens the call screen instead                  |
+| Logout deregistration                               | 🔴 `BROKEN`               | `shell/SessionApi.kt:103` — zero callers                               | Island logout has no path to native deregistration (no JS bridge)             |
 
 ## In-call UI
 
@@ -80,8 +80,8 @@ not?
 
 ## Packaging and configuration
 
-| Feature                            | Status                | Evidence                                                                                                                            | Notes                                                           |
-| ---------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| 16 KB page-aligned native libs     | 🟢 `FULLY_FUNCTIONAL` | `app/build.gradle.kts:36` (packaging); verified 2026-10-23 in commit `d6d4b5d` via `zipalign -c -P 16 4` on the assembled debug APK | Re-verify per release / webrtc bump (build-tools ≥ 35 required) |
-| Settings surface (stack origin)    | ⚪ `PLANNED`          | `App.kt:45` (`App.origin` hardcoded)                                                                                                | README: lands with the first device train                       |
-| POST_NOTIFICATIONS runtime request | ⚪ `PLANNED`          | Declared `AndroidManifest.xml:7`; no runtime request code                                                                           | Needed on API 33+                                               |
+| Feature                            | Status                    | Evidence                                                                                                                            | Notes                                                           |
+| ---------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 16 KB page-aligned native libs     | 🟢 `FULLY_FUNCTIONAL`     | `app/build.gradle.kts:36` (packaging); verified 2026-10-23 in commit `d6d4b5d` via `zipalign -c -P 16 4` on the assembled debug APK | Re-verify per release / webrtc bump (build-tools ≥ 35 required) |
+| Settings surface (stack origin)    | ⚪ `PLANNED`              | `App.kt:45` (`App.origin` hardcoded)                                                                                                | README: lands with the first device train                       |
+| POST_NOTIFICATIONS runtime request | 🟡 `PARTIALLY_FUNCTIONAL` | `shell/MainActivity.kt` (requests on first launch, API 33+)                                                                         | Untested on device                                              |

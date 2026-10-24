@@ -45,6 +45,11 @@
             android:turnScreenOn="true"
             android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
 
+        <!-- The dialer entry: number in, mic permission, dial. -->
+        <activity
+            android:name=".call.DialpadActivity"
+            android:exported="false" />
+
         <!-- Self-managed Telecom integration: the app owns its call UI,
              the OS gets call-state integration (BT/watches, audio
              focus, Do Not Disturb) through the ConnectionService. -->

@@ -78,7 +78,7 @@ class CallActivity : AppCompatActivity() {
     private fun render(state: CallEngine.CallState) {
         statusView.text = when (state.phase) {
             CallEngine.Phase.IDLE -> ""
-            CallEngine.Phase.DIALLING -> getString(R.string.channel_calls).let { "…" }
+            CallEngine.Phase.DIALLING -> getString(R.string.dialing)
             CallEngine.Phase.RINGING_IN -> getString(R.string.incoming_call)
             CallEngine.Phase.ACTIVE -> if (state.muted) "Muted" else "Active"
             CallEngine.Phase.HELD -> getString(R.string.hold)
@@ -91,6 +91,13 @@ class CallActivity : AppCompatActivity() {
             CallEngine.Phase.RINGING_IN -> {
                 controls.addView(button(getString(R.string.answer)) { CallEngine.answer(); CallService.start(this) })
                 controls.addView(button(getString(R.string.decline)) { CallEngine.decline(); finish() })
+            }
+            CallEngine.Phase.DIALLING -> {
+                controls.addView(button(getString(R.string.hang_up)) {
+                    CallEngine.hangUp()
+                    CallService.stop(this)
+                    finish()
+                })
             }
             CallEngine.Phase.ACTIVE, CallEngine.Phase.HELD -> {
                 controls.addView(button(getString(R.string.mute)) { CallEngine.toggleMute() })

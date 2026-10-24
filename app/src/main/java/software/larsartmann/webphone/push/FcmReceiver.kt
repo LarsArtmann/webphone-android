@@ -2,6 +2,7 @@ package software.larsartmann.webphone.push
 
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import software.larsartmann.webphone.shell.SessionApi
 
 /**
  * The FCM lane: the server's push seam sends a DATA message
@@ -27,8 +28,8 @@ class FcmReceiver : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         // Rotation: the registry upserts by stable device id, so the
-        // new token replaces the old row on the next register pass
-        // (SessionApi.registerPushDevice — not yet wired from anywhere,
-        // see TODO_LIST.md "Wire push-device registration").
+        // new token replaces the old row (SessionApi.registerPushDevice
+        // — off the main thread; FCM callbacks are main).
+        Thread { SessionApi.registerPushDevice(applicationContext, "fcm", token) }.start()
     }
 }

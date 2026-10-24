@@ -46,23 +46,26 @@ nix develop                        # JDK 21 + Android SDK (platform 36, build-to
 Single `:app` module, package-per-concern under
 `software.larsartmann.webphone`:
 
-| Package  | Contents                                                                             | Role                                                                                      |
-| -------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| `shell/` | `MainActivity`, `SessionApi`, `DeviceIdentity`                                       | The WebView shell + the origin's HTTP session seam + per-install identity                 |
-| `sip/`   | `SipEngine`, `SipMessage`, `Digest`                                                  | SIP-over-WSS user agent: REGISTER (digest), INVITE/re-INVITE/BYE, DTMF INFO, REFER/NOTIFY |
-| `call/`  | `CallEngine`, `WebRtcEngine`, `CallService`, `CallConnectionService`, `CallActivity` | Call orchestration, WebRTC audio, typed FGS, Telecom integration, in-call UI              |
-| `push/`  | `RingEvent` (the router), `FcmReceiver`, `NtfySubscriptionService`                   | The two ring-while-closed transports, both converging on `RingEvent.route`                |
+| Package  | Contents                                                                                                | Role                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `shell/` | `MainActivity`, `CallLayer`, `SessionApi`, `DeviceIdentity`                                             | The WebView shell + the idempotent call-layer wire + the origin's HTTP session seam + per-install identity |
+| `sip/`   | `SipEngine`, `SipMessage`, `Digest`                                                                     | SIP-over-WSS user agent: REGISTER (digest), INVITE/re-INVITE/BYE, DTMF INFO, REFER/NOTIFY                  |
+| `call/`  | `CallEngine`, `WebRtcEngine`, `CallService`, `CallConnectionService`, `CallActivity`, `DialpadActivity` | Call orchestration, WebRTC audio, typed FGS, Telecom integration, in-call UI, dialer entry                 |
+| `push/`  | `RingEvent` (the router), `FcmReceiver`, `NtfySubscriptionService`                                      | The two ring-while-closed transports, both converging on `RingEvent.route`                                 |
 
 ### Control flow
 
 1. **Session**: `MainActivity` loads `App.origin` in the WebView; the
-   island's login mints the session cookie. `SessionApi.resumeSession()`
-   (GET `/api/session`) trades the cookie for SIP credentials and wires
-   `SipEngine` into the `CallEngine` singleton. Retried on every
-   `onResume` (login may have just happened).
-2. **Outbound call**: `CallEngine.dial` → WebRTC offer →
-   `SipEngine.invite` → 180/200/ACK ladder → `onCallEstablished` applies
-   the remote answer.
+   island's login mints the session cookie. `CallLayer.ensureWired`
+   (idempotent, callable from any wake path) resumes the session
+   (`SessionApi.resumeSession()`, GET `/api/session`), creates the
+   `SipEngine`, attaches it to the `CallEngine` singleton, registers
+   the push lanes, and starts the ntfy subscription. A ring push while
+   closed calls the same entry point — the SIP leg must come up for
+   the INVITE to land (the bootstrap races it).
+2. **Outbound call**: `DialpadActivity` → `CallEngine.dial` → WebRTC
+   offer → `SipEngine.invite` → 180/200/ACK ladder →
+   `onCallEstablished` applies the remote answer.
 3. **Inbound call (ring while closed)**: push arrives (FCM data message
    or ntfy websocket JSON, same `{event, from, call_id}` payload) →
    `RingEvent.route` → `telecom.addNewIncomingCall` (self-managed
@@ -93,10 +96,15 @@ events: `ring` and `ring_end`.
   (`https://pbx.example.org`) — the settings UI doesn't exist yet; set
   it before any real device run. Cleartext is disabled
   (`usesCleartextTraffic="false"`), so the origin must be HTTPS.
-- **Two cookie stores, no sync (v0.1 gap)**: the WebView uses Android's
-  `CookieManager`; `SessionApi` uses its own in-memory OkHttp
-  `CookieJar`. Nothing copies between them yet — the session seam is
-  acknowledged-untested scaffold.
+- **One cookie store**: `SessionApi`'s OkHttp client bridges through the
+  WebView's `CookieManager` (read AND write). The island login mints
+  there; API calls read the same jar. Never add a second cookie store
+  — the v0.1 split-brain gap is closed, keep it that way.
+- **Answer-path race (open question until the first device train)**: a
+  ring push while closed rings via Telecom immediately, but the SIP
+  INVITE only lands once `CallLayer.ensureWired` brings the leg up —
+  whether the server re-invites long enough for that race to be won
+  is unknown.
 - **Mic FGS background-start ban**: Android 15+ forbids starting a
   `microphone` foreground service from the background. `CallService`
   is only ever started from user interaction (the answer flow through
