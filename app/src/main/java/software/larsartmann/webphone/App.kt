@@ -44,7 +44,7 @@ class App : Application() {
         const val CHANNEL_CALLS = "calls"
         const val CHANNEL_PUSH = "push"
 
-        const val PREFS_SETTINGS = "webphone-settings"
+        internal const val PREFS_SETTINGS = "webphone-settings"
         private const val KEY_ORIGIN = "origin"
 
         /** The shipped default: the operator's live stack. A saved

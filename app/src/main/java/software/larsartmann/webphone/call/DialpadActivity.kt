@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -48,6 +49,7 @@ class DialpadActivity : AppCompatActivity() {
     private lateinit var statusDot: View
     private lateinit var statusLabel: TextView
     private lateinit var callPill: LinearLayout
+    private lateinit var recentsHolder: FrameLayout
 
     private val micPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -111,6 +113,7 @@ class DialpadActivity : AppCompatActivity() {
         callPill = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
+            contentDescription = getString(R.string.call)
             background = pillBackground(themeColor(R.attr.wpAccent)).withRipple(this@DialpadActivity)
             minimumHeight = dp(56)
             setPadding(dp(26), 0, dp(26), 0)
@@ -174,15 +177,18 @@ class DialpadActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 ).apply { topMargin = dp(2) },
             )
-            recentsSection()?.let {
-                addView(
-                    it,
-                    LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                    ).apply { topMargin = dp(14) },
-                )
-            }
+            // The recents live in a holder the resume loop re-fills: a
+            // call placed from the dialer finishes it, but the dialer
+            // that survives A call (answered while the dialer was up)
+            // must show the new recents WITHOUT being recreated.
+            recentsHolder = FrameLayout(this@DialpadActivity)
+            addView(
+                recentsHolder,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = dp(14) },
+            )
             // Phone-dialer geometry: the pad floats centered between
             // the number block and the actions anchored at the bottom.
             addView(View(this@DialpadActivity), LinearLayout.LayoutParams(0, 0, 1f))
@@ -211,20 +217,22 @@ class DialpadActivity : AppCompatActivity() {
         setContentView(root)
 
         callPill.setOnClickListener { maybePlaceCall() }
+        refreshRecents()
 
         // The dialer is honest about the PBX: no Call button while the
         // SIP registration is down (dialing would no-op silently).
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                CallEngine.registration.collect { registration ->
-                    val registered = registration == CallEngine.Registration.REGISTERED
+                CallEngine.registration.collect { info ->
+                    val registered = info.status == CallEngine.Registration.REGISTERED
                     callPill.isEnabled = registered
                     callPill.alpha = if (registered) 1f else 0.4f
                     statusLabel.text = getString(
-                        when (registration) {
-                            CallEngine.Registration.REGISTERED -> R.string.registration_registered
-                            CallEngine.Registration.CONNECTING -> R.string.registration_connecting
-                            CallEngine.Registration.OFF -> R.string.registration_off
+                        when {
+                            registered -> R.string.registration_registered
+                            info.status == CallEngine.Registration.CONNECTING -> R.string.registration_connecting
+                            info.failure == CallEngine.RegistrationFailure.AUTH_REJECTED -> R.string.registration_auth_rejected
+                            else -> R.string.registration_off
                         },
                     )
                     statusDot.background = circleBackground(
@@ -234,6 +242,24 @@ class DialpadActivity : AppCompatActivity() {
                     )
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // A call that ended while the dialer sat in the back stack may
+        // have added a recents entry — rebuild the block.
+        refreshRecents()
+    }
+
+    private fun refreshRecents() {
+        recentsHolder.removeAllViews()
+        val section = recentsSection()
+        if (section == null) {
+            recentsHolder.visibility = View.GONE
+        } else {
+            recentsHolder.visibility = View.VISIBLE
+            recentsHolder.addView(section)
         }
     }
 
@@ -292,9 +318,13 @@ class DialpadActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(dp(68), dp(68)).apply {
                 setMargins(dp(6), 0, dp(6), 0)
             }
-            setOnClickListener { numberView.append(digit.toString()) }
+            setOnClickListener {
+                performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                numberView.append(digit.toString())
+            }
             if (digit == '0') {
                 setOnLongClickListener {
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                     numberView.append("+")
                     true
                 }

@@ -5,8 +5,10 @@ import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
 import android.view.Gravity
 import android.view.View
@@ -62,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chrome: LinearLayout
     private var loadedOrigin: String? = null
     private var linePulse: ValueAnimator? = null
+    private var requestedBatteryExemption = false
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -90,6 +93,9 @@ class MainActivity : AppCompatActivity() {
         // The line pill: the phone vernacular "line light" — a live
         // dot plus a short label, dark glass so it reads over any page.
         statusDot = View(this).apply {
+            // Decorative: the label next to it carries the state for
+            // TalkBack; a bare colored dot would only add noise.
+            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             layoutParams = LinearLayout.LayoutParams(dp(8), dp(8)).apply {
                 gravity = Gravity.CENTER_VERTICAL
                 marginEnd = dp(8)
@@ -201,28 +207,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun renderRegistration(registration: CallEngine.Registration) {
+    private fun renderRegistration(info: CallEngine.RegistrationInfo) {
         statusLabel.text = getString(
-            when (registration) {
-                CallEngine.Registration.REGISTERED -> R.string.registration_registered
-                CallEngine.Registration.CONNECTING -> R.string.registration_connecting
-                CallEngine.Registration.OFF -> R.string.registration_off
+            when {
+                info.status == CallEngine.Registration.REGISTERED -> R.string.registration_registered
+                info.status == CallEngine.Registration.CONNECTING -> R.string.registration_connecting
+                // The cause matters: "the PBX refused you" and "no
+                // route to the PBX" ask for different fixes.
+                info.failure == CallEngine.RegistrationFailure.AUTH_REJECTED -> R.string.registration_auth_rejected
+                else -> R.string.registration_off
             },
         )
+        val registered = info.status == CallEngine.Registration.REGISTERED
         statusDot.background = circleBackground(
             ContextCompat.getColor(
                 this,
-                if (registration == CallEngine.Registration.REGISTERED) {
-                    R.color.chrome_dot_on
-                } else {
-                    R.color.chrome_dot_pending
-                },
+                if (registered) R.color.chrome_dot_on else R.color.chrome_dot_pending,
             ),
         )
         // The signature moment: the line light breathes while the
         // line is up (skipped entirely when animations are off).
         linePulse?.cancel()
-        linePulse = if (registration == CallEngine.Registration.REGISTERED) {
+        linePulse = if (registered) {
             statusDot.alpha = 1f
             pulse(statusDot, this)
         } else {
@@ -230,16 +236,42 @@ class MainActivity : AppCompatActivity() {
             null
         }
 
+        if (!registered) return
+
         // The ring lane is dead without the notification grant on
         // API 33+ — ask in context (post-login, i.e. once registration
         // proves the session works), not on a cold launch the user
         // hasn't signed into yet.
-        if (registration == CallEngine.Registration.REGISTERED &&
-            Build.VERSION.SDK_INT >= 33 &&
+        if (Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
             PackageManager.PERMISSION_GRANTED
         ) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+
+        // The ntfy lane's #1 missed-ring cause is the OEM battery
+        // manager killing the dataSync socket. Ask ONCE per install,
+        // post-registration (the same in-context moment as the
+        // notification grant); the direct dialog needs its
+        // manifest-declared permission, the settings deep-link is the
+        // fallback when an OEM broke that too.
+        maybeRequestBatteryExemption()
+    }
+
+    private fun maybeRequestBatteryExemption() {
+        if (requestedBatteryExemption) return
+        val power = getSystemService(PowerManager::class.java) ?: return
+        if (power.isIgnoringBatteryOptimizations(packageName)) return
+        val prefs = getSharedPreferences(App.PREFS_SETTINGS, MODE_PRIVATE)
+        if (prefs.getBoolean(KEY_BATTERY_ASKED, false)) return
+        requestedBatteryExemption = true
+        prefs.edit().putBoolean(KEY_BATTERY_ASKED, true).apply()
+        val direct = Intent(
+            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+            Uri.parse("package:$packageName"),
+        )
+        runCatching { startActivity(direct) }.onFailure {
+            runCatching { startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
         }
     }
 
@@ -255,5 +287,9 @@ class MainActivity : AppCompatActivity() {
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (::webView.isInitialized && webView.canGoBack()) webView.goBack() else super.onBackPressed()
+    }
+
+    private companion object {
+        const val KEY_BATTERY_ASKED = "battery_exemption_asked"
     }
 }
