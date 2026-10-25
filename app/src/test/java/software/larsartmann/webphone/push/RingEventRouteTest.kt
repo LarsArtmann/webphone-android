@@ -130,4 +130,78 @@ class RingEventRouteTest {
             CallEngine.cancelRinging()
         }
     }
+
+    /** W150 pin: `ring_end` for an already-ANSWERED call is a silent
+     *  stand-down — the live call survives (cancelRinging no-ops off
+     *  RINGING_IN) and NO missed-call note appears (the call is not
+     *  missed, it is in progress). */
+    @Test
+    fun `ring_end after a local answer spares the live call and posts nothing`() {
+        val app = grantedApp()
+        try {
+            CallEngine.onIncomingCall(
+                SipEngine.IncomingInvite(
+                    callId = "answered",
+                    fromUser = "100",
+                    fromDisplay = "Alice",
+                    sdp = "v=0",
+                    respondWith = { _, _ -> },
+                ),
+            )
+            CallEngine.onCallEstablished("answered", remoteSdp = "v=0")
+            RingEvent.route(app, "ring_end", null, null)
+
+            assertEquals(
+                CallEngine.Phase.ACTIVE,
+                CallEngine.state.value.phase,
+                "a stale ring_end must not kill the answered call",
+            )
+            val notifications = shadowOf(
+                app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
+            ).allNotifications
+            assertTrue(
+                notifications.none {
+                    it.extras.getString(android.app.Notification.EXTRA_TITLE) ==
+                        app.getString(R.string.missed_call)
+                },
+                "an answered call is not a missed call",
+            )
+        } finally {
+            CallEngine.hangUp()
+        }
+    }
+
+    /** W170: with the registration DEFINITIVELY broken (auth rejected),
+     *  a ring push must not promise a call that can never land — no
+     *  Telecom line, no full-screen ring; a plain heads-up naming the
+     *  cause takes its place and rides the ring notification id, so a
+     *  later ring_end still clears it. */
+    @Test
+    fun `ring while auth-rejected posts the cause instead of a false ring`() {
+        val app = grantedApp()
+        try {
+            CallEngine.onRegistrationState(SipEngine.RegistrationState.AUTH_REJECTED)
+            RingEvent.route(app, "ring", "Alice", "call-1")
+
+            val telecom = app.getSystemService(Context.TELECOM_SERVICE) as TelecomManager
+            assertTrue(
+                shadowOf(telecom).allIncomingCalls.isEmpty(),
+                "an auth-rejected line must not ring Telecom",
+            )
+            val notifications = shadowOf(
+                app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
+            ).allNotifications
+            assertEquals(1, notifications.size)
+            assertEquals(
+                "Alice",
+                notifications[0].extras.getString(android.app.Notification.EXTRA_TITLE),
+            )
+            assertEquals(
+                app.getString(R.string.registration_auth_rejected),
+                notifications[0].extras.getString(android.app.Notification.EXTRA_TEXT),
+            )
+        } finally {
+            CallEngine.onRegistrationState(SipEngine.RegistrationState.OFFLINE)
+        }
+    }
 }

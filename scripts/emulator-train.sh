@@ -128,6 +128,13 @@ done
 	}
 
 echo "== installing $APK =="
+if [ "$MODE" = "release" ]; then
+	# The smoke APK is signed with a freshly generated debug keystore —
+	# any package already on the AVD (the gradle debug builds) has a
+	# different signature and the install dies with
+	# INSTALL_FAILED_UPDATE_INCOMPATIBLE. A smoke run needs no old data.
+	adb_ uninstall software.larsartmann.webphone >/dev/null 2>&1 || true
+fi
 adb_ install -r "$APK"
 
 echo "== launching the shell =="

@@ -85,7 +85,7 @@ class NtfySubscriptionService : Service() {
             .connectTimeout(10, TimeUnit.SECONDS)
             .build()
         val request = Request.Builder()
-            .url("${server.trimEnd('/')}/$topic/ws")
+            .url(subscriptionUrl(server, topic))
             .build()
         socket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
@@ -152,9 +152,14 @@ class NtfySubscriptionService : Service() {
         private const val ACTION_STOP = "software.larsartmann.webphone.push.STOP"
         private const val EXTRA_SERVER = "server"
         private const val EXTRA_TOPIC = "topic"
-        private const val PREFS = "webphone-ntfy"
-        private const val KEY_SERVER = "server"
-        private const val KEY_TOPIC = "topic"
+        internal const val PREFS = "webphone-ntfy"
+        internal const val KEY_SERVER = "server"
+        internal const val KEY_TOPIC = "topic"
+
+        /** Test seam: the websocket endpoint the lane subscribes to —
+         *  ntfy's per-topic websocket is `<server>/<topic>/ws`. */
+        internal fun subscriptionUrl(server: String, topic: String): String =
+            "${server.trimEnd('/')}/$topic/ws"
 
         fun start(context: Context, server: String, topic: String) {
             context.startForegroundService(
