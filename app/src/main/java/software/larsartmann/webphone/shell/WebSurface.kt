@@ -283,10 +283,7 @@ internal class WebSurface(private val activity: ComponentActivity) {
         }
 
         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
-            // Sub-resource failures are routine (a favicon while flaky)
-            // — only the document itself failing means "stack unreachable".
-            if (!request.isForMainFrame) return
-            showOffline()
+            onMainFrameTransportFailure(request.isForMainFrame)
         }
 
         // POLICY (W111, 2026-10-25): main-frame HTTP errors (status >=
@@ -425,6 +422,15 @@ internal class WebSurface(private val activity: ComponentActivity) {
     /** Test seam: the LIVE WebView instance (renderer rebuilds swap it). */
     internal fun currentWebView(): WebView = webView
 
+    /** POLICY seam (unit-tested; the Android callback is a one-line
+     *  delegate): only a main-frame TRANSPORT failure (no route, DNS,
+     *  TLS) means "stack unreachable". Sub-resource failures are
+     *  routine, and HTTP error STATUSES are the origin's own pages. */
+    internal fun onMainFrameTransportFailure(isMainFrame: Boolean) {
+        if (!isMainFrame) return
+        showOffline()
+    }
+
     /** Same-origin downloads ride DownloadManager with the session
      *  cookie; foreign downloads hand off — the cookie must never
      *  leave the origin. Internal for direct policy tests. */
@@ -457,13 +463,17 @@ internal class WebSurface(private val activity: ComponentActivity) {
         val fromHeader = Regex("""filename\*?=\s*(?:\"([^\"]+)\"|([^;]+))""", RegexOption.IGNORE_CASE)
             .find(contentDisposition.orEmpty())
             ?.groupValues
-            ?.let { values -> values.getOrNull(1) ?: values.getOrNull(2)?.trim() }
+            ?.let { values ->
+                // groupValues yields "" (not null) for unmatched groups —
+                // take the first NON-BLANK capture or fall to the URL.
+                values.getOrNull(1)?.takeIf { it.isNotBlank() } ?: values.getOrNull(2)?.trim()
+            }
             ?.trim()
             ?.orNullIfBlank()
         val raw = fromHeader ?: Uri.parse(url).lastPathSegment.orEmpty().substringAfterLast('/')
         val clean = buildString {
             for (ch in raw) if (ch.code > 31 && ch !in FORBIDDEN_FILE_CHARS) append(ch)
-        }.trim()
+        }.trim().trimStart('.')
         return clean.ifBlank { "download" }
     }
 

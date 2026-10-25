@@ -45,6 +45,14 @@ class WebSurfacePolicyTest {
         override fun getMethod(): String = "GET"
     }
 
+    /** MainActivity's battery-exemption ask fires at launch — drain it
+     *  before asserting on hand-off intents. */
+    private fun drainStartedActivities(activity: MainActivity) {
+        while (shadowOf(activity).nextStartedActivity != null) {
+            // discard
+        }
+    }
+
     @Test
     fun `scope guard is wired through shouldOverrideUrlLoading`() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
@@ -52,7 +60,7 @@ class WebSurfacePolicyTest {
                 App.origin = origin
                 val surface = activity.webSurface
                 val client = surface.currentWebView().webViewClient
-
+                drainStartedActivities(activity)
                 // Same-origin navigation: the WebView loads it itself.
                 assertFalse(
                     client.shouldOverrideUrlLoading(
@@ -97,22 +105,11 @@ class WebSurfacePolicyTest {
             scenario.onActivity { activity ->
                 App.origin = origin
                 val surface = activity.webSurface
-                val client = surface.currentWebView().webViewClient
 
-                // The error argument is unread by the policy; null keeps
-                // the test free of framework-internal constructors.
-                client.onReceivedError(
-                    surface.currentWebView(),
-                    FakeRequest(Uri.parse("$origin/"), mainFrame = false),
-                    null,
-                )
+                surface.onMainFrameTransportFailure(isMainFrame = false)
                 assertFalse(surface.offlineVisible(), "sub-resource failures stay quiet")
 
-                client.onReceivedError(
-                    surface.currentWebView(),
-                    FakeRequest(Uri.parse("$origin/"), mainFrame = true),
-                    null,
-                )
+                surface.onMainFrameTransportFailure(isMainFrame = true)
                 assertTrue(surface.offlineVisible(), "main-frame transport failure raises the overlay")
             }
         }
@@ -132,7 +129,14 @@ class WebSurfacePolicyTest {
                 client.onReceivedHttpError(
                     surface.currentWebView(),
                     FakeRequest(Uri.parse("$origin/nope"), mainFrame = true),
-                    null,
+                    android.webkit.WebResourceResponse(
+                        "text/html",
+                        "utf-8",
+                        502,
+                        "Bad Gateway",
+                        emptyMap(),
+                        null,
+                    ),
                 )
                 assertFalse(surface.offlineVisible(), "HTTP error pages must render, not be masked")
             }
@@ -147,6 +151,7 @@ class WebSurfacePolicyTest {
                 val surface = activity.webSurface
                 val downloads =
                     activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                drainStartedActivities(activity)
 
                 // A session cookie exists (the WebView login minted it) —
                 // the same-origin request must carry it without crashing.
@@ -196,7 +201,7 @@ class WebSurfacePolicyTest {
                 )
                 assertEquals(
                     "download",
-                    surface.downloadFileName(null, "$origin/api/"),
+                    surface.downloadFileName(null, "$origin?token=1"),
                     "no name anywhere degrades to 'download'",
                 )
                 assertEquals(
