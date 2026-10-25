@@ -24,15 +24,15 @@ class SipEngineTest {
     }
 
     private class RecordingListener : SipEngine.Listener {
-        val registration = mutableListOf<Boolean>()
+        val registration = mutableListOf<SipEngine.RegistrationState>()
         var incoming: SipEngine.IncomingInvite? = null
         val progress = mutableListOf<Pair<String, Boolean>>()
         val established = mutableListOf<String>()
         val ended = mutableListOf<String>()
         val transferVerdicts = mutableListOf<Pair<String, String>>()
 
-        override fun onRegistrationState(registered: Boolean) {
-            registration.add(registered)
+        override fun onRegistrationState(state: SipEngine.RegistrationState) {
+            registration.add(state)
         }
 
         override fun onIncomingCall(invite: SipEngine.IncomingInvite) {

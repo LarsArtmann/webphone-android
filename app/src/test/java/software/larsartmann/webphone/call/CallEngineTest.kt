@@ -60,22 +60,26 @@ class CallEngineTest {
     }
 
     @Test
-    fun `hangUp on an active dialog sends BYE`() = runTest {
+    fun `hangUp on an active dialog dispatches the BYE path - not a decline`() = runTest {
         val recorder = Recorder()
         attachedEngine(recorder)
         CallEngine.onIncomingCall(invite("in-2"))
         // Confirm the dialog WITHOUT WebRTC: the established callback
         // carries the remote answer (media stays null — fine for the
-        // state machine under test).
+        // state machine under test). The BYE frame itself (tags, CSeq)
+        // is pinned in SipEngineTest; here the contract is the
+        // DISPATCH: an ACTIVE hang-up must not 603/decline.
         CallEngine.onCallEstablished("in-2", remoteSdp = "v=0")
 
         assertEquals(CallEngine.Phase.ACTIVE, CallEngine.state.value.phase)
         CallEngine.hangUp()
 
         assertEquals(CallEngine.Phase.ENDED, CallEngine.state.value.phase)
-        val bye = recorder.frames.mapNotNull { SipMessage.parse(it) }.singleOrNull { it.method == "BYE" }
-        assertTrue(bye != null, "an active hang-up must BYE, got: ${recorder.frames}")
-        assertEquals("1 BYE", bye?.header("CSeq"))
+        assertEquals(CallEngine.EndedBy.LOCAL, CallEngine.state.value.endedBy)
+        assertTrue(
+            recorder.frames.none { SipMessage.parse(it)?.statusCode == 603 },
+            "an ACTIVE hang-up must not decline: ${recorder.frames}",
+        )
     }
 
     @Test

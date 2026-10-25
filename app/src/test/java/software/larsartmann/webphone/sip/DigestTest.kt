@@ -93,6 +93,25 @@ class DigestTest {
     }
 
     @Test
+    fun `stale flag parses and defaults to false`() {
+        assertTrue(
+            Digest.parseChallenge("Digest realm=\"r\", nonce=\"n\", stale=true")!!.stale,
+            "a stale nonce says the credentials were fine",
+        )
+        assertTrue(
+            Digest.parseChallenge("Digest realm=\"r\", nonce=\"n\", stale=TRUE")!!.stale,
+        )
+        assertEquals(
+            false,
+            Digest.parseChallenge("Digest realm=\"r\", nonce=\"n\"")!!.stale,
+        )
+        assertEquals(
+            false,
+            Digest.parseChallenge("Digest realm=\"r\", nonce=\"n\", stale=false")!!.stale,
+        )
+    }
+
+    @Test
     fun `unquoted parameters and missing realm`() {
         val parsed = assertNotNull(Digest.parseChallenge("Digest realm=r nonce=n"))
         assertEquals("r", parsed.realm)
