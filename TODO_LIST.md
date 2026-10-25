@@ -38,15 +38,12 @@
 | First physical install + first-run walk of the redesigned build                                                   | 🔵 `BLOCKED` | High   | 30min  | Needs the operator's phone. Source: 03-12 §f1, 04-58 §f1 (P03)                                    |
 | Verify the answer-path race (push → FSI vs INVITE)                                                                | 🔵 `BLOCKED` | High   | 2h     | Needs the live stack (Q1); plan task F017 measures it (P05)                                       |
 | WebView-train visual verification pass on the emulator (dark mode, offline overlay, attach, links, renderer kill) | 🔴 `TODO`    | High   | 100min | Shipped unverified; emulator kit ready. Source: 09-59 §b1-3 (P06/W101-W107)                       |
-| First green CI run on GitHub (push trigger shipped; watch + fix assumptions)                                      | 🔴 `TODO`    | High   | 30min  | `ci.yml` has the `push` trigger; fires on the next push. Source: 10-00 §a/b (P08/F041)            |
+| First green CI run on GitHub — push trigger VERIFIED (both 10-25 pushes fired runs) but jobs cannot start: "recent account payments have failed or your spending limit needs to be increased" | 🔵 `BLOCKED` | High | 10min | Owner-only: GitHub Billing & plans fix, then re-watch. No workflow bug. Source: 10-25 P08 session (F041) |
 
 ## Medium Impact
 
 | Task                                                                                 | Status       | Impact | Effort | Evidence                                                                                              |
 | ------------------------------------------------------------------------------------ | ------------ | ------ | ------ | ----------------------------------------------------------------------------------------------------- |
-| Execute the ntfy `am kill` sticky-restart cycle on the emulator (+ fix)              | 🔴 `TODO`    | Med    | 30min  | Code shipped; drivable via `am start-foreground-service` + adb root. Source: 10-00 §b (P07/F035-F036) |
-| WebView behavior tail: DownloadListener, HTTP-error policy, delegation tests         | 🔴 `TODO`    | Med    | 60min  | MMS saves silently no-op today. Source: 09-59 §c2/c4, §e5 (P09/W110-W114)                             |
-| Contrast guard as code: `scripts/contrast-check.py` + token manifest + CI            | 🔴 `TODO`    | Med    | 60min  | 3 token pairs already failed once (2.44:1 answer button). Source: 10-00 §e5 (P10)                     |
 | Auth-ladder soak: MockWebServer REGISTER+INVITE challenge ladders e2e                | 🔴 `TODO`    | Med    | 100min | Ladder is unit-pinned only. Source: 10-00 §e6 (P13)                                                   |
 | Logout deregistration: JS bridge vs cookie-poll                                      | 🔵 `BLOCKED` | Med    | 1h     | Operator picks KEEP vs PURGE (F045). Source: 06-38 §T14 (P12)                                         |
 | Live contract checks: session fields, payload shapes, CSRF                           | 🔵 `BLOCKED` | Med    | 1h     | Needs the live stack (Q1); folded into the trains. Source: 06-38 §T15 (P04/P05)                       |
