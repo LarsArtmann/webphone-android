@@ -75,6 +75,10 @@ Unresolved questions route here until an answer turns them into bounded work
   Today NOTHING builds on merge-to-main.
 - **WebView dark-mode:** the island's own pages do not dark-mode; algorithmic
   darkening for the WebView is a separate, undecided surface.
+- **Visibility end-state:** both remotes are PRIVATE today; the sibling
+  `webphone` repo is public and this README reads public-facing. Keep private
+  until the honesty-contract markers clear, then flip the GitHub twin public
+  — or stay private?
 
 ## Non-goals
 

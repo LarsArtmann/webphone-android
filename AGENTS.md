@@ -46,10 +46,11 @@ mirror. Both are **private**.
 - Mirror lag check (same probe as `domains`):
   `git fetch origin && git fetch github && git rev-parse origin/main github/main` —
   equal SHAs mean the mirror is keeping up.
-- **UNTIL the push mirror attaches (next SystemNix deploy), NOTHING pushes
-  `github` automatically** — the daemon commits locally only. After every
-  session (and after daemon sweeps), `git push github main` by hand or the
-  twin silently drifts.
+- **NOTHING pushes ANY remote automatically** — the daemon commits locally
+  only (verified 2026-10-25: both remotes lagged local while the mirror was
+  unattached). Until the push mirror attaches (next SystemNix deploy):
+  after every session `git push origin main && git push github main` by
+  hand, or both the canonical repo and the twin silently drift.
 
 ## Build and verify
 
