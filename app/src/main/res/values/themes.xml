@@ -21,6 +21,10 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
+        <!-- Pinned so WebView algorithmic darkening (API 33+) can trust
+             the app theme: DayNight normally sets it, explicit survives
+             theme-parent churn. -->
+        <item name="android:isLightTheme">true</item>
         <item name="android:windowBackground">@color/wp_background</item>
     </style>
 

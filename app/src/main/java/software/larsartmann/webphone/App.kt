@@ -4,6 +4,8 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.webkit.WebView
 import software.larsartmann.webphone.call.WebRtcEngine
 
 /**
@@ -35,6 +37,11 @@ class App : Application() {
             ),
         )
         WebRtcEngine.initialize(this)
+        // chrome://inspect for the shell's WebView — DEBUGGABLE installs
+        // only (the manifest flag, not BuildConfig: this build doesn't
+        // generate BuildConfig and the flag is the honest source).
+        val debuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        WebView.setWebContentsDebuggingEnabled(debuggable)
         origin = prefs().getString(KEY_ORIGIN, DEFAULT_ORIGIN) ?: DEFAULT_ORIGIN
     }
 

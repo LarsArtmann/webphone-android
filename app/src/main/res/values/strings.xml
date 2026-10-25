@@ -40,4 +40,7 @@
     <string name="keypad">Keypad</string>
     <string name="recents">Recent</string>
     <string name="caller_avatar">Caller</string>
+    <string name="web_offline_title">Can\'t reach the phone system</string>
+    <string name="web_offline_body">The stack at %1$s didn\'t answer. Check your connection or the origin in Settings, then retry.</string>
+    <string name="web_offline_retry">Retry</string>
 </resources>

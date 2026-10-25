@@ -1,5 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Night override of the shell theme's isLightTheme pin (values/
+         themes.xml carries the WHY): false in dark mode, so the WebView
+         reports prefers-color-scheme: dark and the web app renders its
+         own dark theme. -->
+    <style name="Theme.WebPhone">
+        <item name="android:isLightTheme">false</item>
+    </style>
+
     <style name="Theme.WebPhone.Call">
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>

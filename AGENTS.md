@@ -97,7 +97,7 @@ Single `:app` module, package-per-concern under
 
 | Package  | Contents                                                                                                                   | Role                                                                                                                                                             |
 | -------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shell/` | `MainActivity`, `CallLayer`, `SessionApi`, `DeviceIdentity`, `SettingsActivity`                                            | The WebView shell + the idempotent call-layer wire + the origin's HTTP session seam + per-install identity + the persisted stack-origin settings                 |
+| `shell/` | `MainActivity`, `WebSurface`, `CallLayer`, `SessionApi`, `DeviceIdentity`, `SettingsActivity`                                            | The WebView shell (hardened surface in `WebSurface`) + the idempotent call-layer wire + the origin's HTTP session seam + per-install identity + the persisted stack-origin settings                 |
 | `sip/`   | `SipEngine`, `SipMessage`, `Digest`                                                                                        | SIP-over-WSS user agent: REGISTER (digest), INVITE/re-INVITE/CANCEL/BYE, DTMF INFO, REFER/NOTIFY                                                                 |
 | `call/`  | `CallEngine`, `WebRtcEngine`, `CallService`, `CallConnectionService`, `TelecomOutgoing`, `CallActivity`, `DialpadActivity` | Call orchestration (incl. registration state), WebRTC audio, typed FGS, inbound Telecom integration, outbound addCall bridge (API 34+), in-call UI, dialer entry |
 | `push/`  | `RingEvent` (the router), `FcmReceiver`, `NtfySubscriptionService`                                                         | The two ring-while-closed transports, both converging on `RingEvent.route`                                                                                       |
@@ -253,6 +253,22 @@ events: `ring` and `ring_end`.
   passed a null WebView — always pass the real `webView` (found by
   the first emulator smoke, 2026-10-24; Robolectric's shadow does not
   reproduce it, so this class of bug only surfaces on a real stack).
+- **WebView hardening home**: `shell/WebSurface.kt` owns the WebView,
+  its clients and the offline overlay. Navigation scope is the pure
+  `navigationVerdict` — same-origin ONLY, everything else (other
+  hosts, `tel:`, `mailto:`) hands off to the system; never render
+  foreign web in the session-cookie-bearing WebView. Renderer death
+  is consumed (`onRenderProcessGone` → fresh WebView + reload — the
+  default kills the app). Web `getUserMedia` asks are DENIED by
+  design: call audio is native (platform decision), and the deny is
+  explicit so the page never hangs on a pending permission. Dark
+  mode (API 33+): `isAlgorithmicDarkeningAllowed` + the pinned
+  `android:isLightTheme` — the web app declares `color-scheme: dark
+  light`, so it renders its OWN dark theme (no recoloring) and its
+  manual light/dark toggle still overrides. The composer's MMS
+  attach NEEDS `WebChromeClient.onShowFileChooser` — without a
+  ChromeClient `<input type=file>` is a silent dead button; never
+  ship the WebView without one.
 - **Design tokens, not hardcoded colors**: the programmatic UI
   resolves `wp*` theme attrs (`values/attrs.xml`, light values in
   `values/colors.xml`, dark in `values-night/colors.xml`) through the

@@ -57,7 +57,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusDot: View
     private lateinit var statusLabel: TextView
     private lateinit var chrome: LinearLayout
-    private var loadedOrigin: String? = null
     private var linePulse: ValueAnimator? = null
     private var requestedBatteryExemption = false
 
@@ -188,10 +187,6 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         webSurface.pause()
         super.onPause()
-    }
-
-    private fun loadOriginIfChanged() {
-        webSurface.loadOriginIfChanged()
     }
 
     private fun renderRegistration(info: CallEngine.RegistrationInfo) {
