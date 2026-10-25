@@ -1,8 +1,6 @@
 package software.larsartmann.webphone.shell
 
-import android.Manifest
 import android.animation.ValueAnimator
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -13,9 +11,6 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.CookieManager
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -58,7 +53,7 @@ import software.larsartmann.webphone.ui.themeColor
  */
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var webView: WebView
+    internal lateinit var webSurface: WebSurface
     private lateinit var statusDot: View
     private lateinit var statusLabel: TextView
     private lateinit var chrome: LinearLayout
@@ -69,26 +64,11 @@ class MainActivity : AppCompatActivity() {
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
-    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        CookieManager.getInstance().setAcceptCookie(true)
-
-        webView = WebView(this)
-        webView.layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT,
-        )
-        webView.settings.javaScriptEnabled = true
-        webView.settings.domStorageEnabled = true
-        webView.settings.mediaPlaybackRequiresUserGesture = false
-        webView.webViewClient = WebViewClient()
-        // Third-party cookies are OFF per-WebView — the call needs the
-        // WebView param and CRASHES on null under the Chromium glue
-        // (found by the first emulator smoke, 2026-10-24).
-        CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false)
+        webSurface = WebSurface(this)
 
         // The line pill: the phone vernacular "line light" — a live
         // dot plus a short label, dark glass so it reads over any page.
@@ -161,7 +141,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         val root = FrameLayout(this)
-        root.addView(webView)
+        root.addView(
+            webSurface.container,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
+        )
         root.addView(
             chrome,
             FrameLayout.LayoutParams(
@@ -172,7 +158,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         setContentView(root)
-        loadOriginIfChanged()
+        webSurface.loadOriginIfChanged()
         dialFab.setOnClickListener { startActivity(Intent(this, DialpadActivity::class.java)) }
         settingsButton.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
 
@@ -190,21 +176,22 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::webView.isInitialized) {
-            // Settings may have changed the origin while we were away:
-            // the shell MUST follow it (the save-teardown re-wires the
-            // call layer; this re-aims the WebView). Found by walking
-            // the settings flow on the emulator, 2026-10-24.
-            loadOriginIfChanged()
-            CallLayer.ensureWired(this)
-        }
+        webSurface.resume()
+        // Settings may have changed the origin while we were away:
+        // the shell MUST follow it (the save-teardown re-wires the
+        // call layer; this re-aims the WebView). Found by walking
+        // the settings flow on the emulator, 2026-10-24.
+        webSurface.loadOriginIfChanged()
+        CallLayer.ensureWired(this)
+    }
+
+    override fun onPause() {
+        webSurface.pause()
+        super.onPause()
     }
 
     private fun loadOriginIfChanged() {
-        if (App.origin != loadedOrigin) {
-            webView.loadUrl(App.origin)
-            loadedOrigin = App.origin
-        }
+        webSurface.loadOriginIfChanged()
     }
 
     private fun renderRegistration(info: CallEngine.RegistrationInfo) {
@@ -278,7 +265,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         linePulse?.cancel()
         CallLayer.shutdown()
-        if (::webView.isInitialized) webView.destroy()
+        if (::webSurface.isInitialized) webSurface.destroy()
         super.onDestroy()
     }
 
@@ -286,7 +273,11 @@ class MainActivity : AppCompatActivity() {
     // island is the product's own navigation.
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (::webView.isInitialized && webView.canGoBack()) webView.goBack() else super.onBackPressed()
+        if (::webSurface.isInitialized && webSurface.canGoBack()) {
+            webSurface.goBack()
+        } else {
+            super.onBackPressed()
+        }
     }
 
     private companion object {
