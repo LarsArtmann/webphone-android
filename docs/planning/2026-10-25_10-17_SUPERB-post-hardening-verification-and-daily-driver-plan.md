@@ -1,5 +1,36 @@
 # SUPERB — Post-Hardening Verification & Daily-Driver Plan (2026-10-25 10:17)
 
+> **Execution errata (2026-10-25 ~13:30 pass, second session):**
+>
+> - **P09 SHIPPED** (W110–W114): `DownloadListener` (same-origin downloads
+>   ride DownloadManager WITH the session cookie; foreign hand off),
+>   HTTP-error policy DECIDED + documented (`onReceivedHttpError` no-op:
+>   origin pages render, overlay stays transport-only), 5 delegation
+>   tests. Gate: 60 tests green.
+> - **P10 SHIPPED** (W115–W116): `scripts/contrast-check.py` +
+>   `scripts/contrast-pairs.json` (50 checks, both modes, glass
+>   compositing, fail-exit proven) + CI step; dark `wp_danger` made
+>   text-grade (#F87171, 6.1:1 — reserved token, was 4.31:1 nowhere-grade).
+> - **P06 PARTIAL**: new `scripts/emulator-verify.sh` verified W101 (dark
+>   seam: mean 243→146, dominant `#12151B`), W102 (light back), W103
+>   (offline overlay: exact `#F5F8F7` fill + accent retry; Retry recovers),
+>   W107 (renderer kill: app pid SURVIVES, origin reloads), F024 (dialpad
+>   152/249), F038 (smoke dry run OK), F058 (the PNG set). NOT verifiable
+>   headless: W104 attach, W105 external link, W106 back-nav — need a
+>   logged-in session (Q1).
+> - **P07**: mechanism verified by code read — a fresh emulator has no
+>   server/topic in prefs so the FGS self-stops BEFORE `am kill`
+>   (`START_NOT_STICKY` on missing config is BY DESIGN); the live
+>   kill-cycle needs a configured session. Re-ranked BLOCKED, not broken.
+> - **P08**: push trigger VERIFIED (both pushes fired runs) but GitHub
+>   refuses to start jobs — "recent account payments have failed or your
+>   spending limit needs to be increased" (billing, owner action; no
+>   workflow bug). All dependabot-era runs failed identically.
+> - Gate moved again: the verification bar is now **60 tests**.
+> - Emulator lifetime gotcha (new): host-side detached emulators get
+>   reaped within ~2 min of their parent shell; the verify script owns
+>   its emulator start-to-finish because of it.
+>
 > **Basis:** the prior plan `2026-10-25_06-38_pareto-live-core-and-daily-driver-plan.md`
 > (27 T-tasks / 92 F-tasks), the execution report
 > `docs/status/2026-10-25_10-00_execution-pass-core-hardening-and-surface-modernization.md`

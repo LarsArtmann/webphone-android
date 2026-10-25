@@ -71,6 +71,7 @@ dependencies {
 
     testImplementation(kotlin("test"))
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
 }
