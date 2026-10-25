@@ -20,15 +20,23 @@ Raw ideas:
 - Doze/battery-manager variance in the ntfy lane (accepted trade today;
   revisit if rings go missing in the field)
 - Audio-focus and audio-routing polish on the WebRTC leg
+- Missed-call notification when `ring_end` lands unanswered
+- In-call duration timer; dialpad haptic feedback
+- WorkManager as a fallback ntfy reconnect path
+- `CallEndpoint`-based speaker routing on API 34+ (align with the addCall
+  session instead of raw AudioManager)
+- Crash reporting (self-hosted, e.g. ACRA) — or none by policy
+- Baseline profiles for startup + the call path
 
 ### 2. Operator configuration
 
-The shell is currently single-origin, hardcoded. Ideas around making it
-operator-configurable without growing a second settings brain.
+The origin is user-settable since 2026-10-24 (persisted in Settings,
+`https://`-validated, live re-wire on save); the shipped default is the
+operator's live stack. Ideas around going beyond typed configuration without
+growing a second settings brain.
 
 Raw ideas:
 
-- Settings surface for the stack origin (first device train deliverable)
 - Whether origin should be provisioned (QR/enrollment) instead of typed
 - Multi-account / multi-line: does the single-call policy survive a second
   extension?
@@ -42,6 +50,31 @@ Raw ideas:
 - Play Store, later, if ever — Play would re-audit the full-screen-intent
   grant; the sideload lane keeps it by default
 - Update distribution for sideloaded installs (APK self-update? nothing?)
+- A release signing config (deliberate future step — today the only
+  installable artifact is the debug APK; `assembleRelease` emits an
+  unsigned APK)
+
+## Open questions
+
+Unresolved questions route here until an answer turns them into bounded work
+(TODO_LIST) or non-goals.
+
+- **Live-stack access (the device-train blocker):** which test extension
+  (+ account, if login needs one) may the app use against the operator's
+  stack, and is the stack reachable? Everything self-serve is done.
+- **Logout semantics (drives the deregistration design):** when a user logs
+  out on the island, does the server KEEP the `/api/push-devices` rows (the
+  native side must deregister BEFORE the cookie dies → JS bridge needed), or
+  PURGE them (the shipped cookie-poll watcher suffices)?
+- **Icon parity:** the native launcher leads with the handset glyph; the PWA
+  uses a link glyph. Keep them diverged, or adopt the handset in both (change
+  both or neither)?
+- **Where should CI run?** GitHub Actions with a `push` trigger (private
+  minutes; the account's Actions were billing-dead 2026-09-08), the native
+  Forgejo runner via `.forgejo/workflows`, or manual device trains only?
+  Today NOTHING builds on merge-to-main.
+- **WebView dark-mode:** the island's own pages do not dark-mode; algorithmic
+  darkening for the WebView is a separate, undecided surface.
 
 ## Non-goals
 

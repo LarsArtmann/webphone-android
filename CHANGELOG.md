@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (null-intent restarts resubscribe from prefs)
 - Session watcher: a dead session (island logout) stops the ntfy lane
   and tears the engine down, best-effort deregistering the device
-- Test suite: 26 JVM tests — SIP codec round-trips and malformed-input
+- Test suite: 25 JVM tests — SIP codec round-trips and malformed-input
   rejection, digest credentials against the RFC 2617 §3.5 vector
   (independently re-computed), CANCEL/BYE/487/ACK wire sequences,
   device-identity topic shape, plus Robolectric smoke for the push

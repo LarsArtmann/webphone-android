@@ -46,6 +46,10 @@ mirror. Both are **private**.
 - Mirror lag check (same probe as `domains`):
   `git fetch origin && git fetch github && git rev-parse origin/main github/main` —
   equal SHAs mean the mirror is keeping up.
+- **UNTIL the push mirror attaches (next SystemNix deploy), NOTHING pushes
+  `github` automatically** — the daemon commits locally only. After every
+  session (and after daemon sweeps), `git push github main` by hand or the
+  twin silently drifts.
 
 ## Build and verify
 
@@ -96,7 +100,7 @@ Single `:app` module, package-per-concern under
 | `sip/`   | `SipEngine`, `SipMessage`, `Digest`                                                                                        | SIP-over-WSS user agent: REGISTER (digest), INVITE/re-INVITE/CANCEL/BYE, DTMF INFO, REFER/NOTIFY                                                                 |
 | `call/`  | `CallEngine`, `WebRtcEngine`, `CallService`, `CallConnectionService`, `TelecomOutgoing`, `CallActivity`, `DialpadActivity` | Call orchestration (incl. registration state), WebRTC audio, typed FGS, inbound Telecom integration, outbound addCall bridge (API 34+), in-call UI, dialer entry |
 | `push/`  | `RingEvent` (the router), `FcmReceiver`, `NtfySubscriptionService`                                                         | The two ring-while-closed transports, both converging on `RingEvent.route`                                                                                       |
-| `ui/`    | `Fab` (styleAsFab)                                                                                                         | The one floating-action look shared by the shell dial button and the dialer call button                                                                          |
+| `ui/`    | `Design` (`themeColor`, `iconButton`, `pillBackground`, `pulse`, …)                                                        | The design-token system behind every native surface: theme attrs resolved programmatically, one helper vocabulary                                                |
 
 Unit tests live under `app/src/test/` mirroring the packages; Robolectric
 tests MUST set `@Config(application = Application::class)` — the manifest

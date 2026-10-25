@@ -47,11 +47,16 @@ a real stack:
 ## Build and verify
 
 ```console
-nix develop                        # JDK 21 + Android SDK (platform 36, build-tools)
-nix develop -c ./gradlew assembleDebug      # debug APK
+nix develop                        # JDK 21 + Android SDK (platform 36, build-tools 34+35)
+nix develop -c ./gradlew assembleDebug      # debug APK (THE installable artifact)
+nix develop -c ./gradlew assembleRelease    # minified + resource-shrunk (R8); emits an UNSIGNED apk — not installable
 nix develop -c ./gradlew testDebugUnitTest  # protocol + Robolectric tests
 nix develop .#emulator -c bash scripts/emulator-train.sh   # self-serve device smoke
 ```
+
+There is no release signing config yet — the debug APK is the only
+artifact you can sideload. Signing is a deliberate future step, not an
+accident to fix.
 
 The FCM lane activates when `app/google-services.json` exists (drop
 in + add the google-services plugin); the ntfy lane works with zero
@@ -65,3 +70,18 @@ run prompts for it).
 Sideload first (the `USE_FULL_SCREEN_INTENT` default grant stays
 enabled for sideloaded calling apps — the favorable lane; Play would
 re-audit it). Play later, if ever.
+
+Install on a phone (Android 12+) in six steps:
+
+1. Rebuild fresh — `nix develop -c ./gradlew assembleDebug` — never
+   trust a stale APK.
+2. `adb install -r app/build/outputs/apk/debug/app-debug.apk` over USB
+   (or copy the APK over and open it).
+3. Grant mic + notification permissions; the real stack origin is the
+   shipped default — change it in the app's Settings if needed.
+4. Log in on the island inside the WebView; that session cookie drives
+   everything.
+5. Verify the badge turns REGISTERED, then dial via the FAB → dialpad.
+6. Kill the app and take an inbound call to prove the ntfy
+   ring-while-closed lane — with the app set to battery "Unrestricted"
+   (OEM battery killers are the #1 missed-ring cause).
