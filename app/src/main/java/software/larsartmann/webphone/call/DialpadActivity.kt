@@ -398,7 +398,7 @@ class DialpadActivity : AppCompatActivity() {
             finish()
             return
         }
-        if (CallEngine.registration.value != CallEngine.Registration.REGISTERED) {
+        if (CallEngine.registration.value.status != CallEngine.Registration.REGISTERED) {
             // The button is disabled already — this is the belt to its
             // suspenders: dialing unregistered would no-op silently.
             Toast.makeText(this, R.string.registration_off, Toast.LENGTH_SHORT).show()

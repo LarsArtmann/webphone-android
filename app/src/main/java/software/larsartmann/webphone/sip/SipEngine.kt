@@ -592,7 +592,7 @@ class SipEngine(
         val seq = cseq.incrementAndGet()
         leg.inviteCseq = seq
         leg.inviteVia = "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"
-        message.header("To")?.let { leg.toHeader = it }
+        challengeResponse.header("To")?.let { leg.toHeader = it }
         val authHeader = if (status == 407) "Proxy-Authorization" else "Authorization"
         val authorization = Digest.authorization(
             method = "INVITE",

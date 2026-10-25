@@ -8,7 +8,9 @@ import android.graphics.drawable.GradientDrawable
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Bundle
+import android.os.SystemClock
 import android.view.Gravity
+import android.view.HapticFeedbackConstants
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -54,6 +56,8 @@ class CallActivity : AppCompatActivity() {
 
     private var answerWhenMicGranted = false
     private var autoFinish: Job? = null
+    private var durationTimer: Job? = null
+    private var activeSince: Long? = null
 
     private val micPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -212,6 +216,8 @@ class CallActivity : AppCompatActivity() {
             renderAvatar(state.remoteParty)
         }
 
+        trackDuration(state)
+
         answerPadPulse?.cancel()
         answerPadPulse = null
         controls.removeAllViews()
@@ -225,6 +231,37 @@ class CallActivity : AppCompatActivity() {
         if (state.phase == CallEngine.Phase.ENDED) {
             CallService.stop(this)
             scheduleEndAutoFinish()
+        }
+    }
+
+    /** The in-call clock: ticks once a second while the line is up
+     *  ("Active · 12:34" — TalkBack hears the base label, the tick
+     *  is silent for it). Hold pauses nothing — the elapsed time is
+     *  the honest wall-clock of the call. */
+    private fun trackDuration(state: CallEngine.CallState) {
+        if (state.phase != CallEngine.Phase.ACTIVE) {
+            durationTimer?.cancel()
+            durationTimer = null
+            activeSince = null
+            return
+        }
+        if (activeSince == null) {
+            activeSince = SystemClock.elapsedRealtime()
+        }
+        if (durationTimer?.isActive == true) return
+        durationTimer = lifecycleScope.launch {
+            while (CallEngine.state.value.phase == CallEngine.Phase.ACTIVE) {
+                val elapsed = (SystemClock.elapsedRealtime() - (activeSince ?: return@launch)) / 1000
+                val minutes = elapsed / 60
+                val seconds = elapsed % 60
+                statusView.text = getString(
+                    R.string.status_active_duration,
+                    getString(if (CallEngine.state.value.muted) R.string.status_muted else R.string.status_active),
+                    minutes,
+                    seconds,
+                )
+                delay(1_000)
+            }
         }
     }
 
@@ -444,7 +481,7 @@ class CallActivity : AppCompatActivity() {
             minimumHeight = side
             isClickable = true
             isFocusable = true
-            contentDescription = label
+            contentDescription = if (active) "$label ${getString(R.string.state_on)}" else label
             setOnClickListener { onClick() }
         }
     }
@@ -506,7 +543,10 @@ class CallActivity : AppCompatActivity() {
                         isClickable = true
                         isFocusable = true
                         contentDescription = digit.toString()
-                        setOnClickListener { CallEngine.sendDtmf(digit) }
+                        setOnClickListener {
+                            performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
+                            CallEngine.sendDtmf(digit)
+                        }
                         layoutParams = LinearLayout.LayoutParams(
                             dp(48),
                             dp(48),

@@ -13,6 +13,10 @@
     <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- The ntfy lane's #1 missed-ring cause is OEM battery managers
+         killing the dataSync socket; the in-context exemption dialog
+         needs this declaration (sideload lane — no Play policy). -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <uses-feature android:name="android.hardware.microphone" android:required="true" />
 
@@ -85,6 +89,12 @@
             android:name=".call.CallService"
             android:exported="false"
             android:foregroundServiceType="microphone|phoneCall" />
+
+        <!-- The shade's call actions (CallStyle Answer/Decline, the
+             ongoing call's Hang up): explicit intents only. -->
+        <receiver
+            android:name=".call.CallNotificationReceiver"
+            android:exported="false" />
 
         <!-- The ntfy lane's subscription socket: a low-cost dataSync
              FGS holding the websocket to the self-hosted ntfy server

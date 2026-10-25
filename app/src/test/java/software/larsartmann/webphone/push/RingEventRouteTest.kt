@@ -11,8 +11,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import software.larsartmann.webphone.R
+import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.push.RingEvent.EXTRA_CALL_ID
 import software.larsartmann.webphone.push.RingEvent.EXTRA_FROM
+import software.larsartmann.webphone.sip.SipEngine
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -82,5 +84,44 @@ class RingEventRouteTest {
         RingEvent.route(app, "mystery_event", "Alice", "call-1")
         val telecom = app.getSystemService(Context.TELECOM_SERVICE) as TelecomManager
         assertTrue(shadowOf(telecom).allIncomingCalls.isEmpty())
+    }
+
+    /** The single-call policy at the router: a second ring while a
+     *  call is live must NOT add a second Telecom line — the human
+     *  gets a missed-call note instead (F095/F096). The engine's RINGING
+     *  state is claimed directly (no WebRTC on the JVM); it is stood
+     *  back down so the shared singleton stays free for the other
+     *  tests. */
+    @Test
+    fun `ring while a call is live posts a missed call instead of a second line`() {
+        val app = grantedApp()
+        try {
+            CallEngine.onIncomingCall(
+                SipEngine.IncomingInvite(
+                    callId = "live",
+                    fromUser = "100",
+                    fromDisplay = "Alice",
+                    sdp = "v=0",
+                    respondWith = { _, _ -> },
+                ),
+            )
+            RingEvent.route(app, "ring", "Bob", "call-2")
+
+            val telecom = app.getSystemService(Context.TELECOM_SERVICE) as TelecomManager
+            assertTrue(
+                shadowOf(telecom).allIncomingCalls.isEmpty(),
+                "a busy line must not grow a second incoming Telecom call",
+            )
+            val notifications = shadowOf(
+                app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
+            ).allNotifications
+            assertEquals(1, notifications.size)
+            assertEquals(
+                app.getString(R.string.missed_call),
+                notifications[0].extras.getString(android.app.Notification.EXTRA_TITLE),
+            )
+        } finally {
+            CallEngine.cancelRinging()
+        }
     }
 }
