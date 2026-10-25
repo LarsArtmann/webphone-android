@@ -1,6 +1,14 @@
 name: CI
 
+# The execution home is GitHub Actions (decision 2026-10-25): the
+# workflow already lives on the GitHub mirror, and a Forgejo-native
+# runner would be new infra for the same signal. The mirror's PAT
+# cannot push workflow-file changes (the `workflow` scope gap) —
+# pushes touching this directory go by hand over SSH until the PAT is
+# re-scoped.
 on:
+  push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
 

@@ -7,8 +7,8 @@
          these do not follow the theme. -->
     <color name="call_bg_top">#16292e</color>
     <color name="call_bg_bottom">#0a1518</color>
-    <color name="call_answer">#2ebd6b</color>
-    <color name="call_danger">#e5484d</color>
+    <color name="call_answer">#219a56</color>
+    <color name="call_danger">#d6363b</color>
     <color name="call_text">#E6F0EE</color>
     <color name="call_muted">#93A8A6</color>
     <color name="call_avatar_bg">#1F3A40</color>
@@ -36,7 +36,7 @@
     <color name="wp_surface">#FFFFFF</color>
     <color name="wp_surface_raised">#EAF0EF</color>
     <color name="wp_on_surface">#132729</color>
-    <color name="wp_on_surface_muted">#5B7175</color>
+    <color name="wp_on_surface_muted">#526870</color>
     <color name="wp_outline">#D8E2E0</color>
     <color name="wp_accent">#0F766E</color>
     <color name="wp_on_accent">#FFFFFF</color>
