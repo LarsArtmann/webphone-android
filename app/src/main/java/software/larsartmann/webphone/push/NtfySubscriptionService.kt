@@ -34,6 +34,12 @@ class NtfySubscriptionService : Service() {
     private var reconnectAttempts = 0
     @Volatile private var reconnecting = false
 
+    /** Set by the explicit stop path AND onDestroy: the pending
+     *  reconnect thread must not resurrect the subscription after the
+     *  service was told to die (a stop leak — the socket came back and
+     *  rang forever with no owner). */
+    @Volatile private var stopped = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -46,12 +52,14 @@ class NtfySubscriptionService : Service() {
         startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
 
         if (intent?.action == ACTION_STOP) {
+            stopped = true
             socket?.close(1000, "stopped")
             socket = null
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return START_NOT_STICKY
         }
+        stopped = false
 
         // Sticky restart delivers a NULL intent — the server/topic
         // must survive in prefs or the de-Googled push lane dies
@@ -120,18 +128,19 @@ class NtfySubscriptionService : Service() {
     }
 
     private fun scheduleReconnect(server: String, topic: String) {
-        if (reconnecting) return
+        if (reconnecting || stopped) return
         reconnecting = true
         reconnectAttempts += 1
         val backoff = minOf(60_000L, 1_000L shl (reconnectAttempts - 1).coerceAtMost(6))
         Thread {
             Thread.sleep(backoff)
             reconnecting = false
-            if (socket == null) subscribe(server, topic)
+            if (!stopped && socket == null) subscribe(server, topic)
         }.start()
     }
 
     override fun onDestroy() {
+        stopped = true
         socket?.close(1000, "destroyed")
         socket = null
         super.onDestroy()
