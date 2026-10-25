@@ -318,7 +318,7 @@ internal class WebSurface(private val activity: ComponentActivity) {
 
         override fun onConsoleMessage(console: ConsoleMessage): Boolean {
             val line = "[${console.sourceId()}:${console.lineNumber()}] ${console.message()}"
-            when (console.level()) {
+            when (console.messageLevel()) {
                 ConsoleMessage.MessageLevel.ERROR -> Log.e(TAG, line)
                 ConsoleMessage.MessageLevel.WARNING -> Log.w(TAG, line)
                 else -> Log.d(TAG, line)
