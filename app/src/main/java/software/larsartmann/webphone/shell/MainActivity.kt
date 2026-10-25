@@ -15,6 +15,8 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -60,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chrome: LinearLayout
     private var linePulse: ValueAnimator? = null
     private var requestedBatteryExemption = false
+    private var backInvoker: OnBackInvokedCallback? = null
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -69,6 +72,25 @@ class MainActivity : AppCompatActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         webSurface = WebSurface(this)
+
+        // Predictive back (API 33+): the manifest enables
+        // enableOnBackInvokedCallback, which SILENCES onBackPressed —
+        // without this callback the system back never reached the
+        // WebView's tab history (found by review, 2026-10-25).
+        if (Build.VERSION.SDK_INT >= 33) {
+            val invoker = OnBackInvokedCallback {
+                if (::webSurface.isInitialized && webSurface.canGoBack()) {
+                    webSurface.goBack()
+                } else {
+                    finish()
+                }
+            }
+            backInvoker = invoker
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                invoker,
+            )
+        }
 
         // The line pill: the phone vernacular "line light" — a live
         // dot plus a short label, dark glass so it reads over any page.
@@ -259,13 +281,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        backInvoker?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
         linePulse?.cancel()
         CallLayer.shutdown()
         if (::webSurface.isInitialized) webSurface.destroy()
         super.onDestroy()
     }
 
-    // The WebView back stack, not the activity's: tab nav inside the
+    // API 31/32 back path (33+ rides the OnBackInvokedCallback): the
+    // WebView back stack, not the activity's — tab nav inside the
     // island is the product's own navigation.
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {

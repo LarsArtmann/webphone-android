@@ -1,6 +1,8 @@
 package software.larsartmann.webphone.shell
 
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
 import androidx.test.core.app.ActivityScenario
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -11,6 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
@@ -61,6 +64,57 @@ class WebSurfaceTest {
                     "the fresh WebView re-aims the configured origin",
                 )
                 assertEquals(2, surface.container.childCount, "webview + offline overlay")
+            }
+        }
+    }
+
+    @Test
+    fun `navigation hands foreign origins to the system and keeps the origin in-shell`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val surface = activity.webSurface
+
+                val foreign = surface.navigateOut(Uri.parse("https://example.com/invoice.pdf"))
+                assertTrue(foreign, "a foreign navigation is consumed by the hand-off")
+                val started = shadowOf(activity).nextStartedActivity
+                assertEquals(Intent.ACTION_VIEW, started?.action, "the hand-off is a system view intent")
+                assertEquals("example.com", started?.data?.host, "the hand-off carries the foreign URL")
+
+                val before = shadowOf(activity).nextStartedActivity
+                assertFalse(
+                    surface.navigateOut(Uri.parse("https://pbx.artmann.tech/messages")),
+                    "a same-origin navigation stays in the shell",
+                )
+                assertSame(
+                    before,
+                    shadowOf(activity).nextStartedActivity,
+                    "no system intent for an in-shell navigation",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `transport failures raise the overlay only for the main frame`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val surface = activity.webSurface
+                assertFalse(surface.offlineVisible(), "overlay starts hidden")
+
+                surface.onMainFrameTransportFailure(false)
+                assertFalse(
+                    surface.offlineVisible(),
+                    "a sub-resource failure is routine — never the overlay",
+                )
+
+                surface.onMainFrameTransportFailure(true)
+                assertTrue(
+                    surface.offlineVisible(),
+                    "a main-frame transport failure raises the overlay",
+                )
+
+                surface.retry()
+                assertFalse(surface.offlineVisible(), "retry dismisses the overlay")
             }
         }
     }

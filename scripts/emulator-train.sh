@@ -81,7 +81,9 @@ emulator -avd "$AVD_NAME" \
 	-no-window -no-audio -no-boot-anim -no-snapshot \
 	-gpu swiftshader_indirect &
 EMU_PID=$!
-trap 'kill "$EMU_PID" 2>/dev/null || true' EXIT
+# The emulator daemonizes: killing the launcher PID can miss it. The
+# serial-based `emu kill` is the reliable path once the serial exists.
+trap 'kill "$EMU_PID" 2>/dev/null || true; [ -n "${SERIAL:-}" ] && adb -s "$SERIAL" emu kill 2>/dev/null || true' EXIT
 
 # adb discipline (the dual-server trap): pin every call to this boot's
 # serial; fail fast on a foreign server or a second device.

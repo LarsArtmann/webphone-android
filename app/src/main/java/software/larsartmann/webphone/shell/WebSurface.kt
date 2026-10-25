@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Build
+import android.provider.MediaStore
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -150,6 +152,7 @@ internal class WebSurface(private val activity: ComponentActivity) {
     private var loadedOrigin: String? = null
     private var pendingPicker: ValueCallback<Array<Uri>>? = null
     private val offlineOverlay: LinearLayout
+    private lateinit var offlineBody: TextView
 
     private val pickerLauncher =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -221,6 +224,7 @@ internal class WebSurface(private val activity: ComponentActivity) {
             text = activity.getString(R.string.web_offline_body, App.origin)
             setPadding(0, activity.dp(8), 0, 0)
         }
+        offlineBody = body
         val retry = AppCompatButton(activity).apply {
             background = activity.pillBackground(activity.themeColor(R.attr.wpAccent))
             setTextColor(ContextCompat.getColor(activity, R.color.wp_on_accent))
@@ -260,17 +264,8 @@ internal class WebSurface(private val activity: ComponentActivity) {
 
     private inner class ShellWebViewClient : WebViewClient() {
 
-        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            val verdict = navigationVerdict(request.url, Uri.parse(App.origin))
-            return when (verdict) {
-                is NavigationVerdict.LoadInShell -> false
-                is NavigationVerdict.HandOff -> {
-                    runCatching { activity.startActivity(verdict.intent) }
-                        .onFailure { Log.w(TAG, "no handler for ${request.url}: ${it.message}") }
-                    true
-                }
-            }
-        }
+        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+            navigateOut(request.url)
 
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
             hideOffline()
@@ -320,11 +315,7 @@ internal class WebSurface(private val activity: ComponentActivity) {
             // NEXT file chooser until it times out.
             pendingPicker?.onReceiveValue(null)
             pendingPicker = filePathCallback
-            val choose = fileChooserParams.createIntent().apply {
-                if (fileChooserParams.mode == FileChooserParams.MODE_OPEN_MULTIPLE) {
-                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                }
-            }
+            val choose = chooseIntent(fileChooserParams)
             return runCatching { pickerLauncher.launch(choose) }.fold(
                 onSuccess = { true },
                 onFailure = {
@@ -343,13 +334,39 @@ internal class WebSurface(private val activity: ComponentActivity) {
         }
 
         override fun onConsoleMessage(console: ConsoleMessage): Boolean {
+            // Page chatter is a debugging aid: verbose levels only in
+            // debuggable builds; errors always (a production breakage
+            // must still reach bugreports).
+            val verbose = activity.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
             val line = "[${console.sourceId()}:${console.lineNumber()}] ${console.message()}"
-            when (console.messageLevel()) {
-                ConsoleMessage.MessageLevel.ERROR -> Log.e(TAG, line)
-                ConsoleMessage.MessageLevel.WARNING -> Log.w(TAG, line)
-                else -> Log.d(TAG, line)
+            when {
+                console.messageLevel() == ConsoleMessage.MessageLevel.ERROR -> Log.e(TAG, line)
+                verbose && console.messageLevel() == ConsoleMessage.MessageLevel.WARNING -> Log.w(TAG, line)
+                verbose -> Log.d(TAG, line)
             }
             return true
+        }
+
+        /** API 33+ routes image-only inputs through the system photo
+         *  picker (the native look, no storage permission); everything
+         *  else — and older versions — keeps the classic chooser. */
+        private fun chooseIntent(params: FileChooserParams): Intent {
+            if (Build.VERSION.SDK_INT >= 33) {
+                val accepts = params.acceptTypes.orEmpty()
+                val imageOnly = accepts.isNotEmpty() && accepts.all { it.startsWith("image/") }
+                if (imageOnly) {
+                    return Intent(MediaStore.ACTION_PICK_IMAGES).apply {
+                        if (params.mode == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                            putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit())
+                        }
+                    }
+                }
+            }
+            return params.createIntent().apply {
+                if (params.mode == FileChooserParams.MODE_OPEN_MULTIPLE) {
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+            }
         }
     }
 
@@ -410,6 +427,10 @@ internal class WebSurface(private val activity: ComponentActivity) {
     }
 
     internal fun showOffline() {
+        // Re-resolve the origin at SHOW time: the overlay outlives
+        // Settings changes (its body text was frozen at build time and
+        // pointed at a stale stack).
+        offlineBody.text = activity.getString(R.string.web_offline_body, App.origin)
         offlineOverlay.visibility = View.VISIBLE
     }
 
@@ -421,6 +442,22 @@ internal class WebSurface(private val activity: ComponentActivity) {
 
     /** Test seam: the LIVE WebView instance (renderer rebuilds swap it). */
     internal fun currentWebView(): WebView = webView
+
+    /** POLICY seam (unit-tested; the Android callback is a one-line
+     *  delegate): the navigation verdict APPLIED — same-origin stays
+     *  in the shell (`false`), everything else starts the system
+     *  hand-off and reports `true` (consumed). */
+    internal fun navigateOut(url: Uri): Boolean {
+        val verdict = navigationVerdict(url, Uri.parse(App.origin))
+        return when (verdict) {
+            is NavigationVerdict.LoadInShell -> false
+            is NavigationVerdict.HandOff -> {
+                runCatching { activity.startActivity(verdict.intent) }
+                    .onFailure { Log.w(TAG, "no handler for $url: ${it.message}") }
+                true
+            }
+        }
+    }
 
     /** POLICY seam (unit-tested; the Android callback is a one-line
      *  delegate): only a main-frame TRANSPORT failure (no route, DNS,
