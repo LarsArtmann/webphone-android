@@ -185,7 +185,7 @@ class DialpadActivity : AppCompatActivity() {
             }
             // Phone-dialer geometry: the pad floats centered between
             // the number block and the actions anchored at the bottom.
-            addView(View(this), LinearLayout.LayoutParams(0, 0, 1f))
+            addView(View(this@DialpadActivity), LinearLayout.LayoutParams(0, 0, 1f))
             addView(
                 keys,
                 LinearLayout.LayoutParams(
@@ -193,7 +193,7 @@ class DialpadActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                 ).apply { gravity = Gravity.CENTER_HORIZONTAL },
             )
-            addView(View(this), LinearLayout.LayoutParams(0, 0, 1f))
+            addView(View(this@DialpadActivity), LinearLayout.LayoutParams(0, 0, 1f))
             addView(
                 actions,
                 LinearLayout.LayoutParams(

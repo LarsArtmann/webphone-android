@@ -297,7 +297,13 @@ class CallActivity : AppCompatActivity() {
                 R.drawable.ic_speaker,
                 active = speakerActive(),
                 label = getString(R.string.speaker),
-            ) { toggleSpeaker() },
+            ) {
+                toggleSpeaker()
+                // The speaker is local audio state, not CallEngine
+                // state — no collector fires, so re-render for the
+                // lit/unlit feedback.
+                render(CallEngine.state.value)
+            },
         )
         toggles.addView(View(this), LinearLayout.LayoutParams(dp(20), 1))
         toggles.addView(
