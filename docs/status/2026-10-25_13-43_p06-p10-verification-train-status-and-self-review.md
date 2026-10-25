@@ -48,8 +48,8 @@
      filled danger surface exists.
 3. **P08 — first-push CI investigation (F041):** the `push` trigger VERIFIED
    (both 09:25/09:33 runs + my 12:31 run fired). Jobs cannot start:
-   *"recent account payments have failed or your spending limit needs to be
-   increased"* — GitHub billing, owner-only, NO workflow bug. Documented in
+   _"recent account payments have failed or your spending limit needs to be
+   increased"_ — GitHub billing, owner-only, NO workflow bug. Documented in
    TODO_LIST + plan errata.
 4. **P06 subset — emulator verification pass, via the NEW
    `scripts/emulator-verify.sh`** (committed; owns its emulator lifetime,
@@ -215,4 +215,4 @@
 
 ---
 
-*Written by the P06–P10 session; auto-commit daemon will sweep this file. Not manually committed (harness rule: no unprompted commits). Awaiting instructions.*
+_Written by the P06–P10 session; auto-commit daemon will sweep this file. Not manually committed (harness rule: no unprompted commits). Awaiting instructions._
