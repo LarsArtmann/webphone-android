@@ -62,3 +62,6 @@ result-*
 .direnv/
 # <<< buildflow-managed (.gitignore) <<<
 .kotlin/
+
+# Session scratch evidence (emulator shots, logcats, probes) — findings live in docs/
+work/
