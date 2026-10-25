@@ -1,7 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Brand constants: identical in both modes. -->
     <color name="ic_launcher_background">#0f766e</color>
-    <color name="accent">#0f766e</color>
-    <color name="status_connected">#4ade80</color>
-    <color name="status_pending">#9ca3af</color>
+
+    <!-- The call screen is ALWAYS dark (calls happen in dim rooms);
+         these do not follow the theme. -->
+    <color name="call_bg_top">#16292e</color>
+    <color name="call_bg_bottom">#0a1518</color>
+    <color name="call_answer">#2ebd6b</color>
+    <color name="call_danger">#e5484d</color>
+    <color name="call_text">#E6F0EE</color>
+    <color name="call_muted">#93A8A6</color>
+    <color name="call_avatar_bg">#1F3A40</color>
+    <color name="call_avatar_fg">#2DD4BF</color>
+    <color name="call_toggle_bg">#1B2E32</color>
+    <color name="call_toggle_fg">#C9D8D6</color>
+    <color name="call_toggle_active_bg">#10312E</color>
+    <color name="call_toggle_active_fg">#2DD4BF</color>
+    <color name="call_card">#142428</color>
+    <color name="call_key_bg">#1B2E32</color>
+    <color name="call_decline_bg">#3A2225</color>
+    <color name="call_decline_fg">#FF9B9E</color>
+
+    <!-- The floating shell chrome sits over the stack's web pages, so
+         it is fixed dark glass in both modes — legible over any page. -->
+    <color name="chrome_glass">#E6121F24</color>
+    <color name="chrome_glass_pressed">#F01A2C33</color>
+    <color name="chrome_on_glass">#E6F0EE</color>
+    <color name="chrome_on_glass_muted">#93A8A6</color>
+    <color name="chrome_dot_on">#4ADE80</color>
+    <color name="chrome_dot_pending">#8FA3AB</color>
+
+    <!-- Light mode palette (the theme attrs point at these). -->
+    <color name="wp_background">#F5F8F7</color>
+    <color name="wp_surface">#FFFFFF</color>
+    <color name="wp_surface_raised">#EAF0EF</color>
+    <color name="wp_on_surface">#132729</color>
+    <color name="wp_on_surface_muted">#5B7175</color>
+    <color name="wp_outline">#D8E2E0</color>
+    <color name="wp_accent">#0F766E</color>
+    <color name="wp_on_accent">#FFFFFF</color>
+    <color name="wp_accent_subtle">#DDF2EF</color>
+    <color name="wp_status_on">#15803D</color>
+    <color name="wp_status_pending">#64748B</color>
+    <color name="wp_danger">#DC2626</color>
+    <color name="wp_on_danger">#FFFFFF</color>
 </resources>

@@ -47,17 +47,15 @@ class App : Application() {
         const val PREFS_SETTINGS = "webphone-settings"
         private const val KEY_ORIGIN = "origin"
 
-        /** The shipped fallback: never a real stack. The operator sets
-         *  the origin once in Settings (persisted; read back at process
-         *  start). A saved origin wins over this constant. */
-        const val DEFAULT_ORIGIN = "https://pbx.example.org"
+        /** The shipped default: the operator's live stack. A saved
+         *  origin (Settings, persisted, read back at process start)
+         *  wins over this constant. */
+        const val DEFAULT_ORIGIN = "https://pbx.artmann.tech"
 
         /** The stack origin every island request, the SIP WSS URL and
          *  the ntfy lane hang off. Volatile: Settings rewrites it
          *  mid-process and CallLayer's next wire must see the new one. */
         @Volatile var origin: String = DEFAULT_ORIGIN
-
-        fun originIsDefault(): Boolean = origin == DEFAULT_ORIGIN
 
         /** Persist a validated origin and make it live immediately. */
         fun saveOrigin(context: Context, value: String) {

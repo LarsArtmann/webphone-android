@@ -1,24 +1,28 @@
 package software.larsartmann.webphone.shell
 
 import android.Manifest
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -27,7 +31,14 @@ import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.call.DialpadActivity
-import software.larsartmann.webphone.ui.styleAsFab
+import software.larsartmann.webphone.ui.circleBackground
+import software.larsartmann.webphone.ui.dp
+import software.larsartmann.webphone.ui.dpf
+import software.larsartmann.webphone.ui.iconButton
+import software.larsartmann.webphone.ui.pillBackground
+import software.larsartmann.webphone.ui.pulse
+import software.larsartmann.webphone.ui.styleText
+import software.larsartmann.webphone.ui.themeColor
 
 /**
  * The shell: the stack origin's own pages render in the WebView (the
@@ -35,18 +46,22 @@ import software.larsartmann.webphone.ui.styleAsFab
  * History/Contacts/Settings keep working exactly as in the browser),
  * while the native call layer (SIP + WebRTC + Telecom) registers the
  * same extension over the same WSS gateway — the call contract the
- * platform decision moved into Kotlin. The badge + dial button are
- * the native chrome: calling is native, everything else is web.
+ * platform decision moved into Kotlin. The floating chrome (line pill
+ * + dial + settings) is the only native surface: calling is native,
+ * everything else is web. The chrome is fixed dark glass so it stays
+ * legible over any page the stack renders.
  *
- * First run: if the stack origin is still the shipped fallback, a
- * one-time prompt routes to Settings — the app is useless against an
- * origin it invented.
+ * The shipped default origin is the operator's live stack; Settings
+ * re-points it (persisted, live teardown on save).
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
-    private lateinit var statusBadge: TextView
+    private lateinit var statusDot: View
+    private lateinit var statusLabel: TextView
+    private lateinit var chrome: LinearLayout
     private var loadedOrigin: String? = null
+    private var linePulse: ValueAnimator? = null
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -54,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         CookieManager.getInstance().setAcceptCookie(true)
 
@@ -71,22 +87,73 @@ class MainActivity : AppCompatActivity() {
         // (found by the first emulator smoke, 2026-10-24).
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, false)
 
-        statusBadge = TextView(this).apply { textSize = 14f }
-        val dial = Button(this).apply {
-            text = getString(R.string.dial)
-            styleAsFab()
+        // The line pill: the phone vernacular "line light" — a live
+        // dot plus a short label, dark glass so it reads over any page.
+        statusDot = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(8), dp(8)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginEnd = dp(8)
+            }
         }
-        val settings = Button(this).apply {
-            text = getString(R.string.settings)
-            textSize = 12f
+        statusLabel = TextView(this).apply {
+            styleText(13f, ContextCompat.getColor(this@MainActivity, R.color.chrome_on_glass), medium = true)
         }
-        val chrome = LinearLayout(this).apply {
+        val linePill = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = pillBackground(ContextCompat.getColor(this@MainActivity, R.color.chrome_glass))
+            setPadding(dp(14), dp(9), dp(14), dp(9))
+            addView(statusDot)
+            addView(statusLabel)
+        }
+
+        val dialFab = iconButton(
+            iconRes = R.drawable.ic_call,
+            iconTint = themeColor(R.attr.wpOnAccent),
+            backgroundColor = themeColor(R.attr.wpAccent),
+            sizeDp = 56,
+            contentDescriptionText = getString(R.string.dial),
+        ).apply { elevation = dpf(6f) }
+
+        val settingsButton = iconButton(
+            iconRes = R.drawable.ic_settings,
+            iconTint = ContextCompat.getColor(this, R.color.chrome_on_glass),
+            backgroundColor = ContextCompat.getColor(this, R.color.chrome_glass),
+            sizeDp = 44,
+            contentDescriptionText = getString(R.string.settings),
+        )
+
+        chrome = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.END
-            addView(statusBadge)
-            addView(dial)
-            addView(settings)
+            addView(
+                linePill,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { bottomMargin = dp(12) },
+            )
+            addView(dialFab)
+            addView(
+                settingsButton,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = dp(12) },
+            )
         }
+        // Float above the system bars: insets become chrome margins.
+        ViewCompat.setOnApplyWindowInsetsListener(chrome) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            (view.layoutParams as FrameLayout.LayoutParams).setMargins(
+                dp(16),
+                bars.top + dp(16),
+                dp(16),
+                bars.bottom + dp(16),
+            )
+            insets
+        }
+
         val root = FrameLayout(this)
         root.addView(webView)
         root.addView(
@@ -95,15 +162,13 @@ class MainActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 Gravity.BOTTOM or Gravity.END,
-            ).apply { setMargins(48, 48, 48, 96) },
+            ).apply { setMargins(dp(16), dp(16), dp(16), dp(16)) },
         )
 
         setContentView(root)
         loadOriginIfChanged()
-        dial.setOnClickListener { startActivity(Intent(this, DialpadActivity::class.java)) }
-        settings.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
-
-        maybePromptForOrigin()
+        dialFab.setOnClickListener { startActivity(Intent(this, DialpadActivity::class.java)) }
+        settingsButton.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -137,23 +202,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderRegistration(registration: CallEngine.Registration) {
-        statusBadge.text = getString(
+        statusLabel.text = getString(
             when (registration) {
                 CallEngine.Registration.REGISTERED -> R.string.registration_registered
                 CallEngine.Registration.CONNECTING -> R.string.registration_connecting
                 CallEngine.Registration.OFF -> R.string.registration_off
             },
         )
-        statusBadge.setTextColor(
+        statusDot.background = circleBackground(
             ContextCompat.getColor(
                 this,
                 if (registration == CallEngine.Registration.REGISTERED) {
-                    R.color.status_connected
+                    R.color.chrome_dot_on
                 } else {
-                    R.color.status_pending
+                    R.color.chrome_dot_pending
                 },
             ),
         )
+        // The signature moment: the line light breathes while the
+        // line is up (skipped entirely when animations are off).
+        linePulse?.cancel()
+        linePulse = if (registration == CallEngine.Registration.REGISTERED) {
+            statusDot.alpha = 1f
+            pulse(statusDot, this)
+        } else {
+            statusDot.alpha = 1f
+            null
+        }
+
         // The ring lane is dead without the notification grant on
         // API 33+ — ask in context (post-login, i.e. once registration
         // proves the session works), not on a cold launch the user
@@ -167,22 +243,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun maybePromptForOrigin() {
-        if (!App.originIsDefault()) return
-        val prefs = getSharedPreferences(App.PREFS_SETTINGS, MODE_PRIVATE)
-        if (prefs.getBoolean(KEY_ORIGIN_PROMPTED, false)) return
-        prefs.edit().putBoolean(KEY_ORIGIN_PROMPTED, true).apply()
-        AlertDialog.Builder(this)
-            .setTitle(R.string.first_run_title)
-            .setMessage(R.string.first_run_message)
-            .setPositiveButton(R.string.first_run_set_origin) { _, _ ->
-                startActivity(Intent(this, SettingsActivity::class.java))
-            }
-            .setNegativeButton(R.string.later, null)
-            .show()
-    }
-
     override fun onDestroy() {
+        linePulse?.cancel()
         CallLayer.shutdown()
         if (::webView.isInitialized) webView.destroy()
         super.onDestroy()
@@ -193,9 +255,5 @@ class MainActivity : AppCompatActivity() {
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         if (::webView.isInitialized && webView.canGoBack()) webView.goBack() else super.onBackPressed()
-    }
-
-    private companion object {
-        const val KEY_ORIGIN_PROMPTED = "origin-prompted"
     }
 }

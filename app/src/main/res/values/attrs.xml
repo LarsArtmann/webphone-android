@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The WebPhone design tokens. Programmatic UI resolves these
+         through the theme, so day/night follows the system with a
+         single source of truth per hue. -->
+    <attr name="wpBackground" format="color" />
+    <attr name="wpSurface" format="color" />
+    <attr name="wpSurfaceRaised" format="color" />
+    <attr name="wpOnSurface" format="color" />
+    <attr name="wpOnSurfaceMuted" format="color" />
+    <attr name="wpOutline" format="color" />
+    <attr name="wpAccent" format="color" />
+    <attr name="wpOnAccent" format="color" />
+    <attr name="wpAccentSubtle" format="color" />
+    <attr name="wpStatusOn" format="color" />
+    <attr name="wpStatusPending" format="color" />
+    <attr name="wpDanger" format="color" />
+    <attr name="wpOnDanger" format="color" />
+</resources>

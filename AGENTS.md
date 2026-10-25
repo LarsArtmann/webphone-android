@@ -12,7 +12,7 @@ silently replaces.
 **Status: v0.1 scaffold, first runtime smoke done.** Load-bearing code is
 implemented but untested against LIVE infrastructure (the README
 "honesty contract" section lists the markers). There IS now: a JVM test
-source set (26 tests: protocol unit tests + Robolectric smoke) and a CI
+source set (25 tests: protocol unit tests + Robolectric smoke) and a CI
 workflow (never run — no git remote configured). First emulator smoke
 (install + launch) passed 2026-10-24.
 
@@ -134,9 +134,11 @@ events: `ring` and `ring_end`.
   signing config is a deliberate future step, not an accident to fix.
 - **Stack origin**: persisted in Settings (`webphone-settings` prefs;
   `SettingsActivity` validates `https://` and tears the call layer
-  down on save). The shipped default `https://pbx.example.org` is a
-  NON-place; first run prompts for the real origin. Cleartext is
-  disabled (`usesCleartextTraffic="false"`), so the origin must be HTTPS.
+  down on save). The shipped default is the operator's live stack
+  (`https://pbx.artmann.tech`) — no first-run prompt; anyone pointing
+  elsewhere uses Settings. A saved origin wins over the default.
+  Cleartext is disabled (`usesCleartextTraffic="false"`), so the
+  origin must be HTTPS.
 - **One cookie store**: `SessionApi`'s OkHttp client bridges through the
   WebView's `CookieManager` (read AND write). The island login mints
   there; API calls read the same jar. Never add a second cookie store

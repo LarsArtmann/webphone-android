@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark mode palette: petrol, teal-tinted — never pure black. -->
+    <color name="wp_background">#0C1517</color>
+    <color name="wp_surface">#121F22</color>
+    <color name="wp_surface_raised">#1B2E32</color>
+    <color name="wp_on_surface">#E6F0EE</color>
+    <color name="wp_on_surface_muted">#93A8A6</color>
+    <color name="wp_outline">#24393D</color>
+    <color name="wp_accent">#2DD4BF</color>
+    <color name="wp_on_accent">#06201C</color>
+    <color name="wp_accent_subtle">#10312E</color>
+    <color name="wp_status_on">#4ADE80</color>
+    <color name="wp_status_pending">#8FA3AB</color>
+    <color name="wp_danger">#E5484D</color>
+    <color name="wp_on_danger">#FFFFFF</color>
+</resources>

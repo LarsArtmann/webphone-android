@@ -6,22 +6,35 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
-import android.widget.Button
+import android.view.View
+import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.push.RingEvent
-import software.larsartmann.webphone.ui.styleAsFab
+import software.larsartmann.webphone.ui.circleBackground
+import software.larsartmann.webphone.ui.dp
+import software.larsartmann.webphone.ui.iconButton
+import software.larsartmann.webphone.ui.mediumTypeface
+import software.larsartmann.webphone.ui.pillBackground
+import software.larsartmann.webphone.ui.styleText
+import software.larsartmann.webphone.ui.themeColor
+import software.larsartmann.webphone.ui.withRipple
 
 /**
  * The dialer entry — the only way a call starts from this side:
@@ -32,6 +45,9 @@ import software.larsartmann.webphone.ui.styleAsFab
 class DialpadActivity : AppCompatActivity() {
 
     private lateinit var numberView: EditText
+    private lateinit var statusDot: View
+    private lateinit var statusLabel: TextView
+    private lateinit var callPill: LinearLayout
 
     private val micPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -40,60 +56,91 @@ class DialpadActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         numberView = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_PHONE
-            textSize = 28f
+            textSize = 34f
+            typeface = mediumTypeface
             gravity = Gravity.CENTER
             hint = "100"
+            setHintTextColor(themeColor(R.attr.wpOnSurfaceMuted))
+            setTextColor(themeColor(R.attr.wpOnSurface))
+            letterSpacing = 0.03f
+            background = null
+            setPadding(0, dp(8), 0, dp(8))
         }
 
-        val keys = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val density = resources.displayMetrics.density
+        statusDot = View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(8), dp(8)).apply {
+                gravity = Gravity.CENTER_VERTICAL
+                marginEnd = dp(8)
+            }
+        }
+        statusLabel = TextView(this).apply {
+            styleText(13f, themeColor(R.attr.wpOnSurfaceMuted))
+        }
+        val statusRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            addView(statusDot)
+            addView(statusLabel)
+        }
+
+        val keys = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+        }
         for (rowDigits in listOf("123", "456", "789", "*0#")) {
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER
             }
             for (digit in rowDigits) {
-                row.addView(
-                    Button(this).apply {
-                        text = digit.toString()
-                        textSize = 24f
-                        setOnClickListener { numberView.append(digit.toString()) }
-                        minimumWidth = (48 * density).toInt()
-                        minimumHeight = (48 * density).toInt()
-                        layoutParams = LinearLayout.LayoutParams(
-                            0,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            1f,
-                        )
-                    },
-                )
+                row.addView(digitKey(digit))
             }
             keys.addView(
                 row,
                 LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT,
-                ),
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = dp(10) },
             )
         }
 
-        val call = Button(this).apply {
-            text = getString(R.string.call)
-            styleAsFab()
-        }
-        val recentsRow = recentsChipsRow()
-        val registrationHint = TextView(this).apply {
+        callPill = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            textSize = 14f
+            background = pillBackground(themeColor(R.attr.wpAccent)).withRipple(this@DialpadActivity)
+            minimumHeight = dp(56)
+            setPadding(dp(26), 0, dp(26), 0)
+            isClickable = true
+            isFocusable = true
+            addView(
+                AppCompatImageView(this@DialpadActivity).apply {
+                    setImageResource(R.drawable.ic_call)
+                    setColorFilter(themeColor(R.attr.wpOnAccent))
+                    layoutParams = LinearLayout.LayoutParams(dp(20), dp(20))
+                },
+            )
+            addView(
+                TextView(this@DialpadActivity).apply {
+                    text = getString(R.string.call)
+                    styleText(16f, themeColor(R.attr.wpOnAccent), medium = true)
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply { marginStart = dp(10) }
+                },
+            )
         }
-        val backspace = Button(this).apply {
-            text = "\u232B"
-            contentDescription = getString(R.string.delete_last_digit)
-            minimumWidth = (48 * density).toInt()
-            minimumHeight = (48 * density).toInt()
+        val backspace = iconButton(
+            iconRes = R.drawable.ic_backspace,
+            iconTint = themeColor(R.attr.wpOnSurface),
+            backgroundColor = themeColor(R.attr.wpSurfaceRaised),
+            sizeDp = 56,
+            contentDescriptionText = getString(R.string.delete_last_digit),
+        ).apply {
             setOnClickListener {
                 val text = numberView.text
                 if (text.isNotEmpty()) text.delete(text.length - 1, text.length)
@@ -103,48 +150,205 @@ class DialpadActivity : AppCompatActivity() {
                 true
             }
         }
-        val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        actions.addView(call, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 3f))
-        actions.addView(backspace, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+
+        val actions = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(18), 0, 0)
+            addView(
+                callPill,
+                LinearLayout.LayoutParams(0, dp(56), 1f).apply { marginEnd = dp(12) },
+            )
+            addView(backspace)
+        }
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(48, 96, 48, 48)
+            setBackgroundColor(themeColor(R.attr.wpBackground))
+            setPadding(dp(24), dp(16), dp(24), dp(20))
             addView(numberView)
-            addView(registrationHint)
-            recentsRow?.let { addView(it) }
-            addView(keys)
-            addView(actions)
+            addView(
+                statusRow,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = dp(2) },
+            )
+            recentsSection()?.let {
+                addView(
+                    it,
+                    LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    ).apply { topMargin = dp(14) },
+                )
+            }
+            addView(
+                keys,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = dp(16); gravity = Gravity.CENTER_HORIZONTAL },
+            )
+            addView(
+                actions,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = dp(20) },
+            )
+        }
+        // Edge-to-edge: the system bars become the root's padding.
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(dp(24), bars.top + dp(16), dp(24), bars.bottom + dp(20))
+            insets
         }
         setContentView(root)
 
-        call.setOnClickListener { maybePlaceCall() }
+        callPill.setOnClickListener { maybePlaceCall() }
 
         // The dialer is honest about the PBX: no Call button while the
         // SIP registration is down (dialing would no-op silently).
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 CallEngine.registration.collect { registration ->
-                    call.isEnabled = registration == CallEngine.Registration.REGISTERED
-                    registrationHint.text = getString(
+                    val registered = registration == CallEngine.Registration.REGISTERED
+                    callPill.isEnabled = registered
+                    callPill.alpha = if (registered) 1f else 0.4f
+                    statusLabel.text = getString(
                         when (registration) {
                             CallEngine.Registration.REGISTERED -> R.string.registration_registered
                             CallEngine.Registration.CONNECTING -> R.string.registration_connecting
                             CallEngine.Registration.OFF -> R.string.registration_off
                         },
                     )
-                    registrationHint.setTextColor(
-                        ContextCompat.getColor(
-                            this@DialpadActivity,
-                            if (registration == CallEngine.Registration.REGISTERED) {
-                                R.color.status_connected
-                            } else {
-                                R.color.status_pending
-                            },
+                    statusDot.background = circleBackground(
+                        themeColor(
+                            if (registered) R.attr.wpStatusOn else R.attr.wpStatusPending,
                         ),
                     )
                 }
             }
+        }
+    }
+
+    /** One circular dial-pad key: digit over its letters (phone
+     *  vernacular), long-press 0 for the international +. */
+    private fun digitKey(digit: Char): View {
+        val letters = when (digit) {
+            '2' -> "ABC"
+            '3' -> "DEF"
+            '4' -> "GHI"
+            '5' -> "JKL"
+            '6' -> "MNO"
+            '7' -> "PQRS"
+            '8' -> "TUV"
+            '9' -> "WXYZ"
+            '0' -> "+"
+            else -> ""
+        }
+        return FrameLayout(this).apply {
+            background = circleBackground(themeColor(R.attr.wpSurfaceRaised))
+                .withRipple(this@DialpadActivity)
+            isClickable = true
+            isFocusable = true
+            contentDescription = digit.toString()
+            addView(
+                LinearLayout(this@DialpadActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER
+                    isClickable = false
+                    isFocusable = false
+                    addView(
+                        TextView(this@DialpadActivity).apply {
+                            text = digit.toString()
+                            styleText(26f, themeColor(R.attr.wpOnSurface), medium = true)
+                        },
+                    )
+                    addView(
+                        TextView(this@DialpadActivity).apply {
+                            text = letters
+                            styleText(
+                                10f,
+                                themeColor(R.attr.wpOnSurfaceMuted),
+                                letterSpacingEm = 0.12f,
+                                allCaps = true,
+                            )
+                            visibility = if (letters.isEmpty()) View.INVISIBLE else View.VISIBLE
+                        },
+                    )
+                },
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    Gravity.CENTER,
+                ),
+            )
+            layoutParams = LinearLayout.LayoutParams(dp(68), dp(68)).apply {
+                setMargins(dp(6), 0, dp(6), 0)
+            }
+            setOnClickListener { numberView.append(digit.toString()) }
+            if (digit == '0') {
+                setOnLongClickListener {
+                    numberView.append("+")
+                    true
+                }
+            }
+        }
+    }
+
+    /** The recents block: an eyebrow and the last numbers as tap-to-
+     *  restore capsules (they do not dial — the user still taps Call). */
+    private fun recentsSection(): LinearLayout? {
+        val recent = getSharedPreferences(PREFS_RECENTS, MODE_PRIVATE)
+            .getString(KEY_RECENTS, "")?.split("\n")?.filter { it.isNotEmpty() }.orEmpty()
+        if (recent.isEmpty()) return null
+        val eyebrow = TextView(this).apply {
+            text = getString(R.string.recents)
+            styleText(
+                11f,
+                themeColor(R.attr.wpOnSurfaceMuted),
+                medium = true,
+                letterSpacingEm = 0.12f,
+                allCaps = true,
+            )
+        }
+        val chips = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        recent.forEach { number ->
+            chips.addView(
+                TextView(this).apply {
+                    text = number
+                    styleText(14f, themeColor(R.attr.wpOnSurface))
+                    background = pillBackground(themeColor(R.attr.wpSurfaceRaised))
+                        .withRipple(this@DialpadActivity)
+                    minHeight = dp(48)
+                    gravity = Gravity.CENTER
+                    setPadding(dp(18), 0, dp(18), 0)
+                    isClickable = true
+                    isFocusable = true
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    ).apply { marginEnd = dp(8) }
+                    setOnClickListener { numberView.setText(number) }
+                },
+            )
+        }
+        val scroller = HorizontalScrollView(this).apply {
+            addView(chips)
+            isHorizontalScrollBarEnabled = false
+        }
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(eyebrow)
+            addView(
+                scroller,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = dp(8) },
+            )
         }
     }
 
@@ -205,26 +409,6 @@ class DialpadActivity : AppCompatActivity() {
         val previous = prefs.getString(KEY_RECENTS, "")?.split("\n")?.filter { it.isNotEmpty() }.orEmpty()
         val updated = (listOf(number) + previous.filter { it != number }).take(RECENTS_LIMIT)
         prefs.edit().putString(KEY_RECENTS, updated.joinToString("\n")).apply()
-    }
-
-    /** The recents chips row: one tap restores a recent number into
-     *  the input (it does not dial — the user still taps Call). */
-    private fun recentsChipsRow(): HorizontalScrollView? {
-        val recent = getSharedPreferences(PREFS_RECENTS, MODE_PRIVATE)
-            .getString(KEY_RECENTS, "")?.split("\n")?.filter { it.isNotEmpty() }.orEmpty()
-        if (recent.isEmpty()) return null
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
-        recent.forEach { number ->
-            row.addView(
-                Button(this).apply {
-                    text = number
-                    textSize = 14f
-                    minimumHeight = (48 * resources.displayMetrics.density).toInt()
-                    setOnClickListener { numberView.setText(number) }
-                },
-            )
-        }
-        return HorizontalScrollView(this).apply { addView(row) }
     }
 
     private companion object {

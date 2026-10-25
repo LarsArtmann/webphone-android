@@ -23,10 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   ringing state cancelled
 - Full-screen-intent runtime check with heads-up degradation
   (`canUseFullScreenIntent()`)
-- Settings surface: the stack origin is now user-configurable —
+- Settings surface: the stack origin is user-configurable —
   persisted (`SettingsActivity`, `https://`-validated), loaded at
-  process start, and a first-run prompt routes to Settings when the
-  app still points at the shipped placeholder
+  process start; the shipped default origin is the live stack
+  (`https://pbx.artmann.tech`)
 - SIP registration state surfaced end-to-end: `CallEngine.registration`
   (OFF/CONNECTING/REGISTERED), a shell badge, and a dialer that
   disables the Call button while unregistered

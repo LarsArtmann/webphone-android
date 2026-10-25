@@ -32,8 +32,7 @@
     <string name="settings_saved">Origin saved — reconnecting</string>
     <string name="settings_invalid">Origin must be an https:// URL</string>
     <string name="settings_explanation">The app loads your phone system from this address. Sign in there once; calls ride the native call layer.</string>
-    <string name="first_run_title">Welcome to WebPhone</string>
-    <string name="first_run_message">Set the address of your phone system to begin. You can change it later in Settings.</string>
-    <string name="first_run_set_origin">Set origin</string>
-    <string name="later">Later</string>
+    <string name="keypad">Keypad</string>
+    <string name="recents">Recent</string>
+    <string name="caller_avatar">Caller</string>
 </resources>
