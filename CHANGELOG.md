@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Design system: light/dark theme tokens (`wp*` attrs, DayNight) with
+  programmatic helpers in `ui/Design.kt`; every native surface
+  redesigned — dark-glass shell chrome with a pulsing line dot, a
+  circular dialer with letters under the keys and bottom-anchored
+  actions, an always-dark call screen (gradient, initials avatar,
+  circular answer/decline pads, toggles with lit states, the DTMF pad
+  behind a Keypad toggle), and a card-based Settings field
+- Edge-to-edge rendering on all native surfaces (insets-aware
+  padding); the WebView runs full-bleed behind the system bars
+- Adaptive launcher icon: handset glyph in the safe zone plus a
+  monochrome layer (Android 13 themed icons)
 - Dependabot dependency updates (`.github/dependabot.yml`)
 - Dialer entry: numpad activity with mic-permission gate and single-call
   guard, plus a dial button on the shell

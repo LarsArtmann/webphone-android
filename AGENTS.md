@@ -217,6 +217,25 @@ events: `ring` and `ring_end`.
   passed a null WebView — always pass the real `webView` (found by
   the first emulator smoke, 2026-10-24; Robolectric's shadow does not
   reproduce it, so this class of bug only surfaces on a real stack).
+- **Design tokens, not hardcoded colors**: the programmatic UI
+  resolves `wp*` theme attrs (`values/attrs.xml`, light values in
+  `values/colors.xml`, dark in `values-night/colors.xml`) through the
+  `ui/Design.kt` helpers (`themeColor`, `iconButton`, `pillBackground`,
+  `pulse`, …). Never hardcode a color in new UI — add a token instead.
+  The call screen is deliberately ALWAYS dark (`Theme.WebPhone.Call` +
+  fixed `call_*` colors); the shell chrome is deliberately fixed dark
+  glass (it floats over arbitrary web pages). Edge-to-edge is on:
+  every surface pads its own content from `WindowInsets` (and the
+  insets listener must RETURN the insets, not the view).
+- **UI automation needs `adb root` on API 36**: `am start` on a
+  non-exported activity is denied for the shell uid (SecurityException)
+  — run `adb root` first (works on the google_apis image), and pin
+  every adb call with `-s <emulator-serial>` (the operator's phone may
+  be attached to the same adb server).
+- **Launcher icon**: the adaptive icon leads with the handset glyph
+  plus a monochrome layer (Android 13 themed icons). It deliberately
+  DIVERGED from the PWA's link glyph — if the webphone repo ever wants
+  icon parity, change BOTH or neither.
 - dprint formats Markdown tables BETWEEN edits — re-view any `.md`
   file before `edit`/`multiedit` or exact matches fail. Run
   `nix run nixpkgs#dprint -- fmt` on touched `.md`/`.yml` files before

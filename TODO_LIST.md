@@ -37,9 +37,9 @@
 
 ## Low Impact
 
-| Task                                          | Status       | Impact | Effort | Evidence                                                                                           |
-| --------------------------------------------- | ------------ | ------ | ------ | -------------------------------------------------------------------------------------------------- |
-| Real adaptive icon artwork + LICENSE decision | 🔴 `TODO`    | Low    | 1h     | Plan T24 remainder (icon is the placeholder teal; no LICENSE file; config cache + dependabot done) |
-| Cookie-expiry mid-call behavior check         | 🔵 `BLOCKED` | Low    | 30min  | Needs the live stack (plan F106)                                                                   |
-| TLS-pinning consideration memo                | 🔴 `TODO`    | Low    | 30min  | Decide pin-or-not, record why (plan F107)                                                          |
-| Retire honesty markers post-train             | 🔵 `BLOCKED` | Low    | 1h     | Needs both device trains green (plan T26)                                                          |
+| Task                                  | Status       | Impact | Effort | Evidence                                                                                             |
+| ------------------------------------- | ------------ | ------ | ------ | ---------------------------------------------------------------------------------------------------- |
+| LICENSE decision + file               | 🔴 `TODO`    | Low    | 30min  | Adaptive icon artwork DONE 2026-10-25 (handset glyph + monochrome layer); LICENSE file still missing |
+| Cookie-expiry mid-call behavior check | 🔵 `BLOCKED` | Low    | 30min  | Needs the live stack (plan F106)                                                                     |
+| TLS-pinning consideration memo        | 🔴 `TODO`    | Low    | 30min  | Decide pin-or-not, record why (plan F107)                                                            |
+| Retire honesty markers post-train     | 🔵 `BLOCKED` | Low    | 1h     | Needs both device trains green (plan T26)                                                            |
