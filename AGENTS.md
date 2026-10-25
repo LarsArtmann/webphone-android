@@ -128,6 +128,10 @@ events: `ring` and `ring_end`.
   `CallAttributes`/`CallControl`); API 31-33 dials directly (no OS
   surface). NEVER reintroduce `placeCall` — it does not compile against
   platform 36. Inbound stays classic (`addNewIncomingCall`, all APIs).
+- **No release signing config**: `assembleRelease` emits
+  `app-release-unsigned.apk` — NOT installable on any device. The only
+  sideload/MVP artifact is the debug APK (auto debug-signed). Adding a
+  signing config is a deliberate future step, not an accident to fix.
 - **Stack origin**: persisted in Settings (`webphone-settings` prefs;
   `SettingsActivity` validates `https://` and tears the call layer
   down on save). The shipped default `https://pbx.example.org` is a
