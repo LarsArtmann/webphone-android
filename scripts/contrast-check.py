@@ -58,7 +58,9 @@ def contrast(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> floa
     return (lighter + 0.05) / (darker + 0.05)
 
 
-def composite(over: tuple[int, int, int, int], base: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+def composite(
+    over: tuple[int, int, int, int], base: tuple[int, int, int, int]
+) -> tuple[int, int, int, int]:
     """Alpha-blend `over` onto opaque `base` (straight alpha)."""
     ao, bo = over[0] / 255.0, base[0] / 255.0
     a_out = ao + bo * (1 - ao)
@@ -70,7 +72,9 @@ def composite(over: tuple[int, int, int, int], base: tuple[int, int, int, int]) 
     return tuple(out)  # type: ignore[return-value]
 
 
-def resolve(token: str, mode_colors: dict[str, str]) -> tuple[int, int, int, int] | None:
+def resolve(
+    token: str, mode_colors: dict[str, str]
+) -> tuple[int, int, int, int] | None:
     if token.startswith("#"):
         return channels(token)
     raw = mode_colors.get(token)
@@ -98,7 +102,9 @@ def main() -> int:
                 if bg is None:
                     continue
                 if bg[0] != 255 and not over_names:
-                    raise SystemExit(f"ERROR: {bg_name} carries alpha but pair has no 'over' bases")
+                    raise SystemExit(
+                        f"ERROR: {bg_name} carries alpha but pair has no 'over' bases"
+                    )
                 if over_names:
                     for over_name in over_names:
                         base = resolve(over_name, mode_colors)
@@ -121,7 +127,9 @@ def main() -> int:
 
     defined = set(light) | set(dark)
     for pair in manifest["pairs"]:
-        names = [pair["fg"]] + (pair["bg"] if isinstance(pair["bg"], list) else [pair["bg"]])
+        names = [pair["fg"]] + (
+            pair["bg"] if isinstance(pair["bg"], list) else [pair["bg"]]
+        )
         names += pair.get("over", [])
         for name in names:
             if not name.startswith("#") and name not in defined:
@@ -131,7 +139,9 @@ def main() -> int:
     w_mode, w_pair = 5, max(len(r[1]) for r in rows) + 2
     for mode, label, ratio, min_ratio, ok in rows:
         verdict = "PASS" if ok else "FAIL"
-        print(f"{mode:<{w_mode}}  {label:<{w_pair}} {ratio:5.2f}:1  (min {min_ratio:.1f})  {verdict}")
+        print(
+            f"{mode:<{w_mode}}  {label:<{w_pair}} {ratio:5.2f}:1  (min {min_ratio:.1f})  {verdict}"
+        )
     print(f"\n{len(rows)} checks, {failures} failure(s)")
     return 1 if failures else 0
 

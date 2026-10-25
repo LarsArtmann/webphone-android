@@ -40,8 +40,14 @@ for _ in $(seq 1 60); do
 	[ -n "$SERIAL" ] && break
 	sleep 2
 done
-[ -n "${SERIAL:-}" ] || { echo "no emulator serial" >&2; exit 1; }
-[ "$(adb devices | grep -c 'emulator-')" -eq 1 ] || { echo "multiple emulators" >&2; exit 1; }
+[ -n "${SERIAL:-}" ] || {
+	echo "no emulator serial" >&2
+	exit 1
+}
+[ "$(adb devices | grep -c 'emulator-')" -eq 1 ] || {
+	echo "multiple emulators" >&2
+	exit 1
+}
 echo "== using $SERIAL =="
 
 adb_ root >/dev/null 2>&1 || true
@@ -52,7 +58,10 @@ for _ in $(seq 1 180); do
 done
 echo "== boot completed =="
 
-shot() { adb_ exec-out screencap -p >"$OUT/$1.png"; echo "shot $1"; }
+shot() {
+	adb_ exec-out screencap -p >"$OUT/$1.png"
+	echo "shot $1"
+}
 
 echo "== install + launch =="
 # A previous session's install may carry a different debug signature —
@@ -111,8 +120,8 @@ if [ -n "$RENDERER_PID" ]; then
 	adb_ shell kill "$RENDERER_PID"
 	sleep 6
 	APP_PID="$(adb_ shell pidof "$PKG" | tr -d '\r')"
-	[ -n "$APP_PID" ] && echo "app SURVIVED renderer death (pid $APP_PID)" \
-		|| echo "APP DIED with the renderer"
+	[ -n "$APP_PID" ] && echo "app SURVIVED renderer death (pid $APP_PID)" ||
+		echo "APP DIED with the renderer"
 	shot w107-after-renderer-kill
 else
 	echo "no sandboxed_process found — page may not have loaded"
@@ -126,8 +135,8 @@ adb_ shell input keyevent KEYCODE_HOME >/dev/null
 sleep 2
 adb_ shell am kill "$PKG"
 sleep 10
-adb_ shell pidof "$PKG" >/dev/null 2>&1 && echo "process restarted after am kill" \
-	|| echo "process NOT running after am kill"
+adb_ shell pidof "$PKG" >/dev/null 2>&1 && echo "process restarted after am kill" ||
+	echo "process NOT running after am kill"
 adb_ shell dumpsys activity services "$PKG" >"$OUT/ntfy-services-after.txt" 2>/dev/null || true
 adb_ shell am start -W -n "$PKG/.shell.MainActivity" >/dev/null || true
 sleep 3
