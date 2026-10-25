@@ -14,7 +14,9 @@ import kotlin.test.assertTrue
 class SipEngineSilenceTest {
 
     private fun TestScope.engine(): SipEngine = SipEngine(
-        scope = this,
+        // backgroundScope: the silence watchdog is a daemon loop — it
+        // must not hold the test open (runTest cancels it at the end).
+        scope = backgroundScope,
         config = SipEngine.Config(
             wsUrl = "wss://example.org/sip",
             sipDomain = "example.org",

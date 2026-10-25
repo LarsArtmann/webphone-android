@@ -502,7 +502,7 @@ class SipEngine(
                 401, 407 -> {
                     // Bounded: a wrong password would otherwise loop
                     // REGISTER/401 forever (the wire floods, the badge
-                    // flickers). Two challenges, three when the last
+                    // flickers). ONE credentialed retry, two when the
                     // challenge says stale=true (only the nonce was
                     // old — the retry is guaranteed final).
                     registerAuthChallenges += 1
@@ -582,8 +582,8 @@ class SipEngine(
      *  carrying the digest credentials (WWW- vs Proxy- flavor), the
      *  SAME offer SDP, and a new CSeq/Via (a new transaction in the
      *  same dialog — RFC 3261 §13.2.2 / §22.1). Bounded like REGISTER:
-     *  two challenges, three when stale=true; exhaustion ends the call
-     *  instead of looping. */
+     *  one credentialed retry, two when stale=true; exhaustion ends
+     *  the call instead of looping. */
     private fun reinviteWithAuth(leg: Leg, challengeResponse: SipMessage, status: Int) {
         val challengeHeader = if (status == 407) "Proxy-Authenticate" else "WWW-Authenticate"
         val challenge = Digest.parseChallenge(challengeResponse.header(challengeHeader).orEmpty())

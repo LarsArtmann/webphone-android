@@ -219,7 +219,7 @@ class SipEngineAuthTest {
         )
 
         val registerCount = recorder.frames.count { raw -> parse(raw).method == "REGISTER" }
-        assertEquals(2, registerCount, "bad credentials must not REGISTER forever")
+        assertEquals(1, registerCount, "bad credentials get ONE credentialed retry, never a loop")
         assertEquals(listOf(SipEngine.RegistrationState.AUTH_REJECTED), listener.states)
     }
 }
