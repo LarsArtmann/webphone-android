@@ -1,6 +1,8 @@
 package software.larsartmann.webphone.shell
 
 import android.annotation.SuppressLint
+import android.app.DownloadManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -110,6 +112,16 @@ private fun effectivePort(uri: Uri): Int =
  *   the web composer's attach button (`<input type=file>`, MMS) is a
  *   silent dead button. Now it opens the system picker; multi-select
  *   passes through when the input asks for it.
+ * - **Downloads** (`DownloadListener`): MMS attachments and exports
+ *   arrive as `download` links the WebView cannot save itself — a
+ *   silent no-op without a listener. Same-origin downloads ride the
+ *   system DownloadManager WITH the session cookie (the attachment
+ *   routes are session-gated); foreign downloads hand off to the
+ *   browser because the cookie must never leave the origin.
+ * - **Main-frame HTTP errors stay PAGES**: the proxy's 502 surface and
+ *   the origin's styled 404 are the origin's own error contract — the
+ *   offline overlay is reserved for TRANSPORT failure (no route to
+ *   the stack). See [ShellWebViewClient.onReceivedHttpError].
  * - **Web permissions denied explicitly**: call audio is NATIVE by the
  *   platform decision (never move signaling/audio back into the
  *   WebView) — the island's getUserMedia asks are refused up front
@@ -184,6 +196,9 @@ internal class WebSurface(private val activity: ComponentActivity) {
         }
         webViewClient = ShellWebViewClient()
         webChromeClient = ShellWebChromeClient()
+        setDownloadListener { url, _, contentDisposition, mimeType, _ ->
+            handleDownload(url, contentDisposition, mimeType)
+        }
         // Third-party cookies are OFF per-WebView — the call needs the
         // WebView param and CRASHES on null under the Chromium glue
         // (found by the first emulator smoke, 2026-10-24).
@@ -273,6 +288,20 @@ internal class WebSurface(private val activity: ComponentActivity) {
             if (!request.isForMainFrame) return
             showOffline()
         }
+
+        // POLICY (W111, 2026-10-25): main-frame HTTP errors (status >=
+        // 400 — the proxy's 502 page, the origin's styled 404) RENDER
+        // AS PAGES; they never raise the offline overlay. Those bodies
+        // ARE the origin's error contract (actionable HTML with a path
+        // echo and a way home) and browser parity matters: swapping
+        // them for a native panel would hide the origin's own recovery
+        // affordances. The overlay stays reserved for TRANSPORT failure
+        // (onReceivedError: no route, DNS, TLS — "stack unreachable").
+        override fun onReceivedHttpError(
+            view: WebView,
+            request: WebResourceRequest,
+            errorResponse: android.webkit.WebResourceResponse,
+        ) = Unit
 
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
             // Consumed: the app survives its renderer dying. The dead
@@ -396,7 +425,53 @@ internal class WebSurface(private val activity: ComponentActivity) {
     /** Test seam: the LIVE WebView instance (renderer rebuilds swap it). */
     internal fun currentWebView(): WebView = webView
 
+    /** Same-origin downloads ride DownloadManager with the session
+     *  cookie; foreign downloads hand off — the cookie must never
+     *  leave the origin. Internal for direct policy tests. */
+    internal fun handleDownload(url: String, contentDisposition: String?, mimeType: String?) {
+        val uri = Uri.parse(url)
+        if (navigationVerdict(uri, Uri.parse(App.origin)) is NavigationVerdict.HandOff) {
+            runCatching { activity.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
+                .onFailure { Log.w(TAG, "no handler for download $url: ${it.message}") }
+            return
+        }
+        val request = DownloadManager.Request(uri).apply {
+            // The attachment routes are session-gated; DownloadManager
+            // makes its own HTTP fetch and needs the WebView's cookie.
+            CookieManager.getInstance().getCookie(url)?.let { addRequestHeader("Cookie", it) }
+            setMimeType(mimeType ?: "application/octet-stream")
+            setTitle(downloadFileName(contentDisposition, url))
+            // Shared Downloads collection: no destination override, no
+            // legacy storage permission (minSdk 31).
+            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+        }
+        val downloads = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+        runCatching { downloads.enqueue(request) }
+            .onFailure { Log.w(TAG, "download enqueue failed for $url: ${it.message}") }
+    }
+
+    /** Content-Disposition filename > URL path segment > "download",
+     *  stripped of path separators and control characters (the title
+     *  is user-visible in the Downloads notification). */
+    internal fun downloadFileName(contentDisposition: String?, url: String): String {
+        val fromHeader = Regex("""filename\*?=\s*(?:\"([^\"]+)\"|([^;]+))""", RegexOption.IGNORE_CASE)
+            .find(contentDisposition.orEmpty())
+            ?.groupValues
+            ?.let { values -> values.getOrNull(1) ?: values.getOrNull(2)?.trim() }
+            ?.trim()
+            ?.orNullIfBlank()
+        val raw = fromHeader ?: Uri.parse(url).lastPathSegment.orEmpty().substringAfterLast('/')
+        val clean = buildString {
+            for (ch in raw) if (ch.code > 31 && ch !in FORBIDDEN_FILE_CHARS) append(ch)
+        }.trim()
+        return clean.ifBlank { "download" }
+    }
+
     private companion object {
         const val TAG = "WebSurface"
+
+        val FORBIDDEN_FILE_CHARS = charArrayOf('/', '\\', ':', '*', '?', '"', '<', '>', '|')
     }
 }
+
+private fun String.orNullIfBlank(): String? = ifBlank { null }
