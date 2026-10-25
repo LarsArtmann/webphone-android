@@ -60,9 +60,15 @@ class RingEventRouteTest {
             app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
         ).allNotifications
         assertEquals(1, notifications.size)
+        // CallStyle renders the PERSON as the title (the caller's name
+        // IS the incoming-call headline); the category stays a call.
         assertEquals(
-            app.getString(R.string.incoming_call),
+            "Alice",
             notifications[0].extras.getString(android.app.Notification.EXTRA_TITLE),
+        )
+        assertEquals(
+            android.app.Notification.CATEGORY_CALL,
+            notifications[0].category,
         )
     }
 

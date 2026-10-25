@@ -47,7 +47,10 @@ class CallEngineTest {
     fun `hangUp on a ringing inbound declines with 603`() = runTest {
         val recorder = Recorder()
         attachedEngine(recorder)
-        CallEngine.onIncomingCall(invite("in-1"))
+        var declinedStatus = 0
+        CallEngine.onIncomingCall(
+            invite("in-1").copy(respondWith = { status, _ -> declinedStatus = status }),
+        )
 
         assertEquals(CallEngine.Phase.RINGING_IN, CallEngine.state.value.phase)
         assertEquals("Alice", CallEngine.state.value.remoteParty)
@@ -55,8 +58,7 @@ class CallEngineTest {
 
         assertEquals(CallEngine.Phase.ENDED, CallEngine.state.value.phase)
         assertEquals(CallEngine.EndedBy.LOCAL, CallEngine.state.value.endedBy)
-        assertEquals(1, recorder.frames.size)
-        assertEquals(603, assertNotNull(SipMessage.parse(recorder.frames[0])).statusCode)
+        assertEquals(603, declinedStatus, "a ringing-inbound hang-up declines with 603")
     }
 
     @Test

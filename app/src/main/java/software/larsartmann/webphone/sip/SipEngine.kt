@@ -408,6 +408,10 @@ class SipEngine(
     // -- inbound dispatch ------------------------------------------
 
     internal fun receive(raw: String) {
+        // EVERY received frame is wire activity — the silence watchdog
+        // reads this (the socket callback funnels here, and so do the
+        // tests).
+        lastActivity = System.currentTimeMillis()
         val message = SipMessage.parse(raw) ?: return
         if (message.isRequest) {
             receiveRequest(message)
@@ -506,7 +510,7 @@ class SipEngine(
                         message.header("WWW-Authenticate") ?: message.header("Proxy-Authenticate").orEmpty(),
                     )
                     val limit = if (challenge?.stale == true) 3 else 2
-                    if (registerAuthChallenges > limit || challenge == null) {
+                    if (registerAuthChallenges >= limit || challenge == null) {
                         setRegistration(RegistrationState.AUTH_REJECTED)
                         return
                     }
@@ -584,7 +588,7 @@ class SipEngine(
         val challengeHeader = if (status == 407) "Proxy-Authenticate" else "WWW-Authenticate"
         val challenge = Digest.parseChallenge(challengeResponse.header(challengeHeader).orEmpty())
         leg.authChallenges += 1
-        if (challenge == null || leg.offerSdp == null || leg.authChallenges > (if (challenge.stale) 3 else 2)) {
+        if (challenge == null || leg.offerSdp == null || leg.authChallenges >= (if (challenge.stale) 3 else 2)) {
             callLegs.remove(leg.callId)
             listener?.onCallEnded(leg.callId)
             return
