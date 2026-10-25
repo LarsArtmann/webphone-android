@@ -81,7 +81,7 @@ the ntfy ring-while-closed lane, with the app set to battery
 | -------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | T10 ntfy persistence       | Code + reasoning                                                        | F055: actual `adb shell am kill` restart cycle never executed                                                                                                                                    |
 | T22 call-screen robustness | F091/F092                                                               | F093 thread-confinement audit (REAL risk: `pendingInvite`/`media` are plain fields written from WebRTC callbacks, OkHttp threads, and the UI thread), F094 shutdown-vs-ensureWired race decision |
-| T24 repo polish            | Config cache, dependabot                                                | Icon artwork (design), LICENSE (operator decision)                                                                                                                                               |
+| T24 repo polish            | Config cache, dependabot                                                | ~~Icon artwork (design)~~ done at `29c4e45` (handset glyph + monochrome); LICENSE (operator decision) still open                                                             |
 | T13 logout deregistration  | Cookie-poll watcher shipped                                             | The JS-bridge alternative and actual server-side row cleanup need the operator pick (F063/F064)                                                                                                  |
 | A11y                       | Touch targets + one description                                         | TalkBack pass, contrast audit of every programmatic surface, DTMF row layout (13 buttons in ONE horizontal row — cramped)                                                                        |
 | CI                         | Workflow written, locally mirrored (dprint/zipalign/tests pass locally) | First green GitHub run — impossible without a remote; runner assumptions unverified on GH infrastructure                                                                                         |
@@ -163,8 +163,8 @@ the ntfy ring-while-closed lane, with the app set to battery
    the phone; calls still need Q1)
 2. **Q1 unblock: a reachable live stack origin + test extension** → then
    the two real device trains (outbound E2E, ring-while-closed E2E)
-3. **Write the MVP/sideload path into README** (the steps from tonight,
-   persisted: rebuild → install → origin → login → battery exemption)
+3. ~~**Write the MVP/sideload path into README** (the steps from tonight,~~ done — README "Distribution" now carries the 6-step sideload path (added 2026-10-25, docs-health audit)
+   ~~persisted: rebuild → install → origin → login → battery exemption)~~
 4. **Battery-optimization exemption prompt in-app** for the ntfy lane
    (Doze survival — OEM killers are the #1 missed-ring cause)
 5. Measure the answer-path race on the live stack (F013); file the
@@ -185,24 +185,24 @@ the ntfy ring-while-closed lane, with the app set to battery
 18. Busy heads-up + FSI suppression for a second call (F095-F096)
 19. Push a git remote → CI first green run (F040) → then keep it green
 20. LICENSE decision + file (F098)
-21. Real adaptive icon artwork (F097)
+21. ~~Real adaptive icon artwork (F097)~~ done at `29c4e45`
 22. Fix `scripts/emulator-smoke.sh` adb-server robustness (pin one adb)
 23. Add a debug-signed release smoke mode to the train script
 24. Recents chips refresh after a call without activity recreation
-25. Speaker button pressed/on state feedback
-26. DTMF pad layout: 3×4 grid + separate row, not one cramped line
+25. ~~Speaker button pressed/on state feedback~~ done at `49ec670`
+26. ~~DTMF pad layout: 3×4 grid + separate row, not one cramped line~~ done at `29c4e45`
 27. TalkBack pass over every programmatic surface (F079 remainder)
 28. Contrast audit of badge/status colors (F080 remainder)
 29. Show WHY registration failed (network vs 401) on the badge/dialer
 30. Missed-call notification when `ring_end` lands unanswered
 31. In-call duration timer on the call screen
 32. Haptic feedback on dialpad keys
-33. Dialpad long-press `0` → `+`, pause/semicolon handling
+33. ~~Dialpad long-press `0` → `+`, pause/semicolon handling~~ done at `b254654`
 34. Robolectric test for the SettingsActivity save flow
 35. Engine-level unit test for `CallEngine.hangUp` phase dispatch
 36. Suppress or fix the AGP-vs-compileSdk-36 warning
 37. Clean up the stale `local.properties` sdk.dir
-38. Evaluate WorkManager as a fallback ntfy reconnect path
+38. Evaluate WorkManager as a fallback ntfy reconnect path **→ routed to ROADMAP theme 1 (WorkManager fallback reconnect)**
 39. Verify webrtc consumer R8 rules against a REAL call in release build
 40. FCM lane enablement once `google-services.json` exists (operator)
 41. Cookie-expiry mid-call behavior check (F106, needs live stack)
@@ -210,28 +210,28 @@ the ntfy ring-while-closed lane, with the app set to battery
 43. Emulator snapshot reuse for faster train boots
 44. Decide: API 31-33 outbound Telecom via reflection, or document the
     fallback as permanent
-45. Crash reporting decision (self-hosted, e.g. ACRA — or none)
+45. Crash reporting decision (self-hosted, e.g. ACRA — or none) **→ routed to ROADMAP theme 1 (crash reporting decision)**
 46. Call audio: verify AEC/NS actually engages on device
-47. `CallEndpoint`-based speaker routing on API 34+ (align with addCall)
+47. `CallEndpoint`-based speaker routing on API 34+ (align with addCall) **→ routed to ROADMAP theme 1 (CallEndpoint speaker routing)**
 48. Second `adb devices` guard in train scripts (fail fast)
-49. Consider baseline profiles (startup + call path)
+49. Consider baseline profiles (startup + call path) **→ routed to ROADMAP theme 1 (baseline profiles)**
 50. Second-incoming-call server behavior: confirm FreeSWITCH sends
     CANCEL (not BYE) when the caller gives up — feeds CANCEL tests
 
 ## g) Questions only you can answer
 
-1. **Q1 (the ONLY blocker for a WORKING MVP on your phone):** can you
+1. **Q1 (the ONLY blocker for a WORKING MVP on your phone):** can you **→ still open — the stack is UP again (verified 2026-10-25) but the test extension is still owed (ROADMAP Open questions)**
    give me a reachable live stack origin + a test extension (and a test
    account if login needs one)? Or point me at a staging stack? The app
    will install and launch without it, but it cannot register, call, or
    ring — the placeholder origin is a non-place and cleartext/LAN stacks
    won't connect (HTTPS with a valid cert only).
-2. **Logout semantics (drives F063):** when a user logs out on the
+2. **Logout semantics (drives F063):** when a user logs out on the **→ still open — ROADMAP Open questions**
    island, does the server KEEP the `/api/push-devices` rows (then the
    native side must deregister BEFORE the cookie dies → JS bridge
    needed), or PURGE them on logout (then the shipped cookie-poll
    watcher is already enough)?
-3. **Q3 confirmation:** the FSI auto-answer removal shipped on the
-   plan's assumption it was a defect. Confirm: incoming calls must
-   ALWAYS require an explicit Answer tap, correct? (If pocket-answer was
-   intended, reverting is a one-line change in `CallActivity`.)
+3. ~~**Q3 confirmation:** the FSI auto-answer removal shipped on the~~ done at `dac60c9`
+   ~~plan's assumption it was a defect. Confirm: incoming calls must~~
+   ~~ALWAYS require an explicit Answer tap, correct? (If pocket-answer was~~
+   ~~intended, reverting is a one-line change in `CallActivity`.)~~

@@ -42,7 +42,7 @@
 | -------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | T10 ntfy persistence       | Code + reasoning                                                            | F055: actual `adb shell am kill` restart cycle never executed                                                                                                                                    |
 | T22 call-screen robustness | F091/F092                                                                   | F093 thread-confinement audit (REAL risk: `pendingInvite`/`media` are plain fields written from WebRTC callbacks, OkHttp threads, and the UI thread), F094 shutdown-vs-ensureWired race decision |
-| T24 repo polish            | Config cache, dependabot                                                    | Icon artwork (design), LICENSE (operator decision)                                                                                                                                               |
+| T24 repo polish            | Config cache, dependabot                                                    | ~~Icon artwork (design)~~ done at `29c4e45` (handset glyph + monochrome); LICENSE (operator decision) still open                                                                                 |
 | T13 logout deregistration  | Cookie-poll watcher shipped                                                 | The JS-bridge alternative and the actual server-side row cleanup need the operator pick (F063/F064)                                                                                              |
 | A11y                       | Touch targets + one description                                             | TalkBack pass, contrast audit of every programmatic surface, DTMF row layout (13 buttons in ONE horizontal row — cramped)                                                                        |
 | CI                         | Workflow written, locally mirrored (dprint/zipalign/tests all pass locally) | First green GitHub run — impossible without a remote; runner assumptions (build-tools 35 availability, dprint via npx) unverified on GH infrastructure                                           |
@@ -143,19 +143,19 @@
 15. Push a git remote → CI first green run (F040) → then keep it green
 16. TLS-pinning memo (F107) — executable now, slipped
 17. LICENSE decision + file (F098)
-18. Real adaptive icon artwork (F097)
+18. ~~Real adaptive icon artwork (F097)~~ done at `29c4e45`
 19. Fix `scripts/emulator-smoke.sh` adb-server robustness (pin one adb)
 20. Add a debug-signed release smoke mode to the train script (what I did manually)
 21. Recents chips refresh after a call without activity recreation
-22. Speaker button pressed/on state feedback
-23. DTMF pad layout: 3×4 grid + separate row, not one cramped line
+22. ~~Speaker button pressed/on state feedback~~ done at `49ec670`
+23. ~~DTMF pad layout: 3×4 grid + separate row, not one cramped line~~ done at `29c4e45`
 24. TalkBack pass over every programmatic surface (F079 remainder)
 25. Contrast audit of badge/status colors (F080 remainder)
 26. Show WHY registration failed (network vs 401) on the badge/dialer (F082 deepening)
 27. Missed-call notification when `ring_end` lands unanswered
 28. In-call duration timer on the call screen
 29. Haptic feedback on dialpad keys
-30. Dialpad long-press `0` → `+`, pause/semicolon handling
+30. ~~Dialpad long-press `0` → `+`, pause/semicolon handling~~ done at `b254654`
 31. Robolectric test for the SettingsActivity save flow
 32. Engine-level unit test for `CallEngine.hangUp` phase dispatch (fakes over SipEngine)
 33. Suppress or fix the AGP-vs-compileSdk-36 warning (`android.suppressUnsupportedCompileSdk=36` or AGP bump)
@@ -167,29 +167,29 @@
 39. Cookie-expiry mid-call behavior check (F106, needs live stack)
 40. Retire honesty markers post-train (F104) + ROADMAP revisit (F105)
 41. Emulator snapshot reuse for faster train boots
-42. Document the sideload signing/release flow in README (the apksigner steps I ran)
+42. ~~Document the sideload signing/release flow in README (the apksigner steps I ran)~~ done — README "Distribution" now carries the 6-step sideload path (added 2026-10-25, docs-health audit)
 43. Decide: API 31-33 outbound Telecom via reflection, or document the fallback as permanent
 44. Crash reporting decision (self-hosted, e.g. ACRA — or none by policy)
 45. Call audio: verify AEC/NS actually engages on device (audio-quality train)
-46. `CallEndpoint`-based speaker routing on API 34+ instead of AudioManager (alignment with addCall sessions)
+46. `CallEndpoint`-based speaker routing on API 34+ instead of AudioManager (alignment with addCall sessions) **→ routed to ROADMAP theme 1 (CallEndpoint speaker routing)**
 47. Second `adb devices` guard in train scripts (fail fast with a clear message)
 48. Add the plan's F018 follow-up: file the webphone issue template for train findings
-49. Consider baseline profiles (startup + call path)
+49. Consider baseline profiles (startup + call path) **→ routed to ROADMAP theme 1 (baseline profiles)**
 50. Second-incoming-call server behavior: confirm FreeSWITCH sends CANCEL (not BYE) when the caller gives up — feeds the CANCEL tests' realism
 
 ## g) Questions only you can answer
 
-1. **Q1 (now the ONLY blocker for the real trains):** can you give me a
+1. **Q1 (now the ONLY blocker for the real trains):** can you give me a **→ still the blocker — the stack is UP again (verified 2026-10-25) but the test extension is still owed (ROADMAP Open questions)**
    reachable stack origin + a test extension (and, if the login flow
    needs it, a test account)? Alternatively: is there a staging stack
    the emulator may point at? Everything self-serve is done — this is
    the last wall.
-2. **Logout semantics (drives F063):** when a user logs out on the
+2. **Logout semantics (drives F063):** when a user logs out on the **→ still open — ROADMAP Open questions**
    island, does the server KEEP the `/api/push-devices` rows (then the
    native side must deregister BEFORE the cookie dies → JS bridge or
    logout-endpoint hook needed), or does the server purge them on
    logout (then the shipped cookie-poll watcher is already enough)?
-3. **Q3 confirmation:** the FSI auto-answer removal shipped on the
-   plan's assumption it was a defect. Confirm: incoming calls must
-   ALWAYS require an explicit Answer tap, correct? (If the pocket-answer
-   was intended, reverting is a one-line change in `CallActivity`.)
+3. ~~**Q3 confirmation:** the FSI auto-answer removal shipped on the~~ done at `dac60c9`
+   ~~plan's assumption it was a defect. Confirm: incoming calls must~~
+   ~~ALWAYS require an explicit Answer tap, correct? (If the pocket-answer~~
+   ~~was intended, reverting is a one-line change in `CallActivity`.)~~

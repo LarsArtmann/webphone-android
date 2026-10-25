@@ -26,40 +26,40 @@ re-scoped; non-workflow commits flow fine.
 
 ## a) FULLY DONE (verified, evidence-based)
 
-1. **Forgejo primary repo** — push-to-create succeeded
-   (`* [new branch] main -> main`), unauthenticated API probe returns
-   404 (= private honored, `DEFAULT_PUSH_CREATE_PRIVATE`), tracking
-   set: `origin/main`. Exists at `lars/webphone-android`.
-2. **GitHub twin** — created PRIVATE via `gh` with a proper
-   description ("Android native-call shell for webphone — SIP-over-WSS,
-   WebRTC audio, Telecom self-managed calling; the web island rides in
-   a session-sharing WebView"), seeded with full history including
-   `ci.yml` (my SSH key is workflow-capable; the sync PAT is not).
-3. **Remote topology matches fleet convention** — `origin` (forgejo,
-   canonical) + `github` (fallback), exactly the
-   domains / company-master-data / eventcatalog-hub pattern.
-4. **All three tips identical** at `7e31298` (local, origin, github;
-   `git ls-remote` on both remotes, `git rev-parse` locally).
-5. **SystemNix `forgejo.canonicalRepos` entry** — added with a
-   dated comment in the established style, calling out the
-   workflow-scope difference vs company-master-data; `nix eval
-   .#nixosConfigurations.evo-x2.config.services.forgejo.canonicalRepos`
-   returns `[ "domains" "eventcatalog-hub" "company-master-data"
-   "webphone-android" ]`. Change is in git (daemon-swept, see d).
-6. **AGENTS.md updated** — new "Repository & mirrors" section
-   (remotes, attach path, PAT trap with the journal quote, lag-check
-   probe) and the stale "no git remote configured" CI line fixed;
-   dprint fmt + `dprint check` green; committed (`7e31298`,
-   `docs: document Forgejo primary + GitHub mirror remotes`) and
-   pushed to BOTH remotes.
-7. **domains mirror-freeze diagnosed with primary evidence** —
-   `mirror-lag` (114 behind), journal lines:
-   `! [remote rejected] master -> master (refusing to allow a Personal
-   Access Token to create or update workflow .github/workflows/deploy.yml
-   without 'workflow' scope)` + `SyncPushMirror [mirror: 2][repo:
-   473:lars/domains]: PushRejected`. company-master-data (no
-   workflows) verified `mirror OK` — isolating the cause to PAT scope,
-   not the machinery.
+1. ~~**Forgejo primary repo** — push-to-create succeeded~~ done — verified 2026-10-25 (docs-health audit): git remote -v shows origin (Forgejo) with tracking
+   ~~(`* [new branch] main -> main`), unauthenticated API probe returns~~
+   ~~404 (= private honored, `DEFAULT_PUSH_CREATE_PRIVATE`), tracking~~
+   ~~set: `origin/main`. Exists at `lars/webphone-android`.~~
+2. ~~**GitHub twin** — created PRIVATE via `gh` with a proper~~ done — verified 2026-10-25: the github remote is present and the twin stays private
+   ~~description ("Android native-call shell for webphone — SIP-over-WSS,~~
+   ~~WebRTC audio, Telecom self-managed calling; the web island rides in~~
+   ~~a session-sharing WebView"), seeded with full history including~~
+   ~~`ci.yml` (my SSH key is workflow-capable; the sync PAT is not).~~
+3. ~~**Remote topology matches fleet convention** — `origin` (forgejo,~~ done — verified 2026-10-25: origin + github topology as described
+   ~~canonical) + `github` (fallback), exactly the~~
+   ~~domains / company-master-data / eventcatalog-hub pattern.~~
+4. ~~**All three tips identical** at `7e31298` (local, origin, github;~~ done — true as of its timestamp; superseded — github now lags local (mirror unattached, tip-compared 2026-10-25)
+   ~~`git ls-remote` on both remotes, `git rev-parse` locally).~~
+5. ~~**SystemNix `forgejo.canonicalRepos` entry** — added with a~~ done — entry verified in SystemNix; the attach itself is still deploy-gated (see b1)
+   ~~dated comment in the established style, calling out the~~
+   ~~workflow-scope difference vs company-master-data; `nix eval~~
+   ~~.#nixosConfigurations.evo-x2.config.services.forgejo.canonicalRepos`~~
+   ~~returns `[ "domains" "eventcatalog-hub" "company-master-data"~~
+   ~~"webphone-android" ]`. Change is in git (daemon-swept, see d).~~
+6. ~~**AGENTS.md updated** — new "Repository & mirrors" section~~ done at `7e31298`
+   ~~(remotes, attach path, PAT trap with the journal quote, lag-check~~
+   ~~probe) and the stale "no git remote configured" CI line fixed;~~
+   ~~dprint fmt + `dprint check` green; committed (`7e31298`,~~
+   ~~`docs: document Forgejo primary + GitHub mirror remotes`) and~~
+   ~~pushed to BOTH remotes.~~
+7. ~~**domains mirror-freeze diagnosed with primary evidence** —~~ done — diagnosis stands; the PAT re-scope is still owed (TODO_LIST High)
+   ~~`mirror-lag` (114 behind), journal lines:~~
+   ~~`! [remote rejected] master -> master (refusing to allow a Personal~~
+   ~~Access Token to create or update workflow .github/workflows/deploy.yml~~
+   ~~without 'workflow' scope)` + `SyncPushMirror [mirror: 2][repo:~~
+   ~~473:lars/domains]: PushRejected`. company-master-data (no~~
+   ~~workflows) verified `mirror OK` — isolating the cause to PAT scope,~~
+   ~~not the machinery.~~
 
 ## b) PARTIALLY DONE
 

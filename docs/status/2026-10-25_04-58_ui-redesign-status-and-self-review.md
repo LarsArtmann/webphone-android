@@ -123,8 +123,8 @@ emulator snapshots. None were promised this session.
 ## f) Up to 50 next things (ranked: unblock-live first)
 
 1. Reinstall the redesigned APK on your phone (built, gate-green)
-2. Fix/inspect the **502 Bad Gateway** on `pbx.artmann.tech` — it
-   blocked every live check this session
+2. ~~Fix/inspect the **502 Bad Gateway** on `pbx.artmann.tech` — it~~ done — resolved 2026-10-25 — the stack serves the island again (fetched live during the docs-health audit)
+   ~~blocked every live check this session~~
 3. Real device trains (outbound E2E, ring-while-closed E2E) — needs a
    test extension/account once the stack is up
 4. Visually verify the redesigned call screen on a live call
@@ -139,7 +139,7 @@ emulator snapshots. None were promised this session.
 10. Silence watchdog re-register + unit tests (F102, F103)
 11. Logout deregistration: cookie-poll vs JS bridge (F063/F064)
 12. Execute F055: `am kill` sticky-restart test for the ntfy lane
-13. PWA icon parity decision (handset vs link glyph — both or neither)
+13. PWA icon parity decision (handset vs link glyph — both or neither) **→ routed to ROADMAP Open questions (icon parity)**
 14. CallStyle incoming notification (F088)
 15. CallStyle ongoing notification (F089)
 16. Live contract checks: `/api/session` field names (F073)
@@ -159,39 +159,39 @@ emulator snapshots. None were promised this session.
 29. Missed-call notification when `ring_end` lands unanswered
 30. In-call duration timer on the call screen
 31. Haptic feedback on dialpad keys
-32. WebView dark-mode decision for the island's pages (algorithmic
+32. WebView dark-mode decision for the island's pages (algorithmic **→ routed to ROADMAP Open questions (WebView dark-mode)**
     darkening or leave-as-is)
-33. Stale theme colors after a day/night switch (`configChanges`
-    includes `uiMode`, so activities skip recreation — colors resolve
-    once). Re-resolve on `onConfigurationChanged` or drop uiMode.
+33. ~~Stale theme colors after a day/night switch (`configChanges`~~ done — now a TODO_LIST row (added 2026-10-25, docs-health audit)
+    ~~includes `uiMode`, so activities skip recreation — colors resolve~~
+    ~~once). Re-resolve on `onConfigurationChanged` or drop uiMode.~~
 34. Robolectric test for the SettingsActivity save flow
 35. Engine-level unit test for `CallEngine.hangUp` phase dispatch
 36. Suppress or fix the AGP-vs-compileSdk-36 warning
 37. Clean up the stale `local.properties` sdk.dir
 38. Battery-optimization exemption prompt for the ntfy lane (Doze)
-39. WorkManager as a fallback ntfy reconnect path
+39. WorkManager as a fallback ntfy reconnect path **→ routed to ROADMAP theme 1 (WorkManager fallback reconnect)**
 40. Verify webrtc consumer R8 rules against a REAL release call
 41. FCM lane enablement once `google-services.json` exists (operator)
 42. Cookie-expiry mid-call behavior check (F106)
 43. Retire honesty markers post-train (F104) + ROADMAP revisit (F105)
 44. Emulator snapshot reuse for faster boots
 45. API 31-33 outbound Telecom: reflection or document the fallback
-46. Crash reporting decision (self-hosted ACRA — or none by policy)
+46. Crash reporting decision (self-hosted ACRA — or none by policy) **→ routed to ROADMAP theme 1 (crash reporting decision)**
 47. Call audio: verify AEC/NS engages on device (audio-quality train)
-48. `CallEndpoint`-based speaker routing on API 34+ (align addCall)
-49. Baseline profiles (startup + call path)
+48. `CallEndpoint`-based speaker routing on API 34+ (align addCall) **→ routed to ROADMAP theme 1 (CallEndpoint speaker routing)**
+49. Baseline profiles (startup + call path) **→ routed to ROADMAP theme 1 (baseline profiles)**
 50. FreeSWITCH second-call behavior: CANCEL vs BYE when caller gives up
 
 ## g) Questions only you can answer
 
-1. **The live stack**: `pbx.artmann.tech` served 502 all session — is
+1. **The live stack**: `pbx.artmann.tech` served 502 all session — is **→ the 502 cleared — the stack serves again (verified 2026-10-25); the test extension is still owed (ROADMAP Open questions)**
    that known maintenance, or will you go poke the backend? And once
    it's up: which test extension (+ account, if login needs one) may I
    use for the device trains and the call-screen verification?
-2. **Logout semantics (drives F063/F064)**: when a user logs out on
+2. **Logout semantics (drives F063/F064)**: when a user logs out on **→ still open — ROADMAP Open questions**
    the island, does the server KEEP the `/api/push-devices` rows (the
    native side must deregister BEFORE the cookie dies → JS bridge
    needed), or PURGE them (the shipped cookie-poll watcher suffices)?
-3. **Icon parity**: the native launcher now leads with the handset
+3. **Icon parity**: the native launcher now leads with the handset **→ routed to ROADMAP Open questions (icon parity)**
    glyph; the PWA still uses the link glyph. Keep them diverged, or
    should the webphone repo adopt the handset too (both or neither)?
