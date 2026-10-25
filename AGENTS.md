@@ -235,8 +235,7 @@ events: `ring` and `ring_end`.
   FGS. Channels `calls` (high, bypass-DND) and `push` (min) are created
   in `App.onCreate`.
 - UI is programmatic in v0.1 (`CallActivity` builds views in code);
-  viewBinding is enabled but the CallStyle-composed notification UI is
-  planned, not present. `minSdk = 31`, `targetSdk/compileSdk = 36`.
+  viewBinding is enabled. `minSdk = 31`, `targetSdk/compileSdk = 36`.
 - Intents carry the ring fact under `RingEvent.EXTRA_FROM` /
   `EXTRA_CALL_ID` action-namespaced extras.
 - Dialer honesty: the Call button is disabled unless
@@ -284,6 +283,40 @@ events: `ring` and `ring_end`.
   add the pair when you add a colored surface. `wp_on_danger` is
   unlisted until a filled danger surface exists — mint passing values
   then, not before.
+- **Predictive back owns API 33+ back nav**: the manifest sets
+  `enableOnBackInvokedCallback="true"`, which SILENCES `onBackPressed`
+  — `MainActivity` registers an `OnBackInvokedCallback` that bridges
+  the WebView's tab history (falls through to `finish()`). Editing the
+  override alone is dead code on 33+; it only serves API 31/32.
+- **uiMode stays OUT of `configChanges`**: the theme-staleness fix
+  (2026-10-25) removes it from all three activities so the system
+  RECREATES on day/night and every surface re-resolves its tokens
+  (the relaunch is logcat-provable). Re-adding it reintroduces the
+  frozen-palette bug; Robolectric does not catch it — emulator find.
+- **SIP liveness cancel-discipline** (the no-double-REGISTER-storm
+  review verdict, 2026-10-25): every relaunch path (`scheduleRefresh`,
+  `startSilenceWatchdog`, `startReconnectBackoff`, `disconnect`)
+  cancels its predecessor Job BEFORE re-arming, and each REGISTER 200
+  re-anchors both jobs. Keep that shape.
+- **`SipEngine.lastActivity` lives in `receive()`**: every inbound
+  frame (not just REGISTER) counts as wire activity — the silence
+  watchdog (>6 min quiet, 30 s poll) judges the LINK, not one method.
+- **AttachGuard semantics**: `CallLayer` wires carry a generation;
+  `shutdown()` invalidates FIRST, so an in-flight `ensureWired`
+  attaches to a dead generation and refuses. Never wire around the
+  guard. `TelecomOutgoing` uses the same orphan shape: a superseded
+  `addCall` session (late callback / stale watcher) disconnects
+  itself instead of touching the current session's bookkeeping.
+- **CallStyle falls back, never crashes**: shade CallStyle demands a
+  Telecom call AT POST TIME — the API 31-33 direct-dial path has
+  none, so `CallService` posts plain and `RingEvent` keeps the plain
+  heads-up path. The shadowed tests pin both branches BUILDING; the
+  platform's post-time rejection itself is device-train territory.
+- **javap-first for platform/shadow APIs**: verify the real signature
+  (android.jar or the Robolectric shadow class) before writing a test
+  against it — `ShadowService.lastForegroundNotification` and friends
+  are shadow API, not framework API (found building the CallService
+  test, 2026-10-25).
 - **Design tokens, not hardcoded colors**: the programmatic UI
   resolves `wp*` theme attrs (`values/attrs.xml`, light values in
   `values/colors.xml`, dark in `values-night/colors.xml`) through the
@@ -299,6 +332,28 @@ events: `ring` and `ring_end`.
   — run `adb root` first (works on the google_apis image), and pin
   every adb call with `-s <emulator-serial>` (the operator's phone may
   be attached to the same adb server).
+- **TLS is NOT pinned (decision, 2026-10-25)**: the stack is
+  Caddy-fronted with Let's Encrypt certs that ROTATE — pinning SPKI
+  would brick every call at the next renewal. Trust is the platform
+  TLS store + HTTPS-only (`usesCleartextTraffic="false"`); revisit
+  only behind a long-lived internal CA.
+- **API 31-33 outbound stays DIRECT-DIAL (decision, 2026-10-25)**: no
+  Telecom surface outbound below 34 (`placeCall` is gone from the 36
+  stubs, `addCall` needs 34+) — PERMANENT until minSdk 34, not a gap
+  to fix. Inbound is fully Telecom-integrated on every API.
+- **A ring push while AUTH-REJECTED must not ring** (W170): with no
+  registration no INVITE can ever land, so `RingEvent` surfaces
+  "Sign-in rejected" as a plain heads-up on the ring notification id
+  (the server's `ring_end` still clears it). Transient states
+  (OFF/CONNECTING/OFFLINE) still ring — the bootstrap race needs the
+  benefit of the doubt.
+- **The island page draws under the status bar in the shell** (found
+  by the W01 emulator pass, 2026-10-25): the web header renders under
+  the transparent status bar (the clock overlaps it) and its top
+  controls are untappable in-shell (browser is unaffected). Cross-repo
+  fix: the island needs `env(safe-area-inset-top)` handling, or the
+  shell pads the WebView container. Untouched pending the webphone
+  repo's call.
 - **Launcher icon**: the adaptive icon leads with the handset glyph
   plus a monochrome layer (Android 13 themed icons). It deliberately
   DIVERGED from the PWA's link glyph — if the webphone repo ever wants

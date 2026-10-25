@@ -65,3 +65,5 @@ result-*
 
 # Session scratch evidence (emulator shots, logcats, probes) — findings live in docs/
 work/
+photos/
+webphone-release-smoke.png

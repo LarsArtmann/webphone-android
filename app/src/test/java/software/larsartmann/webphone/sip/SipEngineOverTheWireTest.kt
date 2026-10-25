@@ -119,6 +119,7 @@ class SipEngineOverTheWireTest {
                 extension = "100",
                 password = "secret",
             ),
+        ).apply {
             listener = object : SipEngine.Listener {
                 override fun onRegistrationState(state: SipEngine.RegistrationState) {
                     states.seen.add(state)
@@ -129,8 +130,8 @@ class SipEngineOverTheWireTest {
                 override fun onCallEstablished(callId: String, remoteSdp: String) = Unit
                 override fun onCallEnded(callId: String) = Unit
                 override fun onTransferVerdict(callId: String, verdict: String) = Unit
-            },
-        )
+            }
+        }
 
     @Test
     fun `the challenge ladder registers over a real socket`() = runTest {
