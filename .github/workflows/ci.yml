@@ -39,5 +39,11 @@ jobs:
       - name: 16 KB page-alignment gate
         run: '"$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk'
 
+      # WCAG contrast guard over the color-token pairs (the 2.44:1
+      # answer-button class can never drift back silently). Stdlib
+      # python3, no setup needed.
+      - name: Contrast gate (WCAG token pairs)
+        run: python3 scripts/contrast-check.py
+
       - name: Formatting gate (dprint)
         run: npx --yes dprint@0.64.3 check

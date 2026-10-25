@@ -12,6 +12,8 @@
     <color name="wp_accent_subtle">#10312E</color>
     <color name="wp_status_on">#4ADE80</color>
     <color name="wp_status_pending">#8FA3AB</color>
-    <color name="wp_danger">#E5484D</color>
+    <!-- Text-grade in dark mode (6.1:1 on surface): this token is used
+         as TEXT color, unlike the call screen's filled call_danger. -->
+    <color name="wp_danger">#F87171</color>
     <color name="wp_on_danger">#FFFFFF</color>
 </resources>

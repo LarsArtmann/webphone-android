@@ -1,0 +1,72 @@
+{
+  "//": "WCAG contrast pairs for scripts/contrast-check.py. fg/bg are colors.xml token names (or raw #hex for glyph constants); theme tokens (wp_*) are checked in BOTH modes automatically. 'over' lists the bases an alpha-carrying bg is composited onto (worst case must pass). min: 4.5 text, 3.0 icon glyphs / status dots (WCAG 1.4.11). wp_on_danger is deliberately unlisted: no filled danger surface exists yet; mint passing values when one appears.",
+  "pairs": [
+    { "fg": "call_text", "bg": "call_bg_top", "min": 4.5, "note": "call screen primary text" },
+    { "fg": "call_text", "bg": "call_bg_bottom", "min": 4.5, "note": "call screen primary text" },
+    { "fg": "call_text", "bg": "call_card", "min": 4.5, "note": "card text on the call card" },
+    { "fg": "call_text", "bg": "call_key_bg", "min": 4.5, "note": "keypad digits" },
+    { "fg": "call_muted", "bg": "call_bg_top", "min": 4.5, "note": "call screen secondary text" },
+    { "fg": "call_muted", "bg": "call_bg_bottom", "min": 4.5, "note": "call screen secondary text" },
+    { "fg": "call_avatar_fg", "bg": "call_avatar_bg", "min": 4.5, "note": "avatar initials" },
+    { "fg": "call_toggle_fg", "bg": "call_toggle_bg", "min": 4.5, "note": "inactive toggle labels" },
+    { "fg": "call_toggle_active_fg", "bg": "call_toggle_active_bg", "min": 4.5, "note": "active toggle labels" },
+    { "fg": "call_decline_fg", "bg": "call_decline_bg", "min": 4.5, "note": "decline card label" },
+    {
+      "fg": "#FFFFFF",
+      "bg": "call_answer",
+      "min": 3.0,
+      "note": "answer icon glyph (the 2.44:1 audit fix stays fixed)"
+    },
+    { "fg": "#FFFFFF", "bg": "call_danger", "min": 3.0, "note": "end-call icon glyph" },
+    {
+      "fg": "chrome_on_glass",
+      "bg": "chrome_glass",
+      "over": ["wp_background", "wp_surface"],
+      "min": 4.5,
+      "note": "floating chrome text over any page"
+    },
+    {
+      "fg": "chrome_on_glass_muted",
+      "bg": "chrome_glass",
+      "over": ["wp_background", "wp_surface"],
+      "min": 4.5,
+      "note": "floating chrome secondary text"
+    },
+    {
+      "fg": "chrome_dot_on",
+      "bg": "chrome_glass",
+      "over": ["wp_background", "wp_surface"],
+      "min": 3.0,
+      "note": "registration dot"
+    },
+    {
+      "fg": "chrome_dot_pending",
+      "bg": "chrome_glass",
+      "over": ["wp_background", "wp_surface"],
+      "min": 3.0,
+      "note": "pending dot"
+    },
+    { "fg": "wp_on_surface", "bg": "wp_background", "min": 4.5, "note": "primary text on page background" },
+    { "fg": "wp_on_surface", "bg": "wp_surface", "min": 4.5, "note": "primary text on cards" },
+    { "fg": "wp_on_surface", "bg": "wp_surface_raised", "min": 4.5, "note": "primary text on raised surfaces" },
+    { "fg": "wp_on_surface_muted", "bg": "wp_background", "min": 4.5, "note": "secondary text" },
+    { "fg": "wp_on_surface_muted", "bg": "wp_surface", "min": 4.5, "note": "secondary text on cards" },
+    { "fg": "wp_on_surface_muted", "bg": "wp_surface_raised", "min": 4.5, "note": "the 4.48:1 audit fix stays fixed" },
+    { "fg": "wp_on_accent", "bg": "wp_accent", "min": 4.5, "note": "accent button text" },
+    { "fg": "wp_accent", "bg": "wp_background", "min": 4.5, "note": "accent used as text" },
+    { "fg": "wp_accent", "bg": "wp_surface", "min": 4.5, "note": "accent used as text on cards" },
+    { "fg": "wp_on_surface", "bg": "wp_accent_subtle", "min": 4.5, "note": "info chip text" },
+    { "fg": "wp_on_surface_muted", "bg": "wp_accent_subtle", "min": 4.5, "note": "info chip secondary text" },
+    { "fg": "wp_status_on", "bg": "wp_surface", "min": 3.0, "note": "status dot" },
+    { "fg": "wp_status_pending", "bg": "wp_surface", "min": 3.0, "note": "status dot" },
+    { "fg": "wp_status_on", "bg": "wp_surface_raised", "min": 3.0, "note": "status dot on raised" },
+    { "fg": "wp_status_pending", "bg": "wp_surface_raised", "min": 3.0, "note": "status dot on raised" },
+    {
+      "fg": "wp_danger",
+      "bg": "wp_background",
+      "min": 4.5,
+      "note": "danger used as text (reserved token, text-grade by contract)"
+    },
+    { "fg": "wp_danger", "bg": "wp_surface", "min": 4.5, "note": "danger used as text on cards" }
+  ]
+}
