@@ -26,15 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   theme via algorithmic darkening — the web app declares
   `color-scheme: dark light` and renders its own dark theme; its
   manual light/dark toggle still overrides
-
-### Fixed
-
-- The session cookie minted by the island login is flushed to disk
-  (page finish + pause) — a process kill can no longer eat the login
-
-### Changed
-
-- Formatting baseline via dprint (JSON/YAML/Markdown/Dockerfile; `dprint.json`)
+- Design system: light/dark theme tokens (`wp*` attrs, DayNight) with
   programmatic helpers in `ui/Design.kt`; every native surface
   redesigned — dark-glass shell chrome with a pulsing line dot, a
   circular dialer with letters under the keys and bottom-anchored
@@ -91,6 +83,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- The session cookie minted by the island login is flushed to disk
+  (page finish + pause) — a process kill can no longer eat the login
 - Session seam: OkHttp now bridges through the WebView's `CookieManager`
   — the login cookie actually reaches `/api/session` (was a private
   in-memory jar that never saw it)

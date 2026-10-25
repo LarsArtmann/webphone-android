@@ -18,12 +18,12 @@ import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.AppCompatButton
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
@@ -193,26 +193,26 @@ internal class WebSurface(private val activity: ComponentActivity) {
     private fun buildOfflineOverlay(): LinearLayout = LinearLayout(activity).apply {
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER
-        setPadding(dp(32), dp(24), dp(32), dp(24))
-        setBackgroundColor(themeColor(R.attr.wpBackground))
+        setPadding(activity.dp(32), activity.dp(24), activity.dp(32), activity.dp(24))
+        setBackgroundColor(activity.themeColor(R.attr.wpBackground))
         visibility = View.GONE
 
         val title = TextView(activity).apply {
-            styleText(18f, themeColor(R.attr.wpOnSurface), medium = true)
+            styleText(18f, activity.themeColor(R.attr.wpOnSurface), medium = true)
             text = activity.getString(R.string.web_offline_title)
         }
         val body = TextView(activity).apply {
-            styleText(14f, themeColor(R.attr.wpOnSurfaceMuted))
+            styleText(14f, activity.themeColor(R.attr.wpOnSurfaceMuted))
             text = activity.getString(R.string.web_offline_body, App.origin)
-            setPadding(0, dp(8), 0, 0)
+            setPadding(0, activity.dp(8), 0, 0)
         }
         val retry = AppCompatButton(activity).apply {
-            background = pillBackground(themeColor(R.attr.wpAccent))
+            background = activity.pillBackground(activity.themeColor(R.attr.wpAccent))
             setTextColor(ContextCompat.getColor(activity, R.color.wp_on_accent))
             textSize = 15f
             isAllCaps = false
-            setPadding(dp(28), dp(12), dp(28), dp(12))
-            minimumHeight = dp(48)
+            setPadding(activity.dp(28), activity.dp(12), activity.dp(28), activity.dp(12))
+            minimumHeight = activity.dp(48)
             text = activity.getString(R.string.web_offline_retry)
             setOnClickListener { retry() }
         }
@@ -229,7 +229,7 @@ internal class WebSurface(private val activity: ComponentActivity) {
             LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp(8) },
+            ).apply { topMargin = activity.dp(8) },
         )
         addView(
             retry,
@@ -237,7 +237,7 @@ internal class WebSurface(private val activity: ComponentActivity) {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             ).apply {
-                topMargin = dp(24)
+                topMargin = activity.dp(24)
                 gravity = Gravity.CENTER_HORIZONTAL
             },
         )
@@ -316,9 +316,9 @@ internal class WebSurface(private val activity: ComponentActivity) {
             request.deny()
         }
 
-        override fun onConsoleMessage(message: ConsoleMessage): Boolean {
-            val line = "[${message.sourceLine()}:${message.lineNumber()}] ${message.message()}"
-            when (message.level()) {
+        override fun onConsoleMessage(console: ConsoleMessage): Boolean {
+            val line = "[${console.sourceId()}:${console.lineNumber()}] ${console.message()}"
+            when (console.level()) {
                 ConsoleMessage.MessageLevel.ERROR -> Log.e(TAG, line)
                 ConsoleMessage.MessageLevel.WARNING -> Log.w(TAG, line)
                 else -> Log.d(TAG, line)

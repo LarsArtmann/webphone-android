@@ -1,5 +1,6 @@
 package software.larsartmann.webphone.shell
 
+import android.Manifest
 import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.pm.PackageManager
