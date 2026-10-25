@@ -4,6 +4,7 @@ import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -495,9 +496,20 @@ class SipEngine(
             // REGISTER ladder: challenge → authorized → registered.
             cseq?.second == "REGISTER" -> when (message.statusCode) {
                 401, 407 -> {
+                    // Bounded: a wrong password would otherwise loop
+                    // REGISTER/401 forever (the wire floods, the badge
+                    // flickers). Two challenges, three when the last
+                    // challenge says stale=true (only the nonce was
+                    // old — the retry is guaranteed final).
+                    registerAuthChallenges += 1
                     val challenge = Digest.parseChallenge(
                         message.header("WWW-Authenticate") ?: message.header("Proxy-Authenticate").orEmpty(),
-                    ) ?: return
+                    )
+                    val limit = if (challenge?.stale == true) 3 else 2
+                    if (registerAuthChallenges > limit || challenge == null) {
+                        setRegistration(RegistrationState.AUTH_REJECTED)
+                        return
+                    }
                     val authorization = Digest.authorization(
                         method = "REGISTER",
                         uri = "sip:${config.sipDomain}",
@@ -508,12 +520,15 @@ class SipEngine(
                     register(authorization)
                 }
                 200 -> {
-                    setRegistered(true)
+                    registerAuthChallenges = 0
+                    setRegistration(RegistrationState.REGISTERED)
                     scheduleRefresh()
+                    startSilenceWatchdog()
                 }
-                else -> setRegistered(false)
+                else -> setRegistration(RegistrationState.OFFLINE)
             }
-            // INVITE ladder: ring → answer → ACK; failure tears down.
+            // INVITE ladder: ring → answer → ACK; a digest challenge
+            // re-INVITEs with credentials; other finals tear down.
             cseq?.second == "INVITE" -> {
                 val leg = callLegs[callId]
                 when {
@@ -535,6 +550,15 @@ class SipEngine(
                         ack(callId, toHeaderOverride = message.header("To"))
                         listener?.onCallEstablished(callId, message.body)
                     }
+                    message.statusCode == 401 || message.statusCode == 407 -> {
+                        // PBXs that challenge the INVITE (not just
+                        // REGISTER) — answer with credentials, same
+                        // dialog, same SDP, new transaction.
+                        if (leg != null) {
+                            ack(callId, toHeaderOverride = message.header("To"))
+                            reinviteWithAuth(leg, message, message.statusCode)
+                        }
+                    }
                     message.statusCode >= 300 -> {
                         // A UAC must ACK non-2xx finals too (RFC 3261
                         // §17.1.1.2) — the 487 after our CANCEL is the
@@ -548,6 +572,52 @@ class SipEngine(
             }
             // BYE/REFER/INFO/CANCEL responses need no ladder (fire-and-confirm).
         }
+    }
+
+    /** The INVITE-challenge rung: answer 401/407 with a fresh INVITE
+     *  carrying the digest credentials (WWW- vs Proxy- flavor), the
+     *  SAME offer SDP, and a new CSeq/Via (a new transaction in the
+     *  same dialog — RFC 3261 §13.2.2 / §22.1). Bounded like REGISTER:
+     *  two challenges, three when stale=true; exhaustion ends the call
+     *  instead of looping. */
+    private fun reinviteWithAuth(leg: Leg, challengeResponse: SipMessage, status: Int) {
+        val challengeHeader = if (status == 407) "Proxy-Authenticate" else "WWW-Authenticate"
+        val challenge = Digest.parseChallenge(challengeResponse.header(challengeHeader).orEmpty())
+        leg.authChallenges += 1
+        if (challenge == null || leg.offerSdp == null || leg.authChallenges > (if (challenge.stale) 3 else 2)) {
+            callLegs.remove(leg.callId)
+            listener?.onCallEnded(leg.callId)
+            return
+        }
+        val seq = cseq.incrementAndGet()
+        leg.inviteCseq = seq
+        leg.inviteVia = "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"
+        message.header("To")?.let { leg.toHeader = it }
+        val authHeader = if (status == 407) "Proxy-Authorization" else "Authorization"
+        val authorization = Digest.authorization(
+            method = "INVITE",
+            uri = leg.remoteTarget,
+            username = config.extension,
+            password = config.password,
+            challenge = challenge,
+        )
+        send(
+            SipMessage(
+                isRequest = true, method = "INVITE", uri = leg.remoteTarget, statusCode = 0, reason = "",
+                headers = buildList {
+                    add(SipHeader("Via", leg.inviteVia))
+                    add(SipHeader("Max-Forwards", "70"))
+                    add(SipHeader("From", leg.fromHeader))
+                    add(SipHeader("To", leg.toHeader))
+                    add(SipHeader("Call-ID", leg.callId))
+                    add(SipHeader("CSeq", "$seq INVITE"))
+                    add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
+                    add(SipHeader(authHeader, authorization))
+                    add(SipHeader("Content-Type", "application/sdp"))
+                },
+                body = leg.offerSdp,
+            ),
+        )
     }
 
     private fun respond(request: SipMessage, status: Int) {
@@ -590,6 +660,12 @@ class SipEngine(
         const val TAG = "SipEngine"
         const val REGISTER_EXPIRES = 600
         const val RECONNECT_BACKOFF_MS = 3_000L
+
+        /** Silence watchdog: a live socket answers the expires/2 refresh
+         *  within seconds, so 6 quiet minutes is a dead link; polled
+         *  every 30 s. */
+        const val SILENCE_THRESHOLD_MS = 6 * 60_000L
+        const val SILENCE_POLL_MS = 30_000L
 
         fun reasonPhrase(status: Int): String = when (status) {
             100 -> "Trying"

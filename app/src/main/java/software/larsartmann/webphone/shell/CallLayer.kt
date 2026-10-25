@@ -29,14 +29,15 @@ import software.larsartmann.webphone.sip.SipEngine
 object CallLayer {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    @Volatile private var engine: SipEngine? = null
+    private val guard = AttachGuard<SipEngine>()
     private var sessionWatch: Job? = null
 
     private const val SESSION_WATCH_INTERVAL_MS = 10 * 60 * 1000L
 
     fun ensureWired(context: Context) {
-        if (engine != null) return
+        if (guard.current() != null) return
         val appContext = context.applicationContext
+        val attempt = guard.begin()
         scope.launch {
             CallEngine.registrationWiringStarted()
             val identity = SessionApi.resumeSession() ?: run {
@@ -52,7 +53,11 @@ object CallLayer {
                     password = identity.sipPassword,
                 ),
             )
-            if (!attachOnce(created)) return@launch
+            // A shutdown that raced this resume (settings save, session
+            // watcher) anointed this attempt an orphan — refuse to
+            // attach; the next ensureWired wires fresh.
+            if (!guard.attach(created, attempt)) return@launch
+            CallEngine.attach(created)
             created.connect()
             registerPushLanes(appContext)
             NtfySubscriptionService.start(
@@ -75,7 +80,7 @@ object CallLayer {
     private fun startSessionWatch(appContext: Context) {
         sessionWatch?.cancel()
         sessionWatch = scope.launch {
-            while (isActive && engine != null) {
+            while (isActive && guard.current() != null) {
                 delay(SESSION_WATCH_INTERVAL_MS)
                 if (SessionApi.sessionAlive()) continue
                 runCatching { SessionApi.deregisterPushDevice(appContext) }
@@ -84,13 +89,6 @@ object CallLayer {
                 break
             }
         }
-    }
-
-    private fun attachOnce(created: SipEngine): Boolean = synchronized(this) {
-        if (engine != null) return false
-        engine = created
-        CallEngine.attach(created)
-        true
     }
 
     /** Register this install's wake addresses with the stack: the ntfy
@@ -104,10 +102,17 @@ object CallLayer {
             ?.let { SessionApi.registerPushDevice(context, "fcm", it) }
     }
 
+    /** Idempotent teardown: invalidate first (in-flight wires become
+     *  orphans and refuse to attach), then detach + drop the engine. */
     fun shutdown() {
+        guard.invalidate()
         sessionWatch?.cancel()
         sessionWatch = null
+        guard.current()?.let { engine ->
+            engine.listener = null
+            engine.disconnect()
+        }
         CallEngine.detach()
-        engine = null
+        guard.clear()
     }
 }
