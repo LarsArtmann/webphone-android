@@ -48,7 +48,10 @@ class SipEngine(
     )
 
     interface Listener {
-        fun onRegistrationState(registered: Boolean)
+        /** The registration verdict: REGISTERED (live), AUTH_REJECTED
+         *  (the PBX refused our credentials — distinct from a network
+         *  outage so the UI can say WHICH lie it told), OFFLINE. */
+        fun onRegistrationState(state: RegistrationState)
         fun onIncomingCall(invite: IncomingInvite)
         fun onCallProgress(callId: String, ringing: Boolean)
         fun onCallEstablished(callId: String, remoteSdp: String)
@@ -58,6 +61,8 @@ class SipEngine(
          *  transfer — we only report the verdict). */
         fun onTransferVerdict(callId: String, verdict: String)
     }
+
+    enum class RegistrationState { REGISTERED, AUTH_REJECTED, OFFLINE }
 
     data class IncomingInvite(
         val callId: String,
@@ -85,17 +90,26 @@ class SipEngine(
 
     private class Leg(
         val callId: String,
-        var inviteCseq: Long,
-        var remoteTarget: String,
-        var fromHeader: String,
-        var toHeader: String,
+        /** Mutated from the caller thread (re-INVITE) while the OkHttp
+         *  reader thread dispatches responses — volatile keeps the
+         *  ladder's CSeq/Via/To coherent across the race. */
+        @Volatile var inviteCseq: Long,
+        @Volatile var remoteTarget: String,
+        @Volatile var fromHeader: String,
+        @Volatile var toHeader: String,
         /** The INVITE's own Via (branch included): CANCEL must reuse it
          *  verbatim, or the server matches the CANCEL to no transaction
          *  and the ring-out never stops. */
-        var inviteVia: String,
+        @Volatile var inviteVia: String,
         /** A CANCEL after a final response is a protocol crime — the
          *  dialog is confirmed, only BYE may end it. */
-        var confirmed: Boolean,
+        @Volatile var confirmed: Boolean,
+        /** The WebRTC offer this leg was dialed with: the INVITE-challenge
+         *  re-INVITE must present the SAME SDP (a fresh offer would
+         *  renegotiate ICE under a dialog the server never agreed to). */
+        val offerSdp: String?,
+        /** 401/407 challenges seen on this leg's INVITE ladder. */
+        var authChallenges: Int = 0,
     )
 
     // -- lifecycle -------------------------------------------------
@@ -131,8 +145,16 @@ class SipEngine(
         watchdogJob?.cancel()
         socket?.close(1000, "shutdown")
         socket = null
-        setRegistered(false)
+        setRegistration(RegistrationState.OFFLINE)
     }
+
+    /** Test seam for the silence decision: the registration is up but
+     *  the wire has carried nothing for longer than the threshold. A
+     *  LIVE socket always answers the expires/2 refresh (300 s), so
+     *  anything quieter than 6 minutes is a wedged link the callbacks
+     *  will never report (the island's silent-death lesson, ported). */
+    internal fun isSilent(nowMs: Long): Boolean =
+        registered && nowMs - lastActivity > SILENCE_THRESHOLD_MS
 
     /**
      * The bounded watchdog: the registration must be REFRESHED
@@ -141,7 +163,11 @@ class SipEngine(
      * (the island's connection.js lesson, ported).
      */
     private fun onLinkLost() {
-        setRegistered(false)
+        setRegistration(RegistrationState.OFFLINE)
+        startReconnectBackoff()
+    }
+
+    private fun startReconnectBackoff() {
         watchdogJob?.cancel()
         watchdogJob = scope.launch {
             delay(RECONNECT_BACKOFF_MS)
@@ -149,11 +175,35 @@ class SipEngine(
         }
     }
 
-    private fun setRegistered(value: Boolean) {
-        if (registered == value) return
-        registered = value
-        listener?.onRegistrationState(value)
+    /** The silence half of the watchdog: poll the last wire activity;
+     *  a registered-but-silent socket gets rebuilt (reconnect implies a
+     *  fresh REGISTER — the UI state follows the 200, never the
+     *  socket). Runs instead of the backoff job once the registration
+     *  is confirmed. */
+    private fun startSilenceWatchdog() {
+        watchdogJob?.cancel()
+        watchdogJob = scope.launch {
+            while (isActive) {
+                delay(SILENCE_POLL_MS)
+                if (isSilent(System.currentTimeMillis())) {
+                    Log.w(TAG, "socket silent > ${SILENCE_THRESHOLD_MS}ms — rebuilding")
+                    watchdogJob = null
+                    connect()
+                    return@launch
+                }
+            }
+        }
     }
+
+    private fun setRegistration(state: RegistrationState) {
+        val registeredNow = state == RegistrationState.REGISTERED
+        if (registered == registeredNow && lastReported == state) return
+        registered = registeredNow
+        lastReported = state
+        listener?.onRegistrationState(state)
+    }
+
+    @Volatile private var lastReported: RegistrationState? = null
 
     // -- REGISTER --------------------------------------------------
 
@@ -176,11 +226,12 @@ class SipEngine(
             },
             body = "",
         )
-        pendingAuth = callId
         send(request)
     }
 
-    @Volatile private var pendingAuth: String? = null
+    /** Auth challenges answered on the CURRENT registration ladder —
+     *  bounded so a wrong password cannot loop REGISTERs forever. */
+    @Volatile private var registerAuthChallenges = 0
 
     // -- outbound call ---------------------------------------------
 
@@ -197,6 +248,7 @@ class SipEngine(
             toHeader = "<$target>",
             inviteVia = via,
             confirmed = false,
+            offerSdp = offerSdp,
         )
         callLegs[callId] = leg
         val request = SipMessage(
@@ -431,6 +483,7 @@ class SipEngine(
                 toHeader = invite.header("From").orEmpty(),
                 inviteVia = "",
                 confirmed = true,
+                offerSdp = null,
             )
         }
     }

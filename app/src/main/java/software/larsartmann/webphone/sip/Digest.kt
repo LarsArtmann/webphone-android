@@ -17,6 +17,10 @@ object Digest {
         val algorithm: String,
         val qop: String?,
         val opaque: String?,
+        /** A stale=true challenge means ONLY the nonce expired — the
+         *  credentials are fine; the retry is guaranteed to be the last
+         *  one, so the ladder may go one round deeper. */
+        val stale: Boolean,
     )
 
     fun parseChallenge(wwwAuthenticate: String): Challenge? {
@@ -39,6 +43,7 @@ object Digest {
             algorithm = params["algorithm"] ?: "MD5",
             qop = params["qop"],
             opaque = params["opaque"],
+            stale = params["stale"]?.equals("true", ignoreCase = true) ?: false,
         )
     }
 
