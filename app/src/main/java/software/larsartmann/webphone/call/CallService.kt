@@ -56,6 +56,13 @@ class CallService : Service() {
         val builder = baseNotification()
         val party = CallEngine.state.value.remoteParty
         if (party.isNotEmpty()) {
+            val startedAtMs = CallEngine.state.value.startedAtMs
+            if (startedAtMs > 0) {
+                // The shade's own call clock (CallStyle renders elapsed
+                // from `when`): the same wall-clock the in-call screen
+                // ticks, visible with the screen off.
+                builder.setShowWhen(true).setWhen(startedAtMs)
+            }
             NotificationCompat.CallStyle.forOngoingCall(
                 androidx.core.app.Person.Builder().setName(party).build(),
                 PendingIntent.getBroadcast(

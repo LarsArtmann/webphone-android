@@ -40,6 +40,12 @@ object TelecomOutgoing {
     private var control: CallControl? = null
     private var watcher: Job? = null
 
+    /** AttachGuard-style generation: Telecom's addCall result is async,
+     *  so a superseded placement's late callback (or its state watcher)
+     *  must never touch the CURRENT session's bookkeeping — stale
+     *  sessions disconnect themselves instead of orphaning. */
+    @Volatile private var generation = 0
+
     /** Place `number` through Telecom's addCall session. Returns
      *  false when the API is unavailable (the caller falls back to a
      *  direct dial). The engine only dials AFTER Telecom accepts the
@@ -57,12 +63,14 @@ object TelecomOutgoing {
         )
             .setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
             .build()
+        generation += 1
+        val gen = generation
         telecom.addCall(
             attributes,
             appContext.mainExecutor,
             object : android.os.OutcomeReceiver<CallControl, CallException> {
                 override fun onResult(result: CallControl) {
-                    onCallControlReady(appContext, result, number)
+                    onCallControlReady(appContext, result, number, gen)
                 }
 
                 override fun onError(error: CallException) {
@@ -113,7 +121,17 @@ object TelecomOutgoing {
         return true
     }
 
-    private fun onCallControlReady(appContext: Context, callControl: CallControl, number: String) {
+    private fun onCallControlReady(appContext: Context, callControl: CallControl, number: String, gen: Int) {
+        if (gen != generation) {
+            // A newer placement superseded this session — disconnect it
+            // so Telecom never holds an orphan the UI has forgotten.
+            callControl.disconnect(
+                DisconnectCause(DisconnectCause.LOCAL),
+                appContext.mainExecutor,
+                failure("disconnect-superseded"),
+            )
+            return
+        }
         control = callControl
         CallEngine.dial(number)
         watcher?.cancel()
@@ -140,7 +158,7 @@ object TelecomOutgoing {
                             appContext.mainExecutor,
                             failure("disconnect"),
                         )
-                        cleanup()
+                        if (gen == generation) cleanup() else coroutineContext[Job]?.cancel()
                     }
                     else -> Unit
                 }

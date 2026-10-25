@@ -56,6 +56,7 @@ object CallEngine : SipEngine.Listener {
         val remoteParty: String = "",
         val muted: Boolean = false,
         val endedBy: EndedBy = EndedBy.NONE,
+        val startedAtMs: Long = 0,
     )
 
     private val _state = MutableStateFlow(CallState())
@@ -290,7 +291,15 @@ object CallEngine : SipEngine.Listener {
         synchronized(callLock) {
             if (!callLive || _state.value.callId != callId) return
             media?.acceptAnswer(SessionDescription(SessionDescription.Type.ANSWER, remoteSdp))
-            _state.value = _state.value.copy(phase = Phase.ACTIVE, callId = callId)
+            _state.value = _state.value.copy(
+                phase = Phase.ACTIVE,
+                callId = callId,
+                // First establishment only — a re-INVITE's 200 (hold/
+                // unhold) re-enters here and must not reset the clock.
+                startedAtMs =
+                    if (_state.value.startedAtMs == 0L) System.currentTimeMillis()
+                    else _state.value.startedAtMs,
+            )
         }
     }
 

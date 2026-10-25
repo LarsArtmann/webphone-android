@@ -59,6 +59,22 @@ object RingEvent {
             notifyMissedCall(context, from)
             return
         }
+        if (CallEngine.registration.value.failure == CallEngine.RegistrationFailure.AUTH_REJECTED) {
+            // Definitive: no registration, no INVITE can ever land on
+            // this device — a Telecom ring would promise a call the
+            // user cannot answer (W170). A plain heads-up naming the
+            // cause takes the ring's place; the server's ring_end
+            // clears it (same notification id).
+            val builder = NotificationCompat.Builder(context, App.CHANNEL_CALLS)
+                .setSmallIcon(android.R.drawable.sym_call_incoming)
+                .setContentTitle(from)
+                .setContentText(context.getString(R.string.registration_auth_rejected))
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+            post(context, NOTIFICATION_ID_INCOMING, builder.build())
+            return
+        }
 
         val telecom = context.getSystemService(TelecomManager::class.java) ?: return
         val extras = Bundle().apply {
@@ -104,7 +120,7 @@ object RingEvent {
                     notificationAction(context, CallNotificationReceiver.ACTION_ANSWER, requestCode = 1),
                 ),
             )
-        }
+        }.onFailure { Log.w("RingEvent", "CallStyle rejected: ${it.message}") }
         val notifications = context.getSystemService(NotificationManager::class.java) ?: return
         if (notifications.canUseFullScreenIntent()) {
             builder.setFullScreenIntent(fullScreen, true)

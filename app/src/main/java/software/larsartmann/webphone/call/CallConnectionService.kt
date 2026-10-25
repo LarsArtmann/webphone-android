@@ -9,6 +9,7 @@ import android.telecom.DisconnectCause
 import android.telecom.PhoneAccount
 import android.telecom.PhoneAccountHandle
 import android.telecom.TelecomManager
+import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -95,6 +96,7 @@ class CallConnectionService : ConnectionService() {
             // call FGS must come up here too (a telecom answer is user
             // interaction — the legitimate mic-FGS launch path).
             runCatching { CallService.start(appContext) }
+                .onFailure { Log.w(TAG, "call FGS start failed on telecom answer: ${it.message}") }
         }
 
         override fun onReject() {
@@ -122,6 +124,7 @@ class CallConnectionService : ConnectionService() {
     }
 
     companion object {
+        private const val TAG = "CallConnectionService"
         private var handle: PhoneAccountHandle? = null
         @Volatile private var activeConnection: SelfManagedConnection? = null
         private val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)

@@ -124,7 +124,7 @@ class NtfySubscriptionService : Service() {
                 from = inner.optString("from").ifEmpty { null },
                 callId = inner.optString("call_id").ifEmpty { null },
             )
-        }
+        }.onFailure { Log.w(TAG, "unroutable ntfy frame (${it.message}): $text") }
     }
 
     private fun scheduleReconnect(server: String, topic: String) {
