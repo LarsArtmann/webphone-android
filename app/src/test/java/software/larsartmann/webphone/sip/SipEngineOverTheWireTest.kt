@@ -44,6 +44,7 @@ class SipEngineOverTheWireTest {
     private lateinit var states: States
     private var socket: WebSocket? = null
     private val frames = LinkedBlockingQueue<String>()
+    private var registersSeen = 0
 
     /** Echo helpers: SIP responses MUST reuse the request's Call-ID,
      *  CSeq and Via or the engine drops them as foreign transactions. */
@@ -80,7 +81,10 @@ class SipEngineOverTheWireTest {
     private fun awaitRegister(): String {
         while (true) {
             val frame = nextFrame()
-            if (frame.startsWith("REGISTER")) return frame
+            if (frame.startsWith("REGISTER")) {
+                registersSeen += 1
+                return frame
+            }
         }
     }
 
@@ -88,6 +92,7 @@ class SipEngineOverTheWireTest {
     fun setUp() {
         server = MockWebServer()
         states = States()
+        registersSeen = 0
         server.enqueue(
             MockResponse().withWebSocketUpgrade(
                 object : WebSocketListener() {
@@ -170,7 +175,7 @@ class SipEngineOverTheWireTest {
 
             assertEquals(
                 2,
-                frames.count { it.startsWith("REGISTER") },
+                registersSeen,
                 "the ladder is bounded: ONE credentialed retry, then stop",
             )
         } finally {
@@ -191,7 +196,7 @@ class SipEngineOverTheWireTest {
 
             assertEquals(
                 3,
-                frames.count { it.startsWith("REGISTER") },
+                registersSeen,
                 "stale=true grants two retries, the third challenge refuses",
             )
         } finally {

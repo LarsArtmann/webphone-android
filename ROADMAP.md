@@ -15,18 +15,12 @@ the call surfaces toward daily-driver quality.
 
 Raw ideas:
 
-- CallStyle-composed in-call notifications (the platform's native calling look)
 - Bluetooth/watch answer-path edge cases through the Telecom integration
 - Doze/battery-manager variance in the ntfy lane (accepted trade today;
   revisit if rings go missing in the field)
 - Audio-focus and audio-routing polish on the WebRTC leg
-- Missed-call notification when `ring_end` lands unanswered
-- In-call duration timer; dialpad haptic feedback
-- WorkManager as a fallback ntfy reconnect path
-- `CallEndpoint`-based speaker routing on API 34+ (align with the addCall
-  session instead of raw AudioManager)
-- Crash reporting (self-hosted, e.g. ACRA) — or none by policy
-- Baseline profiles for startup + the call path
+- Baseline profiles for startup + the call path (deferred 2026-10-25:
+  measure a real device first — see Decisions)
 
 ### 2. Operator configuration
 
@@ -54,6 +48,52 @@ Raw ideas:
   installable artifact is the debug APK; `assembleRelease` emits an
   unsigned APK)
 
+## Decisions
+
+The made-in-head calls, written down (2026-10-25 sweep). Each carries its
+revisit trigger — a decision without one is a grudge.
+
+- **TLS is NOT pinned.** The stack is Caddy-fronted with Let's Encrypt
+  certificates that rotate; SPKI pinning would brick every call at the
+  next renewal. Trust = platform TLS store + HTTPS-only
+  (`usesCleartextTraffic="false"`). Revisit only behind a long-lived
+  internal CA.
+- **API 31-33 outbound stays direct-dial, permanently.** `placeCall`
+  is gone from the API 36 stubs and `addCall` needs 34+; there is no
+  Telecom surface outbound below 34 until minSdk rises to 34. Not a
+  gap — the honest degradation. Inbound is Telecom-integrated
+  everywhere.
+- **CallEndpoint-based speaker routing: NOT for v0.1.**
+  `setCommunicationDevice` works on the supported range today; the
+  CallEndpoint shape aligns with `addCall` but only exists on 34+.
+  Revisit when minSdk reaches 34.
+- **WorkManager as ntfy reconnect fallback: REJECTED.** Its minimum
+  cadence is 15 minutes — that defeats a push socket, which is the
+  entire lane. The real fix shipped: sticky FGS + the battery
+  exemption ask. Revisit only if OEM task-killers defeat the FGS in
+  the field.
+- **Crash reporting: NONE by policy.** A personal stack with one
+  operator; logcat + `adb bugreport` + the train scripts are the
+  pipeline. Revisit ACRA (self-hosted) if daily-driver failures become
+  untraceable.
+- **Emulator snapshots: OFF (`-no-snapshot`).** Determinism over boot
+  time — a train must prove the cold path a real user gets. Revisit
+  if train boot time becomes a real tax.
+- **WebView stance:** Safe Browsing stays default-on (the island is
+  the only content and it is trusted, but the cost of the default is
+  zero); user-agent stays WebView-default (no spoofing — the island
+  knows its own shell); pinch-zoom stays enabled (accessibility over
+  app-look); API 31-32 keeps the web app's own theme toggle as the
+  dark-mode fallback (algorithmic darkening needs 33+).
+- **Kotlin formatter/linter: none for v0.1.** Style is enforced by
+  review (Ktlint/detekt would fight the programmatic-UI idiom for
+  marginal gain at this size). Revisit when a second heavy Kotlin
+  contributor exists.
+- **values-de (German strings): not now.** The UI is English-only;
+  strings are already extractor-safe (positional args, no string
+  concatenation in layouts). Revisit when there is a second user who
+  wants it.
+
 ## Open questions
 
 Unresolved questions route here until an answer turns them into bounded work
@@ -69,10 +109,6 @@ Unresolved questions route here until an answer turns them into bounded work
 - **Icon parity:** the native launcher leads with the handset glyph; the PWA
   uses a link glyph. Keep them diverged, or adopt the handset in both (change
   both or neither)?
-- **Where should CI run?** GitHub Actions with a `push` trigger (private
-  minutes; the account's Actions were billing-dead 2026-09-08), the native
-  Forgejo runner via `.forgejo/workflows`, or manual device trains only?
-  Today NOTHING builds on merge-to-main.
 - **Visibility end-state:** both remotes are PRIVATE today; the sibling
   `webphone` repo is public and this README reads public-facing. Keep private
   until the honesty-contract markers clear, then flip the GitHub twin public
