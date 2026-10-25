@@ -13,8 +13,39 @@ silently replaces.
 implemented but untested against LIVE infrastructure (the README
 "honesty contract" section lists the markers). There IS now: a JVM test
 source set (25 tests: protocol unit tests + Robolectric smoke) and a CI
-workflow (never run — no git remote configured). First emulator smoke
-(install + launch) passed 2026-10-24.
+workflow (mirrored to GitHub 2026-10-25, but its triggers are
+`pull_request`/`workflow_dispatch` only — it has never run). First
+emulator smoke (install + launch) passed 2026-10-24.
+
+## Repository & mirrors
+
+Forgejo is the primary (canonical) remote; GitHub is the off-site
+mirror. Both are **private**.
+
+- Forgejo: `forgejo@evo-x2.home.lan:lars/webphone-android.git`
+  (`origin`), created native via SSH push-to-create (Forgejo default is
+  private) on 2026-10-25.
+- GitHub: `git@github.com:LarsArtmann/webphone-android.git` (`github`
+  remote, push fallback), created private 2026-10-25 and seed-pushed by
+  hand over SSH — the seed had to carry `.github/workflows/ci.yml`,
+  which the sync PAT cannot push (below).
+- The Forgejo→GitHub push mirror (8h + `sync_on_commit`) is attached by
+  phase 5 of `forgejo-github-sync`, driven by `forgejo.canonicalRepos`
+  in `~/projects/SystemNix` (`platforms/nixos/system/configuration.nix`;
+  entry added 2026-10-25). It attaches on the next SystemNix deploy
+  (`nix run .#deploy`) or a root-shell hand-run of the phase-5 script
+  `forgejo-push-mirror` with `FORGEJO_CANONICAL_REPOS=webphone-android`.
+- **Mirror credential trap (LIVE for this repo):** the sops
+  `github_token` sync PAT lacks `workflow` scope and this repo HAS
+  `.github/workflows/ci.yml` — GitHub rejects mirror pushes containing
+  workflow-file changes ("refusing to allow a Personal Access Token …
+  without `workflow` scope"; the same trap froze `domains` at 114
+  commits behind as of 2026-10-25). Fix: regenerate the PAT with
+  repo+workflow scope, update the sops secret, redeploy. Commits that
+  do not touch `.github/workflows/` mirror fine.
+- Mirror lag check (same probe as `domains`):
+  `git fetch origin && git fetch github && git rev-parse origin/main github/main` —
+  equal SHAs mean the mirror is keeping up.
 
 ## Build and verify
 
