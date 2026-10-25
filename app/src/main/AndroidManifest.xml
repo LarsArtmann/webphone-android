@@ -24,11 +24,16 @@
         android:usesCleartextTraffic="false"
         android:enableOnBackInvokedCallback="true">
 
+        <!-- uiMode is deliberately NOT in configChanges on any
+             surface: a day/night switch must recreate the activity so
+             the programmatically built views re-resolve every wp*
+             token from the fresh theme (the stale-colors defect,
+             fixed 2026-10-25). -->
         <activity
             android:name=".shell.MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:configChanges="orientation|screenSize|keyboardHidden|uiMode">
+            android:configChanges="orientation|screenSize|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -44,7 +49,7 @@
             android:showWhenLocked="true"
             android:turnScreenOn="true"
             android:theme="@style/Theme.WebPhone.Call"
-            android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
+            android:configChanges="orientation|screenSize|keyboardHidden" />
 
         <!-- The dialer entry: number in, mic permission, dial. The
              configChanges set preserves the typed number across
@@ -52,7 +57,7 @@
         <activity
             android:name=".call.DialpadActivity"
             android:exported="false"
-            android:configChanges="orientation|screenSize|keyboardHidden|uiMode" />
+            android:configChanges="orientation|screenSize|keyboardHidden" />
 
         <!-- Settings: the stack origin (the one fact the app cannot
              guess) lives here. -->
