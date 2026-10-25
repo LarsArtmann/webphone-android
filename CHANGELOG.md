@@ -34,10 +34,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   alpha-composited chrome glass, worst-case bases) as a CI step — the
   2.44:1 answer-button class can never drift back silently; the
   reserved dark `wp_danger` token is now text-grade (6.1:1 on surface)
-- Test suite grew to 60 JVM tests: WebView client delegation (the
+- Test suite grew to 72 JVM tests: WebView client delegation (the
   scope guard wired, the transport-vs-HTTP error split, the download
   policy incl. cookie confinement, Content-Disposition filename
-  derivation)
+  derivation), the MockWebServer REGISTER-ladder soak over a REAL
+  websocket (challenge → credentialed retry → registered, the
+  wrong-password bound, stale=true grace), the ntfy topic-rotation
+  restart, the call service's styled/plain branches + shade hang-up,
+  and the router's answered-call-spared + auth-rejected suppression
+  pins
 - WebView dark mode (API 33+): the web surfaces follow the system
   theme via algorithmic darkening — the web app declares
   `color-scheme: dark light` and renders its own dark theme; its
@@ -96,9 +101,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   dialpad recents (last 5 numbers), long-press backspace clear,
   floating-action styling, 48dp touch targets, extracted strings,
   ended-call auto-finish, re-ring intent refresh
+- CallStyle notifications (the platform calling look): incoming with
+  the shade's Answer/Decline actions (`CallNotificationReceiver`) and
+  an ongoing style with Hang up + the shade's own call clock (elapsed
+  from the engine's establishment timestamp); plain-notification
+  fallbacks wherever Telecom cannot back the style at post time
+- Missed-call notes: a ring on a busy line and a `ring_end` that dies
+  unanswered leave a visible note instead of a silent loss; a stale
+  `ring_end` after a local answer spares the live call
+- "Sign-in rejected" registration cause: the badge, the dialer guard,
+  and the ring path distinguish a refused credential from a network
+  outage — a ring push while auth-rejected surfaces the cause instead
+  of promising a call that can never land
+- In-call duration clock on the call screen (silent to TalkBack),
+  dialpad + DTMF haptics, and recents re-read on resume
+- Battery-optimization exemption ask: once per install, after a
+  registration proves the session works (direct dialog + settings
+  deep-link fallback)
+- SIP hardening: the INVITE 401/407 digest rung (same dialog, same
+  SDP, bounded), the bounded REGISTER retry ladder (one credentialed
+  retry, two when stale), the silence watchdog (registered-but-quiet
+  >6 min → rebuild), and the AttachGuard generation counter making
+  shutdown invalidate in-flight call-layer wires
+- Day/night theme recreation: `uiMode` removed from `configChanges`
+  so the system recreates every surface on theme change (the frozen-
+  palette root fix)
+- WebView UX tail: image-only file inputs on API 33+ route through
+  the system photo picker; verbose console bridging gated behind
+  debuggable builds (errors always); the offline overlay re-resolves
+  the origin at show time
+- Self-serve train kit discipline: the emulator serial is resolved
+  before any wait (a physical device on the same adb server no longer
+  aborts the run) and the release smoke uninstalls mismatched-
+  signature packages first; FIRST `--release` smoke ran green (R8
+  output boots, 2026-10-25)
+- `scripts/emulator-photos.sh` (light+dark capture in one run) and
+  `scripts/mirror-lag.sh` (mirror-lag probe); MIT LICENSE
+- CI push trigger (`push: branches: [main]`)
 
 ### Fixed
 
+- System back on API 33+ never reached the WebView's tab history: the
+  manifest's `enableOnBackInvokedCallback` silences `onBackPressed`,
+  so a predictive-back callback bridges the history now (the override
+  only serves API 31/32)
+- The second call of the day was silently refused: the call phase
+  never rewound after teardown (the ENDED line now accepts the next
+  call — regression-pinned)
+- The ntfy stop leak: a pending reconnect could resurrect the
+  subscription after stop/destroy (rang forever with no owner)
+- Call-engine confinement: every mutation sits under one lock,
+  teardown disposes the media exactly once (double-dispose was a
+  native-crash window), and offer/answer callbacks guard stood-down
+  calls
 - The session cookie minted by the island login is flushed to disk
   (page finish + pause) — a process kill can no longer eat the login
 - Session seam: OkHttp now bridges through the WebView's `CookieManager`
@@ -131,6 +186,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ### Changed
 
 - Formatting baseline via dprint (JSON/YAML/Markdown/Dockerfile; `dprint.json`)
+- The `.kotlin/` directory (Kotlin 2.x session state) is local-only —
+  gitignored, never committed
+- `runCatching` swallows on the call path now log (the telecom-answer
+  FGS start, the CallStyle post, the unroutable ntfy frame); Telecom
+  `addCall` sessions carry a generation guard so superseded sessions
+  disconnect instead of orphaning
 - Call end attribution modeled explicitly (`CallState.endedBy`:
   local/remote/failed) and rendered as Telecom DisconnectCauses
 - Gradle configuration cache enabled; Dependabot config de-duplicated
