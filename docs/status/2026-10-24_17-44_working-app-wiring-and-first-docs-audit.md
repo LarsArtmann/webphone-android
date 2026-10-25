@@ -261,17 +261,17 @@ resume re-auths — verify)
 
 ## g) Questions I can NOT figure out myself
 
-1. **Live stack for the first device train:** is there a webphone stack URL + **→ origin answered — the live stack shipped as the default (App.DEFAULT_ORIGIN); the test extension is still owed (ROADMAP Open questions)**
+1. **Live stack for the first device train:** is there a webphone stack URL +
    a test extension account I can point the app at (and does its
    `/api/session` actually return `websocket_url`, or is the `/sip`
    derivation the real contract)? Without this, items f-1/f-2/f-14/f-15 stay
-   blocked.
-2. **Server re-INVITE behavior (cross-repo contract):** when the webphone **→ still open — lives on as the bootstrap race (AGENTS.md Gotchas, ROADMAP Open questions)**
+   blocked. **→ origin answered — the live stack shipped as the default (App.DEFAULT_ORIGIN); the test extension is still owed (ROADMAP Open questions)**
+2. **Server re-INVITE behavior (cross-repo contract):** when the webphone
    server fans out a `ring` push, does it re-INVITE the WSS leg long enough
    for a cold-bootstrapped client to catch it — or does the INVITE fire once?
    This decides whether the answer-path race is won by design or needs a
    server-side retry/payload change (the answer lives in the webphone repo's
-   `internal/push`, not here).
+   `internal/push`, not here). **→ still open — lives on as the bootstrap race (AGENTS.md Gotchas, ROADMAP Open questions)**
 3. ~~**Product decision — FSI auto-answer:** is answer-on-activity-open~~ done at `dac60c9`
    ~~intended behavior ("opening the call screen means answering") or a bug~~
    ~~(require an explicit Answer tap, FSI just reveals the buttons)? It changes~~

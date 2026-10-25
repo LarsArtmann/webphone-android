@@ -81,7 +81,7 @@ the ntfy ring-while-closed lane, with the app set to battery
 | -------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | T10 ntfy persistence       | Code + reasoning                                                        | F055: actual `adb shell am kill` restart cycle never executed                                                                                                                                    |
 | T22 call-screen robustness | F091/F092                                                               | F093 thread-confinement audit (REAL risk: `pendingInvite`/`media` are plain fields written from WebRTC callbacks, OkHttp threads, and the UI thread), F094 shutdown-vs-ensureWired race decision |
-| T24 repo polish            | Config cache, dependabot                                                | ~~Icon artwork (design)~~ done at `29c4e45` (handset glyph + monochrome); LICENSE (operator decision) still open                                                             |
+| T24 repo polish            | Config cache, dependabot                                                | ~~Icon artwork (design)~~ done at `29c4e45` (handset glyph + monochrome); LICENSE (operator decision) still open                                                                                 |
 | T13 logout deregistration  | Cookie-poll watcher shipped                                             | The JS-bridge alternative and actual server-side row cleanup need the operator pick (F063/F064)                                                                                                  |
 | A11y                       | Touch targets + one description                                         | TalkBack pass, contrast audit of every programmatic surface, DTMF row layout (13 buttons in ONE horizontal row — cramped)                                                                        |
 | CI                         | Workflow written, locally mirrored (dprint/zipalign/tests pass locally) | First green GitHub run — impossible without a remote; runner assumptions unverified on GH infrastructure                                                                                         |
@@ -220,17 +220,17 @@ the ntfy ring-while-closed lane, with the app set to battery
 
 ## g) Questions only you can answer
 
-1. **Q1 (the ONLY blocker for a WORKING MVP on your phone):** can you **→ still open — the stack is UP again (verified 2026-10-25) but the test extension is still owed (ROADMAP Open questions)**
+1. **Q1 (the ONLY blocker for a WORKING MVP on your phone):** can you
    give me a reachable live stack origin + a test extension (and a test
    account if login needs one)? Or point me at a staging stack? The app
    will install and launch without it, but it cannot register, call, or
    ring — the placeholder origin is a non-place and cleartext/LAN stacks
-   won't connect (HTTPS with a valid cert only).
-2. **Logout semantics (drives F063):** when a user logs out on the **→ still open — ROADMAP Open questions**
+   won't connect (HTTPS with a valid cert only). **→ still open — the stack is UP again (verified 2026-10-25) but the test extension is still owed (ROADMAP Open questions)**
+2. **Logout semantics (drives F063):** when a user logs out on the
    island, does the server KEEP the `/api/push-devices` rows (then the
    native side must deregister BEFORE the cookie dies → JS bridge
    needed), or PURGE them on logout (then the shipped cookie-poll
-   watcher is already enough)?
+   watcher is already enough)? **→ still open — ROADMAP Open questions**
 3. ~~**Q3 confirmation:** the FSI auto-answer removal shipped on the~~ done at `dac60c9`
    ~~plan's assumption it was a defect. Confirm: incoming calls must~~
    ~~ALWAYS require an explicit Answer tap, correct? (If pocket-answer was~~

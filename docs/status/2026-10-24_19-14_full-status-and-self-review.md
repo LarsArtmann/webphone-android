@@ -179,16 +179,16 @@
 
 ## g) Questions only you can answer
 
-1. **Q1 (now the ONLY blocker for the real trains):** can you give me a **→ still the blocker — the stack is UP again (verified 2026-10-25) but the test extension is still owed (ROADMAP Open questions)**
+1. **Q1 (now the ONLY blocker for the real trains):** can you give me a
    reachable stack origin + a test extension (and, if the login flow
    needs it, a test account)? Alternatively: is there a staging stack
    the emulator may point at? Everything self-serve is done — this is
-   the last wall.
-2. **Logout semantics (drives F063):** when a user logs out on the **→ still open — ROADMAP Open questions**
+   the last wall. **→ still the blocker — the stack is UP again (verified 2026-10-25) but the test extension is still owed (ROADMAP Open questions)**
+2. **Logout semantics (drives F063):** when a user logs out on the
    island, does the server KEEP the `/api/push-devices` rows (then the
    native side must deregister BEFORE the cookie dies → JS bridge or
    logout-endpoint hook needed), or does the server purge them on
-   logout (then the shipped cookie-poll watcher is already enough)?
+   logout (then the shipped cookie-poll watcher is already enough)? **→ still open — ROADMAP Open questions**
 3. ~~**Q3 confirmation:** the FSI auto-answer removal shipped on the~~ done at `dac60c9`
    ~~plan's assumption it was a defect. Confirm: incoming calls must~~
    ~~ALWAYS require an explicit Answer tap, correct? (If the pocket-answer~~

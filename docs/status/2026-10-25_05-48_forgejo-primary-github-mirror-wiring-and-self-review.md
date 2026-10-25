@@ -151,11 +151,11 @@ re-scoped; non-workflow commits flow fine.
    edit, or verify content landed post-sweep (I did the latter, by
    luck of habit). For load-bearing config, prefer verifying via
    `nix eval` AND `git log -S` rather than trusting the staging area.
-6. **Gap-window landmine (live until mirror attaches)**: nothing
-   pushes `github` automatically — the daemon commits locally, and
-   every webphone-android session must fallback-push or the twin
-   silently drifts. The AGENTS.md section documents the remotes but
-   does not yet shout "UNTIL DEPLOY: PUSH GITHUB MANUALLY".
+6. ~~**Gap-window landmine (live until mirror attaches)**: nothing~~ done — landed 2026-10-25 (docs-health audit) — AGENTS.md now warns that NOTHING pushes any remote until the mirror attaches
+   ~~pushes `github` automatically — the daemon commits locally, and~~
+   ~~every webphone-android session must fallback-push or the twin~~
+   ~~silently drifts. The AGENTS.md section documents the remotes but~~
+   ~~does not yet shout "UNTIL DEPLOY: PUSH GITHUB MANUALLY".~~
 7. **Symmetric repo metadata**: set the Forgejo description when
    creating twins; phase 5 will not do it for you.
 
@@ -170,25 +170,25 @@ Unblock (owner, minutes):
    (114 behind) AND future-proofs this repo's ci.yml commits.
 3. After both: trigger a sync and run the AGENTS.md lag probe —
    first true end-to-end mirror proof.
-4. Push-or-drift: while the window is open, `git push github main`
-   after every session (and after the daemon's local commits).
+4. ~~Push-or-drift: while the window is open, `git push github main`~~ done — landed 2026-10-25 — AGENTS.md carries the push-both-remotes warning (docs-health audit)
+   ~~after every session (and after the daemon's local commits).~~
 
 Verification debt (agent, quick):
 
-5. `git ls-remote --symref origin HEAD` — confirm forgejo default
-   branch is `main`; fix via UI/API if not.
+5. ~~`git ls-remote --symref origin HEAD` — confirm forgejo default~~ done — 2026-10-25 — git ls-remote --symref origin HEAD returns ref: refs/heads/main
+   ~~branch is `main`; fix via UI/API if not.~~
 6. Resolve the eventcatalog-hub mirror-lag probe (right branch name?
    fetch failure?) — its health is unknown since today.
 7. Re-run domains `mirror-lag` after the PAT fix; confirm 114→0.
-8. README audit for stale remote/CI claims after today's wiring.
+8. ~~README audit for stale remote/CI claims after today's wiring.~~ done — 2026-10-25 — README audited and modernized during the docs-health audit (MVP path + release honesty added)
 9. Check SystemNix's own remote state (should the canonicalRepos
    commit be pushed anywhere?).
 
 Repo hygiene (agent, small):
 
 10. Set the Forgejo repo description (UI or one API call).
-11. Add `.github/dependabot.yml` (gradle + github-actions ecosystems)
-    or delete the claim from AGENTS.md — currently a doc lie.
+11. ~~Add `.github/dependabot.yml` (gradle + github-actions ecosystems)~~ done — non-issue — .github/dependabot.yml EXISTS (gradle x2 + github-actions, landed 1caa45e); the report's '.github/ contains only ci.yml' was wrong
+    ~~or delete the claim from AGENTS.md — currently a doc lie.~~
 12. Port `scripts/mirror-lag.sh` from domains (or extract a
     fleet-shared variant) instead of the inline two-liner.
 13. Add a `push: branches: [main]` trigger decision for ci.yml (see
@@ -215,7 +215,7 @@ see `docs/status/2026-10-25_04-58_*` f) for the full ranked list):
 19. Release signing config (deliberate, currently debug-APK-only).
 20. FCM lane activation (google-services.json drop-in) vs ntfy-only.
 21. CallStyle-composed notification UI (planned, not present).
-22. The prior session's three open operator questions (live stack
+22. The prior session's three open operator questions (live stack **→ routed to ROADMAP Open questions**
     502/test extension; logout semantics; icon parity) — still open.
 
 (22 concrete items; padding to 50 with rephrasings would be noise —
@@ -227,13 +227,13 @@ the prior report's f) carries the long tail.)
    precedents are private; the sibling `webphone` repo is public, and
    this README reads public-facing). Keep both sides private until the
    honesty-contract markers clear, then flip the GitHub twin public?
-   Or public from the start?
+   Or public from the start? **→ routed to ROADMAP Open questions (visibility end-state)**
 2. **Where should CI actually run?** GitHub Actions with a `push`
    trigger (private minutes; the account's Actions were
    billing-dead 2026-09-08 — domains fled to the native runner), the
    native evo-x2 Forgejo runner via `.forgejo/workflows` (is the box
    allowed to carry Android SDK + Gradle builds?), or manual device
-   trains only for now?
+   trains only for now? **→ routed to ROADMAP Open questions (CI execution home)**
 3. **Do you want the agent-unblock made durable?** I can add
    `forgejo-github-sync.service` to the `agent-unit-control` polkit
    allowlist in SystemNix (one line + the same deploy) so future

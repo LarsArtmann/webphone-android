@@ -4,6 +4,10 @@ Point-in-time snapshots, newest first. Living docs (`FEATURES.md`,
 `TODO_LIST.md`, `CHANGELOG.md`) are the current truth; a report is what
 was believed at its timestamp.
 
+> Reading an old report: `~~struck~~` items carry an inline resolution
+> (`done at <hash>` / `routed` / verified evidence); BARE items were still
+> open when last annotated (2026-10-25 docs-health audit).
+
 | Report                                                                                                                                             | Scope                                                                                                                                 |
 | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | [2026-10-25_05-48 — Forgejo primary + GitHub mirror wiring, self-review](2026-10-25_05-48_forgejo-primary-github-mirror-wiring-and-self-review.md) | Forgejo primary + private GitHub twin wired, push mirror deploy-gated, domains 114-commit freeze diagnosed, mistakes catalogued       |

@@ -184,14 +184,14 @@ emulator snapshots. None were promised this session.
 
 ## g) Questions only you can answer
 
-1. **The live stack**: `pbx.artmann.tech` served 502 all session — is **→ the 502 cleared — the stack serves again (verified 2026-10-25); the test extension is still owed (ROADMAP Open questions)**
+1. **The live stack**: `pbx.artmann.tech` served 502 all session — is
    that known maintenance, or will you go poke the backend? And once
    it's up: which test extension (+ account, if login needs one) may I
-   use for the device trains and the call-screen verification?
-2. **Logout semantics (drives F063/F064)**: when a user logs out on **→ still open — ROADMAP Open questions**
+   use for the device trains and the call-screen verification? **→ the 502 cleared — the stack serves again (verified 2026-10-25); the test extension is still owed (ROADMAP Open questions)**
+2. **Logout semantics (drives F063/F064)**: when a user logs out on
    the island, does the server KEEP the `/api/push-devices` rows (the
    native side must deregister BEFORE the cookie dies → JS bridge
-   needed), or PURGE them (the shipped cookie-poll watcher suffices)?
-3. **Icon parity**: the native launcher now leads with the handset **→ routed to ROADMAP Open questions (icon parity)**
+   needed), or PURGE them (the shipped cookie-poll watcher suffices)? **→ still open — ROADMAP Open questions**
+3. **Icon parity**: the native launcher now leads with the handset
    glyph; the PWA still uses the link glyph. Keep them diverged, or
-   should the webphone repo adopt the handset too (both or neither)?
+   should the webphone repo adopt the handset too (both or neither)? **→ routed to ROADMAP Open questions (icon parity)**
