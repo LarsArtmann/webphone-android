@@ -37,7 +37,7 @@ class WebSurfaceTest {
                 assertFalse(surface.offlineVisible(), "retry dismisses the overlay")
                 assertEquals(
                     App.origin,
-                    shadowOf(surface.currentWebView()).loadedUrls.last().url,
+                    shadowOf(surface.currentWebView()).lastLoadedUrl,
                     "retry re-aims the configured origin",
                 )
             }
@@ -57,7 +57,7 @@ class WebSurfaceTest {
                 assertNotSame(dead, fresh, "the renderer-dead WebView must be replaced")
                 assertEquals(
                     App.origin,
-                    shadowOf(fresh).loadedUrls.last().url,
+                    shadowOf(fresh).lastLoadedUrl,
                     "the fresh WebView re-aims the configured origin",
                 )
                 assertEquals(2, surface.container.childCount, "webview + offline overlay")
