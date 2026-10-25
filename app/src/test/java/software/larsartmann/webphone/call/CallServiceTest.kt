@@ -8,7 +8,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import software.larsartmann.webphone.R
 import software.larsartmann.webphone.sip.SipEngine
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,9 +49,10 @@ class CallServiceTest {
 
             val notification = shadowOf(controller.get()).lastForegroundNotification
             assertNotNull(notification, "the service must foreground a notification")
+            // CallStyle renders the PERSON as the title (same as the
+            // incoming style — the caller IS the headline).
             assertEquals(
-                ApplicationProvider.getApplicationContext<Application>()
-                    .getString(R.string.call_active),
+                "Alice",
                 notification.extras.getString(android.app.Notification.EXTRA_TITLE),
             )
             assertEquals(
@@ -60,7 +60,6 @@ class CallServiceTest {
                 notification.`when`,
                 "the shade's call clock rides the engine's establishment timestamp",
             )
-            controller.destroy()
         } finally {
             CallEngine.hangUp()
         }
@@ -70,7 +69,9 @@ class CallServiceTest {
     fun `a service start without a named party still posts the plain ongoing pill`() {
         val controller = Robolectric.buildService(CallService::class.java).create()
         controller.startCommand(0, 0)
-        controller.get().stopSelf()
+
+        val notification = shadowOf(controller.get()).lastForegroundNotification
+        assertNotNull(notification, "the plain fallback must still foreground a notification")
     }
 
     @Test
@@ -94,7 +95,6 @@ class CallServiceTest {
                 CallEngine.state.value.phase,
                 "the shade hang-up must end the engine's call",
             )
-            controller.get().stopSelf()
         } finally {
             CallEngine.hangUp()
         }

@@ -1,0 +1,36 @@
+10-25 13:25:05.785  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'payment'.
+10-25 13:25:05.785  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'usb'.
+10-25 13:25:08.082  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: keyboard shortcuts: A answer · H hangup · M mute · P hold · Esc reject/hangup
+10-25 13:25:08.082  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: webphone loaded; sip domain pbx.artmann.tech
+10-25 13:25:14.240  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'payment'.
+10-25 13:25:14.240  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'usb'.
+10-25 13:25:14.926  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: keyboard shortcuts: A answer · H hangup · M mute · P hold · Esc reject/hangup
+10-25 13:25:14.926  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: webphone loaded; sip domain pbx.artmann.tech
+10-25 13:25:18.351  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'payment'.
+10-25 13:25:18.351  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'usb'.
+10-25 13:25:18.494  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: keyboard shortcuts: A answer · H hangup · M mute · P hold · Esc reject/hangup
+10-25 13:25:18.494  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: webphone loaded; sip domain pbx.artmann.tech
+10-25 13:25:22.618  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'payment'.
+10-25 13:25:22.619  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'usb'.
+10-25 13:25:22.761  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: keyboard shortcuts: A answer · H hangup · M mute · P hold · Esc reject/hangup
+10-25 13:25:22.761  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: webphone loaded; sip domain pbx.artmann.tech
+10-25 13:25:32.482  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'payment'.
+10-25 13:25:32.482  3547  3547 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'usb'.
+10-25 13:25:32.676  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: keyboard shortcuts: A answer · H hangup · M mute · P hold · Esc reject/hangup
+10-25 13:25:32.677  3547  3547 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: webphone loaded; sip domain pbx.artmann.tech
+10-25 13:25:36.766  3547  3547 W WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: browser reports network offline
+10-25 13:25:54.830  3841  3841 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'payment'.
+10-25 13:25:54.830  3841  3841 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'usb'.
+10-25 13:25:55.079  3841  3841 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: keyboard shortcuts: A answer · H hangup · M mute · P hold · Esc reject/hangup
+10-25 13:25:55.080  3841  3841 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: webphone loaded; sip domain pbx.artmann.tech
+10-25 13:26:03.529  3841  3841 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'payment'.
+10-25 13:26:03.529  3841  3841 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'usb'.
+10-25 13:26:03.754  3841  3841 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: keyboard shortcuts: A answer · H hangup · M mute · P hold · Esc reject/hangup
+10-25 13:26:03.756  3841  3841 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: webphone loaded; sip domain pbx.artmann.tech
+10-25 13:26:09.443   704  2179 I ActivityManager: Background started FGS: Allowed [callingPackage: com.android.shell; callingUid: 0; uidState: NONE; uidBFSL: n/a; intent: Intent { xflg=0x4 cmp=software.larsartmann.webphone/.push.NtfySubscriptionService }; code:SYSTEM_UID; tempAllowListReason:<null>; allowWiu:51; targetSdkVersion:36; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+10-25 13:26:09.447   704  2179 I ActivityManager: Background started FGS: Allowed [callingPackage: software.larsartmann.webphone; callingUid: 10219; uidState: TOP ; uidBFSL: [BFSL]; intent: Intent { cmp=software.larsartmann.webphone/.push.NtfySubscriptionService }; code:PROC_STATE_TOP; tempAllowListReason:<null>; allowWiu:12; targetSdkVersion:36; callerTargetSdkVersion:36; startForegroundCount:0; bindFromPackage:null: isBindService:false]
+10-25 13:26:09.449   704  2179 D ActivityManager: Stop FGS timeout: ServiceRecord{4e4f364 u0 software.larsartmann.webphone/.push.NtfySubscriptionService c:com.android.shell}
+10-25 13:26:27.383  4188  4188 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'payment'.
+10-25 13:26:27.383  4188  4188 W WebSurface: [:0] Error with Permissions-Policy header: Unrecognized feature: 'usb'.
+10-25 13:26:29.882  4188  4188 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: keyboard shortcuts: A answer · H hangup · M mute · P hold · Esc reject/hangup
+10-25 13:26:29.882  4188  4188 D WebSurface: [https://pbx.artmann.tech/assets/island/app/ui.js:63] webphone: webphone loaded; sip domain pbx.artmann.tech

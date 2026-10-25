@@ -268,7 +268,22 @@ events: `ring` and `ring_end`.
   manual light/dark toggle still overrides. The composer's MMS
   attach NEEDS `WebChromeClient.onShowFileChooser` — without a
   ChromeClient `<input type=file>` is a silent dead button; never
-  ship the WebView without one.
+  ship the WebView without one. Downloads NEED a `DownloadListener`
+  (`<a download>` is a silent no-op otherwise): same-origin downloads
+  ride the system DownloadManager WITH the session cookie (attachment
+  routes are session-gated) — foreign downloads hand off, the cookie
+  never leaves the origin. Main-frame HTTP errors (proxy 502, the
+  styled 404) RENDER as pages BY POLICY (`onReceivedHttpError` is a
+  documented no-op) — the offline overlay is transport-failure only
+  (`onReceivedError` → `onMainFrameTransportFailure` seam).
+- **Contrast is a GATE, not a review**: `scripts/contrast-check.py`
+  reads the real tokens from `values{,-night}/colors.xml` and checks
+  `scripts/contrast-pairs.json` (WCAG: 4.5 text, 3.0 glyphs/dots) in
+  BOTH modes, alpha-compositing the chrome glass over its bases
+  (worst case). CI runs it; run it locally after ANY token change and
+  add the pair when you add a colored surface. `wp_on_danger` is
+  unlisted until a filled danger surface exists — mint passing values
+  then, not before.
 - **Design tokens, not hardcoded colors**: the programmatic UI
   resolves `wp*` theme attrs (`values/attrs.xml`, light values in
   `values/colors.xml`, dark in `values-night/colors.xml`) through the

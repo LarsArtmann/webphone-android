@@ -54,8 +54,6 @@ class NtfySubscriptionServiceTest {
             "the running lane persists what it subscribed to",
         )
 
-        first.destroy()
-
         val second = Robolectric.buildService(NtfySubscriptionService::class.java, startIntent("https://push.example.org", "new-topic"))
             .create()
             .startCommand(0, 0)
@@ -71,6 +69,5 @@ class NtfySubscriptionServiceTest {
             "https://push.example.org/new-topic/ws",
             NtfySubscriptionService.subscriptionUrl("https://push.example.org", "new-topic"),
         )
-        second.destroy()
     }
 }
