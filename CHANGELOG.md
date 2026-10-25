@@ -22,6 +22,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   explicit deny for web `getUserMedia` asks (call audio is native),
   console-to-logcat bridging, WebView pause/resume pairing (battery),
   and debug-only `chrome://inspect` support
+- MMS attachment downloads work: same-origin `download` links ride the
+  system DownloadManager WITH the session cookie (the attachment routes
+  are session-gated); foreign downloads hand off to the browser — the
+  session cookie never leaves the origin
+- Main-frame HTTP errors (the proxy's 502, the origin's styled 404)
+  render as pages BY POLICY; the native offline overlay stays reserved
+  for transport failures ("stack unreachable")
+- WCAG contrast guard as code: `scripts/contrast-check.py` +
+  `scripts/contrast-pairs.json` (50 checks, light AND dark modes,
+  alpha-composited chrome glass, worst-case bases) as a CI step — the
+  2.44:1 answer-button class can never drift back silently; the
+  reserved dark `wp_danger` token is now text-grade (6.1:1 on surface)
+- Test suite grew to 60 JVM tests: WebView client delegation (the
+  scope guard wired, the transport-vs-HTTP error split, the download
+  policy incl. cookie confinement, Content-Disposition filename
+  derivation)
 - WebView dark mode (API 33+): the web surfaces follow the system
   theme via algorithmic darkening — the web app declares
   `color-scheme: dark light` and renders its own dark theme; its

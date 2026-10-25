@@ -89,8 +89,19 @@ adb start-server >/dev/null 2>&1 || {
 	echo "adb server unreachable — another adb version may own port 5037" >&2
 	exit 1
 }
-adb wait-for-device
-SERIAL="$(adb devices | awk '/emulator-/ {print $1}' | head -1)"
+# Resolve OUR emulator's serial FIRST, then wait pinned to it: a bare
+# `adb wait-for-device` aborts ("more than one device/emulator") the
+# moment any physical device shares the server (found by the
+# --release smoke run, 2026-10-25 — the operator's phone was attached).
+for _ in $(seq 1 60); do
+	SERIAL="$(adb devices | awk '/emulator-/ {print $1}' | head -1)"
+	[ -n "$SERIAL" ] && break
+	sleep 2
+done
+[ -n "$SERIAL" ] || {
+	echo "emulator serial never appeared" >&2
+	exit 1
+}
 COUNT="$(adb devices | grep -c 'emulator-')"
 [ "$COUNT" = "1" ] || {
 	echo "expected exactly one emulator, found $COUNT — refuse to guess" >&2
@@ -102,6 +113,7 @@ adb_() {
 adb_ root >/dev/null 2>&1 || true
 
 echo "== waiting for boot completion ($SERIAL) =="
+adb_ wait-for-device
 for _ in $(seq 1 180); do
 	boot="$(adb_ shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
 	[ "$boot" = "1" ] && break
