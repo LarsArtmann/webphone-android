@@ -41,6 +41,8 @@
 | CallStyle device verification (post-time style + fallback)                                              | 🔵 `BLOCKED` | Med    | 30min  | Needs both trains. Source: 06-38 §F063 (P18)                                      |
 | TalkBack device walkthrough + battery-prompt allow/deny verify                                          | 🔵 `BLOCKED` | Med    | 1h     | Code pass done; device + REGISTERED state needed. Source: 10-00 §f30 (P22)        |
 | Cut the `v0.1.0` annotated tag (CHANGELOG entries are in; the tag itself is the operator's timing call) | 🔵 `BLOCKED` | Med    | 5min   | Before-or-after the trains is the operator's call (F074b). Source: 10-00 §b (P11) |
+| Cross-repo: serve `/.well-known/assetlinks.json` from the stack (webphone repo, SHA256 of the install signing key) so the Android App Link verifies without the chooser | 🔵 `BLOCKED` | Med | 30min | Owner of both repos; android side shipped (filter + intake, 2026-10-27). Unverified links still open via the chooser |
+| Verify the OIDC auth detour against the live Pocket ID (login completes in-shell, session mints in the WebView jar) | 🔵 `BLOCKED` | Med | 30min | Needs operator IdP credential; policy pinned in `WebSurfacePolicyTest`. Adjacent: W104-W106 (P06) |
 
 ## Low Impact
 

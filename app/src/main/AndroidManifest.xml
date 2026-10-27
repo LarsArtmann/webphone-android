@@ -63,6 +63,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="tel" />
+                <data android:scheme="callto" />
                 <data android:scheme="sip" />
             </intent-filter>
         </activity>

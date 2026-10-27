@@ -12,6 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Deep links: `MainActivity` is the single exported VIEW intake —
+  `tel:`/`callto:`/`sip:` links open the dialer PRE-FILLED (the Call
+  button still gates on registration), and stack App Links
+  (`https://pbx.artmann.tech/…`) open that path in the shell; foreign
+  links open the app's home state, never the session-cookie-bearing
+  WebView
+- In-app OIDC login completes: the AUTH DETOUR policy keeps the IdP
+  (Pocket ID) in-shell for the duration of the login dance — the
+  island's same-origin `/api/auth/oauth2/begin` 302 blesses exactly
+  one foreign authority (only redirects/POSTs the verdict never saw
+  can), the callback commit ends the detour, third hosts still hand
+  off, and the session cookie stays scoped to the origin
+- Dialpad prefill seam (`DialpadActivity.prefill`) carrying the
+  tel:/sip: intake number; JVM test suite grew to 89 tests
 - Hardened WebView shell (`shell/WebSurface.kt`): renderer-crash
   recovery (a dead WebView renderer rebuilds the surface instead of
   killing the app), same-origin navigation scope (other hosts and

@@ -32,6 +32,11 @@ class DeepLinkTargetTest {
             deepLinkTarget(Uri.parse("tel:+49-170-1234567"), origin),
         )
         assertEquals(DeepLinkTarget.Dial("100"), deepLinkTarget(Uri.parse("tel:100"), origin))
+        // The legacy alias some pages emit instead of tel:.
+        assertEquals(
+            DeepLinkTarget.Dial("+491701234567"),
+            deepLinkTarget(Uri.parse("callto:+491701234567"), origin),
+        )
     }
 
     @Test

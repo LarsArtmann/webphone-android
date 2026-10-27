@@ -26,8 +26,9 @@ internal sealed interface DeepLinkTarget {
 /**
  * Routes an inbound deep link, PURE so the intake is unit-testable:
  *
- * - `tel:` → the raw number (visual separators included — the user
- *   sees exactly what the link carried, and the dialer edits freely);
+ * - `tel:`/`callto:` → the raw number (visual separators included —
+ *   the user sees exactly what the link carried, and the dialer edits
+ *   freely);
  * - `sip:` → the user part (`sip:100@pbx` dials `100` — the host is
  *   the server's business, the extension is the dialable);
  * - `http(s):` → a stack path only when the authority matches the
@@ -36,7 +37,7 @@ internal sealed interface DeepLinkTarget {
 internal fun deepLinkTarget(uri: Uri?, origin: Uri): DeepLinkTarget {
     if (uri == null) return DeepLinkTarget.None
     return when (uri.scheme?.lowercase()) {
-        "tel" -> uri.schemeSpecificPart.trim()
+        "tel", "callto" -> uri.schemeSpecificPart.trim()
             .takeIf { it.isNotBlank() }
             ?.let { DeepLinkTarget.Dial(it) }
             ?: DeepLinkTarget.None

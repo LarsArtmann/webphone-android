@@ -97,7 +97,7 @@ Single `:app` module, package-per-concern under
 
 | Package  | Contents                                                                                                                   | Role                                                                                                                                                                                |
 | -------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `shell/` | `MainActivity`, `WebSurface`, `CallLayer`, `SessionApi`, `DeviceIdentity`, `SettingsActivity`                              | The WebView shell (hardened surface in `WebSurface`) + the idempotent call-layer wire + the origin's HTTP session seam + per-install identity + the persisted stack-origin settings |
+| `shell/` | `MainActivity`, `WebSurface`, `DeepLink`, `CallLayer`, `SessionApi`, `DeviceIdentity`, `SettingsActivity` | The WebView shell (hardened surface in `WebSurface`) + the deep-link intake + the idempotent call-layer wire + the origin's HTTP session seam + per-install identity + the persisted stack-origin settings |
 | `sip/`   | `SipEngine`, `SipMessage`, `Digest`                                                                                        | SIP-over-WSS user agent: REGISTER (digest), INVITE/re-INVITE/CANCEL/BYE, DTMF INFO, REFER/NOTIFY                                                                                    |
 | `call/`  | `CallEngine`, `WebRtcEngine`, `CallService`, `CallConnectionService`, `TelecomOutgoing`, `CallActivity`, `DialpadActivity` | Call orchestration (incl. registration state), WebRTC audio, typed FGS, inbound Telecom integration, outbound addCall bridge (API 34+), in-call UI, dialer entry                    |
 | `push/`  | `RingEvent` (the router), `FcmReceiver`, `NtfySubscriptionService`                                                         | The two ring-while-closed transports, both converging on `RingEvent.route`                                                                                                          |
@@ -151,6 +151,15 @@ stable `device_id`; token rotation replaces the row), WSS `/sip`
 (`<origin>/<topic>/ws`). Field names are owned by the server repo —
 drift surfaces at first device boot, not at compile time. Push payload
 events: `ring` and `ring_end`.
+
+The AUTH seam (webphone `internal/sso` + `internal/server/sso_api.go`):
+the island's login card links `GET /api/auth/oauth2/begin` (same-origin
+anchor), which 302s to the OIDC IdP (Pocket ID) and back to
+`GET /api/auth/oauth2/callback`, which mints the session cookie and
+303s to `/`. The AUTH DETOUR policy in `WebSurface` exists to serve
+exactly this dance (see Gotchas). App-Link verification needs the
+stack to serve `/.well-known/assetlinks.json` — cross-repo follow-up,
+tracked in TODO_LIST.
 
 ## Gotchas
 
@@ -252,6 +261,33 @@ events: `ring` and `ring_end`.
   passed a null WebView — always pass the real `webView` (found by
   the first emulator smoke, 2026-10-24; Robolectric's shadow does not
   reproduce it, so this class of bug only surfaces on a real stack).
+- **Deep-link intake**: `MainActivity` is the ONLY exported VIEW
+  surface (singleTask — cold links in `onCreate`, warm ones in
+  `onNewIntent`, both one-line delegates into `routeDeepLink`).
+  `tel:`/`callto:`/`sip:` open `DialpadActivity` PRE-FILLED (the Call
+  button still gates on registration — dialer honesty holds on every
+  entry path); same-origin https loads in the shell via
+  `WebSurface.loadUri` (verdict re-checked = defense in depth);
+  foreign links open the app home, NEVER the WebView and never a
+  re-hand-off. The manifest https filter's host is PAIRED with
+  `App.DEFAULT_ORIGIN` (`pbx.artmann.tech`) — change both or neither;
+  `autoVerify` needs `assetlinks.json` from the server repo
+  (TODO_LIST). Never use a wildcard host (chooser spam for every
+  https link on the device).
+- **The auth detour (in-shell OIDC)**: HTTP redirects and cross-origin
+  POSTs NEVER consult `shouldOverrideUrlLoading` — they are the ONLY
+  way a foreign page commits in the shell (`doUpdateVisitedHistory` is
+  the seam). A foreign commit therefore BLESSES exactly that authority
+  as the auth detour (`WebSurface.onCommittedNavigation`): while live,
+  `navigationVerdict` lets that ONE authority navigate in-shell so the
+  island's `/api/auth/oauth2/begin` → Pocket ID dance can complete
+  (without it, the IdP's own SPA links eject the login to Chrome and
+  the session mints in the WRONG cookie jar). One authority at a time
+  (replace, not union); a commit back on the origin ends the detour.
+  Downloads NEVER ride the detour (no cookie to a foreign host), and
+  the session cookie never leaves the origin (per-authority cookie
+  scoping, third-party cookies off). Keep this shape — it is what
+  makes "same-origin only" and "OIDC works" true at the same time.
 - **WebView hardening home**: `shell/WebSurface.kt` owns the WebView,
   its clients and the offline overlay. Navigation scope is the pure
   `navigationVerdict` — same-origin ONLY, everything else (other
