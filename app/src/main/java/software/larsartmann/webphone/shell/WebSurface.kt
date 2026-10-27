@@ -291,16 +291,22 @@ internal class WebSurface(private val activity: ComponentActivity) {
     private inner class ShellWebViewClient : WebViewClient() {
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
-            navigateOut(request.url)
+            navigateOut(
+                request.url,
+                isServerRedirect = request.isRedirect,
+                isMainFrame = request.isForMainFrame,
+            )
 
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
             hideOffline()
         }
 
-        // The redirect seam: `shouldOverrideUrlLoading` is NEVER called
-        // for HTTP redirects (or cross-origin form POSTs), so commits the
-        // verdict never judged arrive HERE. That invisibility is exactly
-        // what the auth detour keys on — see [onCommittedNavigation].
+        // The commit seam: every MAIN-FRAME commit passes HERE — including
+        // the ones no verdict ever judged (cross-origin form POSTs fire no
+        // shouldOverrideUrlLoading). That invisibility is what the auth
+        // detour's commit-side hook keys on — see [onCommittedNavigation].
+        // (Server REDIRECTS are the other half: modern Chromium consults
+        // shouldOverrideUrlLoading for them — see [navigateOut].)
         override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
             url?.let { onCommittedNavigation(Uri.parse(it)) }
         }
@@ -496,15 +502,37 @@ internal class WebSurface(private val activity: ComponentActivity) {
     /** POLICY seam (unit-tested; the Android callback is a one-line
      *  delegate): the navigation verdict APPLIED — same-origin stays
      *  in the shell (`false`), everything else starts the system
-     *  hand-off and reports `true` (consumed). */
-    internal fun navigateOut(url: Uri): Boolean {
+     *  hand-off and reports `true` (consumed).
+     *
+     *  R03 (2026-10-27, emulator-proven): modern Chromium CONSULTS this
+     *  callback for server redirects — the OIDC `begin` 302 lands HERE
+     *  with the IdP URL, not in doUpdateVisitedHistory. A main-frame
+     *  server redirect while no detour is live is, by the same trust
+     *  argument as [onCommittedNavigation], the origin's own chain
+     *  (nothing user-initiated produced it): bless the target authority
+     *  and keep it in-shell. Clicks and JS navigations (isRedirect=
+     *  false) hand off unchanged — W105 stays true. */
+    internal fun navigateOut(
+        url: Uri,
+        isServerRedirect: Boolean = false,
+        isMainFrame: Boolean = true,
+    ): Boolean {
         val verdict = navigationVerdict(url, Uri.parse(App.origin), authDetour)
         return when (verdict) {
             is NavigationVerdict.LoadInShell -> false
             is NavigationVerdict.HandOff -> {
-                runCatching { activity.startActivity(verdict.intent) }
-                    .onFailure { Log.w(TAG, "no handler for $url: ${it.message}") }
-                true
+                val scheme = url.scheme?.lowercase()
+                if (isServerRedirect && isMainFrame && authDetour == null &&
+                    (scheme == "http" || scheme == "https")
+                ) {
+                    authDetour = url
+                    Log.d(TAG, "auth detour blessed via redirect: ${url.authority}")
+                    false
+                } else {
+                    runCatching { activity.startActivity(verdict.intent) }
+                        .onFailure { Log.w(TAG, "no handler for $url: ${it.message}") }
+                    true
+                }
             }
         }
     }
@@ -515,15 +543,16 @@ internal class WebSurface(private val activity: ComponentActivity) {
      *  never judged (HTTP redirects, cross-origin POSTs).
      *
      *  The trust argument, in full: a foreign http(s) page can only EVER
-     *  commit in this WebView through (a) a redirect/POST chain initiated
-     *  by a page already trusted (the origin itself, or the authority the
-     *  origin's redirect already landed us on), or (b) the verdict
-     *  allowing it — which for foreign hosts only happens while an auth
-     *  detour is already live on that same authority. A link click or a
-     *  JS `location` change to a foreign host IS judged and handed off.
-     *  So an unjudged foreign commit is, by construction, the origin's
-     *  own server (or the IdP it chose) sending us there — the exact
-     *  OIDC `begin` → IdP hop. THAT authority becomes the auth detour.
+     *  commit in this WebView through (a) the verdict allowing it — which
+     *  for foreign hosts only happens while an auth detour is already
+     *  live on that same authority — or (b) an unjudged arrival: a
+     *  cross-origin form POST (SOUL is not called for POSTs), or a
+     *  redirect target when the redirect was itself unjudged. Server
+     *  redirects that ARE judged are blessed at the [navigateOut] seam
+     *  instead. A link click or a JS `location` change to a foreign host
+     *  IS judged and handed off. So an unjudged foreign commit is, by
+     *  construction, the origin's own server (or the IdP it chose)
+     *  sending us here — THAT authority becomes the auth detour.
      *
      *  The detour is ONE authority at a time (replace, not union): the
      *  currently committed foreign page is the only one whose internal
