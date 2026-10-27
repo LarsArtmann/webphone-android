@@ -25,11 +25,11 @@ class DialpadActivityTest {
 
     @Test
     fun `the prefill intent seeds the number with the cursor at the end`() {
-        ActivityScenario.launch(
+        ActivityScenario.launch<DialpadActivity>(
             DialpadActivity.prefill(ApplicationProvider.getApplicationContext(), "+49170"),
         ).use { scenario ->
             scenario.onActivity { activity ->
-                val number = firstEditText(activity.findViewById(android.R.id.content))
+                val number = firstEditText(activity.findViewById<View>(android.R.id.content))
                 assertEquals("+49170", number.text.toString())
                 assertEquals(6, number.selectionStart)
                 assertEquals(6, number.selectionEnd)
@@ -42,7 +42,7 @@ class DialpadActivityTest {
         ActivityScenario.launch(DialpadActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 assertNull(activity.intent.getStringExtra(DialpadActivity.EXTRA_NUMBER))
-                assertEquals("", firstEditText(activity.findViewById(android.R.id.content)).text.toString())
+                assertEquals("", firstEditText(activity.findViewById<View>(android.R.id.content)).text.toString())
             }
         }
     }

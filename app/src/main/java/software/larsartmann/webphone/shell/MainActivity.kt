@@ -222,8 +222,10 @@ class MainActivity : AppCompatActivity() {
      *  gate holds); a stack App Link opens that path in the shell;
      *  anything foreign falls through to the app's home state — never
      *  the session-cookie-bearing WebView, and never a re-hand-off
-     *  (the system already had its chance to keep the link). */
-    private fun routeDeepLink(intent: Intent?) {
+     *  (the system already had its chance to keep the link).
+     *  Internal: the intake is unit-tested through this seam;
+     *  onCreate and onNewIntent are one-line delegates. */
+    internal fun routeDeepLink(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
         when (val target = deepLinkTarget(intent.data, Uri.parse(App.origin))) {
             is DeepLinkTarget.ShellPath -> webSurface.loadUri(target.uri)

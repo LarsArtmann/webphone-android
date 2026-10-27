@@ -98,7 +98,9 @@ class DeepLinkIntakeTest {
                 while (shadowOf(activity).nextStartedActivity != null) {
                     // drain launch-time side effects
                 }
-                activity.onNewIntent(viewIntent(Uri.parse("https://pbx.artmann.tech/voicemail/7")))
+                // The onNewIntent delegate is trivial; the ROUTING is
+                // the seam under test (onNewIntent is protected).
+                activity.routeDeepLink(viewIntent(Uri.parse("https://pbx.artmann.tech/voicemail/7")))
                 assertEquals(
                     "https://pbx.artmann.tech/voicemail/7",
                     shadowOf(activity.webSurface.currentWebView()).lastLoadedUrl,
