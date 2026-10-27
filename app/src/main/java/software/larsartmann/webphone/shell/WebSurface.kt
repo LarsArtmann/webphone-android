@@ -54,13 +54,30 @@ internal sealed interface NavigationVerdict {
  * non-web scheme becomes a system hand-off. Subdomains are DIFFERENT
  * origins by intent — an operator app must not render arbitrary web
  * inside its session-cookie-bearing WebView.
+ *
+ * The one exception is [authAuthority]: the AUTH DETOUR. The island's
+ * OIDC login (`/api/auth/oauth2/begin`) is a same-origin hop the
+ * ORIGIN itself 302s to the IdP (Pocket ID) — HTTP redirects never
+ * consult `shouldOverrideUrlLoading`, so the IdP page commits in the
+ * shell without a verdict. From that moment the IdP's own SPA links
+ * would be "foreign" and ejected to the system browser, abandoning
+ * the login mid-dance (the session mints in Chrome's cookie jar,
+ * never the shell's). While the detour is live, the IdP's authority
+ * navigates in-shell too; see [WebSurface.onCommittedNavigation] for
+ * why ONLY a trusted redirect can ever activate one.
  */
-internal fun navigationVerdict(uri: Uri?, origin: Uri): NavigationVerdict {
+internal fun navigationVerdict(
+    uri: Uri?,
+    origin: Uri,
+    authAuthority: Uri? = null,
+): NavigationVerdict {
     if (uri == null) return NavigationVerdict.LoadInShell
     val scheme = uri.scheme?.lowercase() ?: return NavigationVerdict.HandOff(intent(uri))
     return when {
         scheme == "http" || scheme == "https" ->
             if (sameAuthority(uri, origin)) {
+                NavigationVerdict.LoadInShell
+            } else if (authAuthority != null && sameAuthority(uri, authAuthority)) {
                 NavigationVerdict.LoadInShell
             } else {
                 NavigationVerdict.HandOff(intent(uri))
@@ -77,7 +94,7 @@ internal fun navigationVerdict(uri: Uri?, origin: Uri): NavigationVerdict {
 
 private fun intent(uri: Uri): Intent = Intent(Intent.ACTION_VIEW, uri)
 
-private fun sameAuthority(uri: Uri, origin: Uri): Boolean {
+internal fun sameAuthority(uri: Uri, origin: Uri): Boolean {
     if (uri.host?.lowercase() != origin.host?.lowercase()) return false
     return effectivePort(uri) == effectivePort(origin)
 }
@@ -97,7 +114,11 @@ private fun effectivePort(uri: Uri): Int =
  * - **Navigation scope**: same-origin pages render in the shell;
  *   everything else hands off to the system (browser, dialer, mail).
  *   The WebView carries the session cookie — it must never be pointed
- *   at arbitrary web content.
+ *   at arbitrary web content. The one exception is the AUTH DETOUR
+ *   (see [navigationVerdict]): while an OIDC login has legitimately
+ *   landed the shell on the IdP (the origin's own 302 — the only
+ *   navigation class the verdict never sees), that one foreign
+ *   authority navigates in-shell until the dance returns home.
  * - **Offline overlay**: a main-frame transport failure (no route to
  *   the PBX) replaces Chromium's ugly error page with a native
  *   "can't reach the stack" panel and a Retry button. Sits BELOW the
@@ -153,6 +174,11 @@ internal class WebSurface(private val activity: ComponentActivity) {
     private var pendingPicker: ValueCallback<Array<Uri>>? = null
     private val offlineOverlay: LinearLayout
     private lateinit var offlineBody: TextView
+
+    /** The live AUTH DETOUR (see [navigationVerdict]): the authority of
+     *  the foreign page the ORIGIN's own redirect landed the shell on
+     *  (the IdP of an OIDC login). Null while the shell is on-origin. */
+    private var authDetour: Uri? = null
 
     private val pickerLauncher =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -271,6 +297,14 @@ internal class WebSurface(private val activity: ComponentActivity) {
             hideOffline()
         }
 
+        // The redirect seam: `shouldOverrideUrlLoading` is NEVER called
+        // for HTTP redirects (or cross-origin form POSTs), so commits the
+        // verdict never judged arrive HERE. That invisibility is exactly
+        // what the auth detour keys on — see [onCommittedNavigation].
+        override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+            url?.let { onCommittedNavigation(Uri.parse(it)) }
+        }
+
         override fun onPageFinished(view: WebView, url: String?) {
             // The login POST mints the cookie in-page; flush it to disk
             // immediately so even a foreground process kill cannot eat it.
@@ -374,9 +408,24 @@ internal class WebSurface(private val activity: ComponentActivity) {
     fun loadOriginIfChanged() {
         if (App.origin != loadedOrigin) {
             hideOffline()
+            authDetour = null
             webView.loadUrl(App.origin)
             loadedOrigin = App.origin
         }
+    }
+
+    /** Load a deep-linked SAME-ORIGIN path (an App Link into messages,
+     *  voicemail, a share target…). Defense in depth: the verdict is
+     *  re-checked here, so even a mis-declared manifest filter can never
+     *  aim the session-cookie-bearing WebView at a foreign page — a
+     *  foreign deep link is simply not loaded (the shell keeps its
+     *  origin-root state). */
+    fun loadUri(uri: Uri) {
+        if (navigationVerdict(uri, Uri.parse(App.origin)) !is NavigationVerdict.LoadInShell) return
+        hideOffline()
+        authDetour = null
+        webView.loadUrl(uri.toString())
+        loadedOrigin = App.origin
     }
 
     fun retry() {
@@ -423,6 +472,7 @@ internal class WebSurface(private val activity: ComponentActivity) {
         webView = buildWebView()
         container.addView(webView, 0)
         loadedOrigin = null
+        authDetour = null
         loadOriginIfChanged()
     }
 
@@ -448,7 +498,7 @@ internal class WebSurface(private val activity: ComponentActivity) {
      *  in the shell (`false`), everything else starts the system
      *  hand-off and reports `true` (consumed). */
     internal fun navigateOut(url: Uri): Boolean {
-        val verdict = navigationVerdict(url, Uri.parse(App.origin))
+        val verdict = navigationVerdict(url, Uri.parse(App.origin), authDetour)
         return when (verdict) {
             is NavigationVerdict.LoadInShell -> false
             is NavigationVerdict.HandOff -> {
@@ -458,6 +508,40 @@ internal class WebSurface(private val activity: ComponentActivity) {
             }
         }
     }
+
+    /** POLICY seam (unit-tested; the Android callback is a one-line
+     *  delegate off `doUpdateVisitedHistory`): every MAIN-FRAME commit
+     *  passes through here, including the ones `shouldOverrideUrlLoading`
+     *  never judged (HTTP redirects, cross-origin POSTs).
+     *
+     *  The trust argument, in full: a foreign http(s) page can only EVER
+     *  commit in this WebView through (a) a redirect/POST chain initiated
+     *  by a page already trusted (the origin itself, or the authority the
+     *  origin's redirect already landed us on), or (b) the verdict
+     *  allowing it — which for foreign hosts only happens while an auth
+     *  detour is already live on that same authority. A link click or a
+     *  JS `location` change to a foreign host IS judged and handed off.
+     *  So an unjudged foreign commit is, by construction, the origin's
+     *  own server (or the IdP it chose) sending us there — the exact
+     *  OIDC `begin` → IdP hop. THAT authority becomes the auth detour.
+     *
+     *  The detour is ONE authority at a time (replace, not union): the
+     *  currently committed foreign page is the only one whose internal
+     *  navigations may continue in-shell. A commit back on the ORIGIN
+     *  (the OIDC callback is a redirect home) ends the detour.
+     *
+     *  Cookie safety is untouched: cookies are scoped per-authority in
+     *  the shared CookieManager, so the IdP page never sees the
+     *  webphone session cookie, and third-party cookie access is off. */
+    internal fun onCommittedNavigation(url: Uri?) {
+        if (url == null) return
+        val scheme = url.scheme?.lowercase() ?: return
+        if (scheme != "http" && scheme != "https") return
+        authDetour = if (sameAuthority(url, Uri.parse(App.origin))) null else url
+    }
+
+    /** Test seam: the live auth detour's authority (null = on-origin). */
+    internal fun authDetourUri(): Uri? = authDetour
 
     /** POLICY seam (unit-tested; the Android callback is a one-line
      *  delegate): only a main-frame TRANSPORT failure (no route, DNS,

@@ -180,6 +180,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         setContentView(root)
+        routeDeepLink(intent)
         webSurface.loadOriginIfChanged()
         dialFab.setOnClickListener { startActivity(Intent(this, DialpadActivity::class.java)) }
         settingsButton.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }

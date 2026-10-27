@@ -42,6 +42,29 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- The deep-link intake (VIEW links routed by routeDeepLink).
+                 The https filter's host is PAIRED with App.DEFAULT_ORIGIN
+                 ("pbx.artmann.tech") — change both or neither. autoVerify
+                 needs /.well-known/assetlinks.json served BY the stack
+                 (webphone repo); unverified, links still open via the
+                 chooser. A wildcard host here would spam the chooser for
+                 every https link on the device — never. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="pbx.artmann.tech" />
+            </intent-filter>
+            <!-- The dialable protocols: a SIP phone answers its own
+                 tel:/sip: links (chooser entry; the system dialer keeps
+                 its role until the user prefers this app). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="tel" />
+                <data android:scheme="sip" />
+            </intent-filter>
         </activity>
 
         <!-- The in-call surface: CallStyle notifications and the

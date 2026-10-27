@@ -1,6 +1,7 @@
 package software.larsartmann.webphone.call
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -215,6 +216,15 @@ class DialpadActivity : AppCompatActivity() {
             insets
         }
         setContentView(root)
+
+        // Deep-link pre-fill (the tel:/sip: intake routed by
+        // MainActivity): the link only carries the number — the user
+        // still taps Call, and the Call button still gates on
+        // registration (dialer honesty holds on every entry path).
+        intent.getStringExtra(EXTRA_NUMBER)?.takeIf { it.isNotBlank() }?.let { number ->
+            numberView.setText(number)
+            numberView.setSelection(number.length)
+        }
 
         callPill.setOnClickListener { maybePlaceCall() }
         refreshRecents()
@@ -445,9 +455,18 @@ class DialpadActivity : AppCompatActivity() {
         prefs.edit().putString(KEY_RECENTS, updated.joinToString("\n")).apply()
     }
 
-    private companion object {
-        const val PREFS_RECENTS = "webphone-dialer"
-        const val KEY_RECENTS = "recents"
-        const val RECENTS_LIMIT = 5
+    companion object {
+        /** Deep-link intake extra: the number to pre-fill. The dialer
+         *  stays unexported — MainActivity (the shell) is the only
+         *  component that sends this, after routing a tel:/sip: link. */
+        const val EXTRA_NUMBER = "software.larsartmann.webphone.extra.NUMBER"
+
+        /** The tel:/sip: entry: dialer pre-filled, nothing dialed. */
+        fun prefill(context: Context, number: String): Intent =
+            Intent(context, DialpadActivity::class.java).putExtra(EXTRA_NUMBER, number)
+
+        private const val PREFS_RECENTS = "webphone-dialer"
+        private const val KEY_RECENTS = "recents"
+        private const val RECENTS_LIMIT = 5
     }
 }
