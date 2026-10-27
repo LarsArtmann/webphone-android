@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   can), the callback commit ends the detour, third hosts still hand
   off, and the session cookie stays scoped to the origin
 - Dialpad prefill seam (`DialpadActivity.prefill`) carrying the
-  tel:/sip: intake number; JVM test suite grew to 89 tests
+  tel:/sip: intake number; JVM test suite grew to 88 tests
 - Hardened WebView shell (`shell/WebSurface.kt`): renderer-crash
   recovery (a dead WebView renderer rebuilds the surface instead of
   killing the app), same-origin navigation scope (other hosts and
