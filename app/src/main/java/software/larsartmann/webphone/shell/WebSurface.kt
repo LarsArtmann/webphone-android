@@ -537,7 +537,15 @@ internal class WebSurface(private val activity: ComponentActivity) {
         if (url == null) return
         val scheme = url.scheme?.lowercase() ?: return
         if (scheme != "http" && scheme != "https") return
-        authDetour = if (sameAuthority(url, Uri.parse(App.origin))) null else url
+        val next = if (sameAuthority(url, Uri.parse(App.origin))) null else url
+        if (next?.authority != authDetour?.authority) {
+            Log.d(
+                TAG,
+                if (next == null) "auth detour cleared (back on origin: $url)"
+                else "auth detour blessed: ${next.authority}",
+            )
+        }
+        authDetour = next
     }
 
     /** Test seam: the live auth detour's authority (null = on-origin). */
