@@ -212,6 +212,15 @@ class MainActivity : AppCompatActivity() {
      *  the VIEW intent here instead of a new activity). */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        onNewIntentDelegate(intent)
+    }
+
+    /** Test seam (N017): everything onNewIntent does past the framework
+     *  call — `setIntent` (a later `getIntent` must see the deep link,
+     *  e.g. if the app re-reads it after the process is restored) and
+     *  the routing. Protected overrides are untestable directly; this
+     *  keeps the warm path pinned without reflection. */
+    internal fun onNewIntentDelegate(intent: Intent) {
         setIntent(intent)
         routeDeepLink(intent)
     }

@@ -12,10 +12,14 @@ silently replaces.
 **Status: v0.1 scaffold, first runtime smoke done.** Load-bearing code is
 implemented but untested against LIVE infrastructure (the README
 "honesty contract" section lists the markers). There IS now: a JVM test
-source set (25 tests: protocol unit tests + Robolectric smoke) and a CI
-workflow (mirrored to GitHub 2026-10-25, but its triggers are
-`pull_request`/`workflow_dispatch` only — it has never run). First
-emulator smoke (install + launch) passed 2026-10-24.
+source set (91 tests: protocol unit tests + Robolectric smoke + the
+deep-link/auth-detour surface) and a CI workflow (mirrored to GitHub
+2026-10-25, but its triggers are `pull_request`/`workflow_dispatch`
+only — it has never run). First emulator smoke (install + launch)
+passed 2026-10-24. Deep links (tel/callto/sip/stack-https) and the
+in-shell OIDC auth detour SHIPPED 2026-10-27 and are emulator-proven
+(the 404-echo probe + the live `begin`→Pocket-ID redirect); the live
+Pocket ID login itself still awaits credentials (R17).
 
 ## Repository & mirrors
 
@@ -77,10 +81,12 @@ nix develop .#emulator -c bash scripts/emulator-smoke.sh   # keeps the emulator 
   `flake.nix` is the task surface in LarsArtmann projects.
 - 16 KB page-alignment check (mandatory per release and per
   `webrtc` dependency bump; requires build-tools 35 — the `-P` flag
-  does not exist in 34):
+  does not exist in 34). NOTE: `zipalign` is NOT on the devShell PATH
+  (and `find $ANDROID_HOME` misses it through symlinked dirs) — use
+  the full build-tools 35 path:
 
   ```console
-  zipalign -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk
+  nix develop -c bash -c '"$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk'
   ```
 
 - Formatting: `dprint.json` covers JSON/YAML/Markdown/Dockerfile only.
@@ -274,20 +280,56 @@ tracked in TODO_LIST.
   `autoVerify` needs `assetlinks.json` from the server repo
   (TODO_LIST). Never use a wildcard host (chooser spam for every
   https link on the device).
-- **The auth detour (in-shell OIDC)**: HTTP redirects and cross-origin
-  POSTs NEVER consult `shouldOverrideUrlLoading` — they are the ONLY
-  way a foreign page commits in the shell (`doUpdateVisitedHistory` is
-  the seam). A foreign commit therefore BLESSES exactly that authority
-  as the auth detour (`WebSurface.onCommittedNavigation`): while live,
-  `navigationVerdict` lets that ONE authority navigate in-shell so the
-  island's `/api/auth/oauth2/begin` → Pocket ID dance can complete
-  (without it, the IdP's own SPA links eject the login to Chrome and
-  the session mints in the WRONG cookie jar). One authority at a time
-  (replace, not union); a commit back on the origin ends the detour.
-  Downloads NEVER ride the detour (no cookie to a foreign host), and
-  the session cookie never leaves the origin (per-authority cookie
-  scoping, third-party cookies off). Keep this shape — it is what
-  makes "same-origin only" and "OIDC works" true at the same time.
+- **The auth detour (in-shell OIDC)** — CORRECTED MODEL (R03,
+  emulator-proven 2026-10-27; the session-1 premise was WRONG):
+  modern Chromium DOES consult `shouldOverrideUrlLoading` for SERVER
+  redirects — the island's `/api/auth/oauth2/begin` 302 lands in the
+  callback WITH the IdP URL (`request.isRedirect == true`). Only
+  cross-origin form POSTs arrive unjudged. So the detour has TWO
+  bless seams, one trust argument: (1) `navigateOut`'s redirect seam
+  — a MAIN-FRAME server redirect while no detour is live is, by
+  construction, the origin's own chain → bless that authority and
+  keep it in-shell (clicks, `isRedirect=false`, still hand off — W105
+  stays true); (2) the commit-side hooks (`doUpdateVisitedHistory`
+  + the `onPageStarted` belt, idempotent) catch the unjudged POST
+  arrivals. While the detour is live, `navigationVerdict` lets that
+  ONE authority navigate in-shell so the Pocket ID dance completes
+  (without it, the IdP's own links eject the login to Chrome and the
+  session mints in the WRONG cookie jar). One authority at a time
+  (replace, not union); an origin commit/start ends the detour;
+  `retry()` clears it explicitly (an offline retry never commits, so
+  the hooks alone would leave a stale blessing). Downloads NEVER ride
+  the detour (no cookie to a foreign host), and the session cookie
+  never leaves the origin (per-authority cookie scoping, third-party
+  cookies off). On-device proof: deep-link the begin URL → logcat
+  `WebSurface: auth detour blessed via redirect: auth.larsartmann.cloud`
+  + the Pocket ID pages render in the shell, no Chrome task.
+  Multi-host IdPs would need a different allowance (operator question
+  stands). Keep this shape — it is what makes "same-origin only" and
+  "OIDC works" true at the same time.
+- **The debug keystore lives at `~/.config/.android/debug.keystore`
+  (found 2026-10-27)**: the nix JDK resolves AGP's debug keystore via
+  the XDG config home, so the CLASSIC `~/.android/debug.keystore` can
+  exist as a DECOY with a different cert (here it does). Never read
+  fingerprints for assetlinks by hand — `scripts/assetlinks.sh`
+  discovers the real keystore and REFUSES to emit when its cert
+  doesn't match the built APK's (apksigner cross-check).
+- **App-link resolution reality (R02 train, 2026-10-27)**: until the
+  server serves `assetlinks.json` and verification flips, an IMPLICIT
+  `https://pbx.artmann.tech/…` VIEW intent resolves to CHROME
+  (unverified `autoVerify` loses to the browser — resolver evidence:
+  `cmd package query-activities` ranks the app #0, but `am start`
+  still picks Chrome). On an emulator, simulate the post-R18 state:
+  `adb shell pm set-app-links-user-selection --user 0 --package
+  software.larsartmann.webphone true pbx.artmann.tech` — then
+  implicit stack links land in the app. `sip:`/`callto:` resolve to
+  us directly (sole handler); `tel:` shows the system resolver until
+  the user sets a default (the Google Dialer also claims it).
+- **rg `-r` is NOT recursive (three strikes: 2026-10-27 and prior)**:
+  `-r` is the replace-display flag. The recursive search is `-n`
+  (lines) / `-l` (files) — e.g. `rg -n pattern` or plain `rg pattern`.
+  If a search returns nothing and you passed `-r`, you searched
+  NOTHING — the flag silently changed the command's meaning.
 - **WebView hardening home**: `shell/WebSurface.kt` owns the WebView,
   its clients and the offline overlay. Navigation scope is the pure
   `navigationVerdict` — same-origin ONLY, everything else (other
@@ -367,7 +409,10 @@ tracked in TODO_LIST.
   non-exported activity is denied for the shell uid (SecurityException)
   — run `adb root` first (works on the google_apis image), and pin
   every adb call with `-s <emulator-serial>` (the operator's phone may
-  be attached to the same adb server).
+  be attached to the same adb server). For TAP coordinates, never
+  scale from screenshots — the estimate drifted >100 px on the
+  resolver sheet (R02 train, 2026-10-27): `adb shell uiautomator dump`
+  and read the exact `bounds` of the target node instead.
 - **TLS is NOT pinned (decision, 2026-10-25)**: the stack is
   Caddy-fronted with Let's Encrypt certs that ROTATE — pinning SPKI
   would brick every call at the next renewal. Trust is the platform

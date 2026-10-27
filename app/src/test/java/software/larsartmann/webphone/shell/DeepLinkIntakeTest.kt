@@ -98,13 +98,36 @@ class DeepLinkIntakeTest {
                 while (shadowOf(activity).nextStartedActivity != null) {
                     // drain launch-time side effects
                 }
-                // The onNewIntent delegate is trivial; the ROUTING is
-                // the seam under test (onNewIntent is protected).
-                activity.routeDeepLink(viewIntent(Uri.parse("https://pbx.artmann.tech/voicemail/7")))
+                // Full warm path (N017/N018 seam): setIntent + routing,
+                // exactly what the protected override does past the
+                // framework call.
+                activity.onNewIntentDelegate(viewIntent(Uri.parse("https://pbx.artmann.tech/voicemail/7")))
+                assertEquals(
+                    "https://pbx.artmann.tech/voicemail/7",
+                    activity.intent.dataString,
+                    "the activity intent must re-aim at the deep link",
+                )
                 assertEquals(
                     "https://pbx.artmann.tech/voicemail/7",
                     shadowOf(activity.webSurface.currentWebView()).lastLoadedUrl,
                 )
+            }
+        }
+    }
+
+    @Test
+    fun `a warm tel link re-aims the intent and opens the dialer`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = "https://pbx.artmann.tech"
+                while (shadowOf(activity).nextStartedActivity != null) {
+                    // drain launch-time side effects
+                }
+                activity.onNewIntentDelegate(viewIntent(Uri.parse("tel:+49170999")))
+                assertEquals("tel:+49170999", activity.intent.dataString)
+                val started = shadowOf(activity).nextStartedActivity
+                assertEquals(DialpadActivity::class.java.name, started?.component?.className)
+                assertEquals("+49170999", started?.getStringExtra(DialpadActivity.EXTRA_NUMBER))
             }
         }
     }
