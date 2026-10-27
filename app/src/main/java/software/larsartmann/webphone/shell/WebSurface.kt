@@ -299,6 +299,14 @@ internal class WebSurface(private val activity: ComponentActivity) {
 
         override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
             hideOffline()
+            // The belt (R01): a main-frame page START runs the same
+            // bless/clear machine as the commit — idempotent (same
+            // authority dedups), and it catches loads whose commit may
+            // never fire (crashed renderer mid-load). A start the
+            // verdict never allowed is by construction an unjudged
+            // arrival (cross-origin POST) — the same trust argument as
+            // [onCommittedNavigation].
+            onCommittedNavigation(Uri.parse(url))
         }
 
         // The commit seam: every MAIN-FRAME commit passes HERE — including
@@ -435,6 +443,10 @@ internal class WebSurface(private val activity: ComponentActivity) {
     }
 
     fun retry() {
+        // A retry is a deliberate return to the origin: any live auth
+        // detour dies HERE (an offline retry never commits, so the
+        // commit-side hook alone would leave the blessing stale).
+        authDetour = null
         hideOffline()
         webView.loadUrl(App.origin)
     }

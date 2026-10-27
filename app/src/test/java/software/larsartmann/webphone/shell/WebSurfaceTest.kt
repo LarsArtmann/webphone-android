@@ -13,6 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotSame
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -38,6 +39,35 @@ class WebSurfaceTest {
 
                 surface.retry()
                 assertFalse(surface.offlineVisible(), "retry dismisses the overlay")
+                assertEquals(
+                    App.origin,
+                    shadowOf(surface.currentWebView()).lastLoadedUrl,
+                    "retry re-aims the configured origin",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `retry after an offline detoured page clears the stale blessing`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val surface = activity.webSurface
+                val idp = "https://auth.artmann.tech/authorize"
+
+                surface.onCommittedNavigation(Uri.parse(idp))
+                assertEquals(Uri.parse(idp), surface.authDetourUri(), "detour live")
+
+                // The IdP page dies into a transport failure; the user
+                // hits Retry. No commit will ever fire for the reload's
+                // target if IT fails too — the blessing must die HERE.
+                surface.showOffline()
+                surface.retry()
+
+                assertNull(
+                    surface.authDetourUri(),
+                    "retry never leaves a stale auth blessing",
+                )
                 assertEquals(
                     App.origin,
                     shadowOf(surface.currentWebView()).lastLoadedUrl,

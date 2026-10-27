@@ -36,10 +36,11 @@ class WebSurfacePolicyTest {
     private class FakeRequest(
         private val uri: Uri,
         private val mainFrame: Boolean = true,
+        private val redirect: Boolean = false,
     ) : WebResourceRequest {
         override fun getUrl(): Uri = uri
         override fun isForMainFrame(): Boolean = mainFrame
-        override fun isRedirect(): Boolean = false
+        override fun isRedirect(): Boolean = redirect
         override fun hasGesture(): Boolean = true
         override fun getRequestHeaders(): MutableMap<String, String> = mutableMapOf()
         override fun getMethod(): String = "GET"
@@ -132,10 +133,22 @@ class WebSurfacePolicyTest {
                     ),
                 )
 
-                // The origin's 302 lands the IdP WITHOUT a verdict (HTTP
-                // redirects never consult shouldOverrideUrlLoading): the
-                // commit blesses the detour.
+                // The origin's 302 to the IdP IS consulted on modern
+                // Chromium (R03, emulator-proven 2026-10-27): the
+                // main-frame server redirect blesses the detour in-shell.
                 val idp = "https://auth.artmann.tech/authorize?client_id=x"
+                assertFalse(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse(idp), redirect = true),
+                    ),
+                    "the origin's own 302 continues in-shell",
+                )
+                assertEquals(Uri.parse(idp), surface.authDetourUri())
+
+                // The IdP page commits: idempotent — same authority, the
+                // detour is already live (the commit-side hook stays as
+                // the belt for unjudged commits, e.g. cross-origin POSTs).
                 client.doUpdateVisitedHistory(surface.currentWebView(), idp, false)
                 assertEquals(Uri.parse(idp), surface.authDetourUri())
 
@@ -178,6 +191,113 @@ class WebSurfacePolicyTest {
                     ),
                     "after the dance the IdP authority hands off again",
                 )
+            }
+        }
+    }
+
+    @Test
+    fun `a server redirect blesses the detour but a click never does`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+                drainStartedActivities(activity)
+
+                // The R03 seam: a main-frame server redirect from clean
+                // ground is the origin's own chain — blessed, in-shell.
+                val idp = "https://auth.artmann.tech/authorize"
+                assertFalse(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse(idp), redirect = true),
+                    ),
+                    "redirect blesses and loads in-shell",
+                )
+                assertEquals(Uri.parse(idp), surface.authDetourUri())
+
+                // Mid-detour, a redirect to a THIRD host stays foreign
+                // (single-authority policy; multi-host IdP is the open
+                // operator question) — handed off, detour untouched.
+                assertTrue(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse("https://evil.example/next"), redirect = true),
+                    ),
+                    "a third-host redirect hands off mid-detour",
+                )
+                assertEquals(Uri.parse(idp), surface.authDetourUri())
+
+                // A sub-frame redirect never blesses (iframes don't aim
+                // the top-level session WebView).
+                assertTrue(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse("https://other.example/frame"), mainFrame = false, redirect = true),
+                    ),
+                    "iframe redirects never bless",
+                )
+                assertEquals(Uri.parse(idp), surface.authDetourUri())
+
+                // Non-web scheme redirects (absurd, but) hand off — the
+                // bless rule is http(s) only.
+                assertTrue(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse("tel:+49170"), redirect = true),
+                    ),
+                )
+                assertEquals(Uri.parse(idp), surface.authDetourUri())
+
+                // Home: the origin commit clears the blessing.
+                client.doUpdateVisitedHistory(
+                    surface.currentWebView(),
+                    "$origin/api/auth/oauth2/callback?code=c",
+                    false,
+                )
+                assertNull(surface.authDetourUri())
+
+                // And the SAME IdP URL as a user click is a plain
+                // hand-off — W105 (external link) is untouched.
+                assertTrue(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse("$idp/login")),
+                    ),
+                    "a click on a foreign host never enters the shell",
+                )
+                assertNull(surface.authDetourUri())
+                val handOff = shadowOf(activity).nextStartedActivity
+                assertEquals(Uri.parse("$idp/login"), handOff?.data)
+            }
+        }
+    }
+
+    @Test
+    fun `onPageStarted is the belt - foreign start blesses, origin start clears`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+
+                // A foreign page start (unjudged arrival, e.g. a
+                // cross-origin POST response) blesses the detour…
+                val idp = "https://auth.artmann.tech/authorize"
+                client.onPageStarted(surface.currentWebView(), idp, null)
+                assertEquals(Uri.parse(idp), surface.authDetourUri(), "start blesses")
+
+                // …idempotently (same authority, no flip-flop)…
+                client.onPageStarted(surface.currentWebView(), "https://auth.artmann.tech/login", null)
+                assertEquals(
+                    Uri.parse(idp),
+                    surface.authDetourUri(),
+                    "same-authority start keeps the blessing rooted",
+                )
+
+                // …and an origin page start ends the detour.
+                client.onPageStarted(surface.currentWebView(), "$origin/messages", null)
+                assertNull(surface.authDetourUri(), "origin start clears")
             }
         }
     }
