@@ -34,7 +34,22 @@ object CallLayer {
 
     private const val SESSION_WATCH_INTERVAL_MS = 10 * 60 * 1000L
 
+    /**
+     * Test seam for the JVM suite: the Robolectric tests launch
+     * MainActivity, whose onCreate/resume wires the call layer. Left
+     * enabled there, a UNIT test phones the live stack (session HTTP,
+     * SIP WSS, ntfy websocket) and leaves live sockets plus reconnect
+     * threads behind — that hung the suite for hours and deadlocked
+     * ActivityScenario teardown (found by jstack on the wedged
+     * executor, 2026-10-28). Default true; only the Robolectric
+     * classes that launch the shell flip it off (each test class runs
+     * in a fresh sandbox classloader, so the flip cannot leak).
+     */
+    @Volatile
+    internal var wiringEnabled = true
+
     fun ensureWired(context: Context) {
+        if (!wiringEnabled) return
         if (guard.current() != null) return
         val appContext = context.applicationContext
         val attempt = guard.begin()

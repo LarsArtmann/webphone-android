@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -29,6 +30,11 @@ import kotlin.test.assertNull
 class DeepLinkIntakeTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
+
+    @Before
+    fun keepTheShellUnwired() {
+        CallLayer.wiringEnabled = false
+    }
 
     private fun viewIntent(uri: Uri): Intent =
         Intent(context, MainActivity::class.java).apply {

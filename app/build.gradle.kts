@@ -56,6 +56,13 @@ android {
         unitTests {
             isReturnDefaultValues = true
             isIncludeAndroidResources = true
+            all { test ->
+                // A silent suite is how a wedge hid for hours: every
+                // test must print its outcome as it finishes.
+                test.testLogging {
+                    events("passed", "failed", "skipped")
+                }
+            }
         }
     }
 }
