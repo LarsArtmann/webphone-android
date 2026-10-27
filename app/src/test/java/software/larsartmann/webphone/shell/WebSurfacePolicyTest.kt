@@ -287,12 +287,14 @@ class WebSurfacePolicyTest {
                 client.onPageStarted(surface.currentWebView(), idp, null)
                 assertEquals(Uri.parse(idp), surface.authDetourUri(), "start blesses")
 
-                // …idempotently (same authority, no flip-flop)…
+                // …idempotently (same authority — the stored handle
+                // tracks the latest page, the verdict keys on the
+                // authority, so the blessing stays live on it)…
                 client.onPageStarted(surface.currentWebView(), "https://auth.artmann.tech/login", null)
                 assertEquals(
-                    Uri.parse(idp),
+                    Uri.parse("https://auth.artmann.tech/login"),
                     surface.authDetourUri(),
-                    "same-authority start keeps the blessing rooted",
+                    "same-authority start keeps the blessing live",
                 )
 
                 // …and an origin page start ends the detour.
