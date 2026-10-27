@@ -79,4 +79,43 @@ class NavigationVerdictTest {
     fun `null uri stays`() {
         assertEquals(NavigationVerdict.LoadInShell, navigationVerdict(null, origin))
     }
+
+    @Test
+    fun `the auth detour authority navigates in-shell while live`() {
+        val detour = Uri.parse("https://auth.artmann.tech")
+
+        // Mid-detour, the IdP's own pages (its SPA links — consulted
+        // navigations that would otherwise eject the OIDC login) load.
+        assertEquals(
+            NavigationVerdict.LoadInShell,
+            navigationVerdict(Uri.parse("https://auth.artmann.tech/login/passkey"), origin, detour),
+        )
+
+        // Without a live detour the same URL stays foreign (the
+        // default call sites keep the old behavior exactly).
+        assertIs<NavigationVerdict.HandOff>(
+            navigationVerdict(Uri.parse("https://auth.artmann.tech/login/passkey"), origin),
+        )
+
+        // Ports distinguish the detour authority like the origin's.
+        assertIs<NavigationVerdict.HandOff>(
+            navigationVerdict(Uri.parse("https://auth.artmann.tech:8443/"), origin, detour),
+        )
+
+        // Subdomains of the detour host stay foreign.
+        assertIs<NavigationVerdict.HandOff>(
+            navigationVerdict(Uri.parse("https://sso.auth.artmann.tech/"), origin, detour),
+        )
+
+        // A THIRD host is foreign even mid-detour.
+        assertIs<NavigationVerdict.HandOff>(
+            navigationVerdict(Uri.parse("https://evil.example/phish"), origin, detour),
+        )
+
+        // The origin itself is always in-shell, detour or not.
+        assertEquals(
+            NavigationVerdict.LoadInShell,
+            navigationVerdict(Uri.parse("https://pbx.artmann.tech/messages"), origin, detour),
+        )
+    }
 }

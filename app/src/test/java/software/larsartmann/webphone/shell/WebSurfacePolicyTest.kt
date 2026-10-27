@@ -116,6 +116,97 @@ class WebSurfacePolicyTest {
     }
 
     @Test
+    fun `an oidc redirect detour keeps the idp in-shell until the dance comes home`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+                drainStartedActivities(activity)
+
+                // The island's OIDC begin is same-origin: loads itself.
+                assertFalse(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse("$origin/api/auth/oauth2/begin")),
+                    ),
+                )
+
+                // The origin's 302 lands the IdP WITHOUT a verdict (HTTP
+                // redirects never consult shouldOverrideUrlLoading): the
+                // commit blesses the detour.
+                val idp = "https://auth.artmann.tech/authorize?client_id=x"
+                client.doUpdateVisitedHistory(surface.currentWebView(), idp, false)
+                assertEquals(Uri.parse(idp), surface.authDetourUri())
+
+                // On the IdP, its OWN consulted links stay in-shell…
+                assertFalse(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse("https://auth.artmann.tech/login/passkey")),
+                    ),
+                    "the IdP's own pages continue the dance in-shell",
+                )
+                // …a THIRD host is still foreign…
+                assertTrue(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse("https://evil.example/phish")),
+                    ),
+                    "a third host never renders, even mid-detour",
+                )
+                // …and the origin is always in-shell.
+                assertFalse(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse("$origin/api/session")),
+                    ),
+                )
+
+                // The IdP 302s home: the callback commit ends the detour…
+                client.doUpdateVisitedHistory(
+                    surface.currentWebView(),
+                    "$origin/api/auth/oauth2/callback?code=c&state=s",
+                    false,
+                )
+                assertNull(surface.authDetourUri())
+                // …the IdP authority is foreign again.
+                assertTrue(
+                    client.shouldOverrideUrlLoading(
+                        surface.currentWebView(),
+                        FakeRequest(Uri.parse("https://auth.artmann.tech/login")),
+                    ),
+                    "after the dance the IdP authority hands off again",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `loadUri loads same-origin deep links and refuses foreign ones`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                val surface = activity.webSurface
+
+                surface.loadUri(Uri.parse("$origin/messages/42"))
+                assertEquals(
+                    "$origin/messages/42",
+                    shadowOf(surface.currentWebView()).lastLoadedUrl,
+                )
+
+                // Defense in depth: even a manifest mis-declaration can
+                // never aim the cookie-bearing WebView at a foreign page.
+                surface.loadUri(Uri.parse("https://evil.example/phish"))
+                assertEquals(
+                    "$origin/messages/42",
+                    shadowOf(surface.currentWebView()).lastLoadedUrl,
+                    "foreign deep links are never loaded",
+                )
+            }
+        }
+    }
+    @Test
     fun `main-frame HTTP errors render as pages not the offline overlay`() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->

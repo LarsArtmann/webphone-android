@@ -208,6 +208,30 @@ class MainActivity : AppCompatActivity() {
         CallLayer.ensureWired(this)
     }
 
+    /** Warm deep links (singleTask: an already-running shell receives
+     *  the VIEW intent here instead of a new activity). */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        routeDeepLink(intent)
+    }
+
+    /** The single exported VIEW intake (the manifest's tel:/sip:/App
+     *  Link filters all hang off this activity): tel:/sip: open the
+     *  dialer PRE-FILLED (the user still taps Call — the registration
+     *  gate holds); a stack App Link opens that path in the shell;
+     *  anything foreign falls through to the app's home state — never
+     *  the session-cookie-bearing WebView, and never a re-hand-off
+     *  (the system already had its chance to keep the link). */
+    private fun routeDeepLink(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_VIEW) return
+        when (val target = deepLinkTarget(intent.data, Uri.parse(App.origin))) {
+            is DeepLinkTarget.ShellPath -> webSurface.loadUri(target.uri)
+            is DeepLinkTarget.Dial -> startActivity(DialpadActivity.prefill(this, target.number))
+            DeepLinkTarget.None -> Unit
+        }
+    }
+
     override fun onPause() {
         webSurface.pause()
         super.onPause()
