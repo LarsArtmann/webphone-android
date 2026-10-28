@@ -21,6 +21,8 @@ Raw ideas:
 - Audio-focus and audio-routing polish on the WebRTC leg
 - Baseline profiles for startup + the call path (deferred 2026-10-25:
   measure a real device first — see Decisions)
+- R8 full-mode sanity + baseline-profile check under AGP 9 (only
+  mapping.txt existence is verified today; stretch, 2026-10-28)
 
 ### 2. Operator configuration
 
@@ -73,6 +75,17 @@ Raw ideas:
 - Multi-host IdP allowance: the single-authority policy hands off
   mid-dance if the login ever chains through a second host; whether any
   real IdP fan-out needs an allowance (and its shape) is undefined
+
+### 5. Engineering practice
+
+Repo-process ideas — none urgent, all cheap when they ripen.
+
+Raw ideas:
+
+- A `pre-<jump>` git tag before big migrations (bisect anchor — daemon
+  commits make history dense; born from the 48-file ktlint blob)
+- A quarterly toolchain-review cadence so the repo never again sits
+  3 Kotlin minors behind (the 2026-10-28 jump closed a 2.1.0 → 2.4.21 gap)
 
 ## Decisions
 
@@ -150,6 +163,22 @@ Unresolved questions route here until an answer turns them into bounded work
   `webphone` repo is public and this README reads public-facing. Keep private
   until the honesty-contract markers clear, then flip the GitHub twin public
   — or stay private?
+- **In-shell dialable links (R08):** should `tel:`/`callto:`/`sip:` links
+  tapped INSIDE island pages route straight to the native dialer (no chooser
+  bounce), or keep browser-parity hand-off? Product call — both defensible.
+- **IdP cancel/error redirect target:** when the user cancels Pocket ID
+  consent (or the IdP errors), where does the server land the callback —
+  island root, a styled origin error page, or the IdP? The Android detour
+  clears on ANY origin commit, so all three work; the on-device assertion
+  depends on knowing the intended target (no explicit error-callback handler
+  was found in `internal/sso/sso.go`).
+- **crush-daily scheduler coexistence:** the scheduler dispatches
+  autonomous gate runs on this repo; can it SKIP when a session is actively
+  building (flock/lockfile or a repo-busy marker)? Its config lives outside
+  the repo.
+- **Concurrent-agent policy:** serialize sessions on this repo at the
+  dispatcher, or keep parallel work with the merge-around protocol
+  (freshness checks + hand-committed format passes)?
 
 ## Non-goals
 

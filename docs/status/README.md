@@ -1,24 +1,29 @@
 # Status Reports
 
-Point-in-time snapshots, newest first. Living docs (`FEATURES.md`,
-`TODO_LIST.md`, `CHANGELOG.md`) are the current truth; a report is what
+Point-in-time snapshots. **Living docs (`FEATURES.md`, `TODO_LIST.md`,
+`CHANGELOG.md`, `ROADMAP.md`) are the current truth**; a report is what
 was believed at its timestamp.
 
 > Reading an old report: `~~struck~~` items carry an inline resolution
-> (`done at <hash>` / `routed` / verified evidence); BARE items were still
-> open when last annotated (2026-10-25 docs-health audit).
+> (`done at <hash>` / `done — evidence` / `**→ routed**` to TODO_LIST or
+> ROADMAP); BARE items were still open when the file was last annotated.
 
-| Report                                                                                                                                                   | Scope                                                                                                                                                                                                              |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [2026-10-27_15-11 — deep links + in-shell OAuth: status & self-review](2026-10-27_15-11_deep-links-and-in-shell-oauth-status-and-self-review.md)         | Auth-detour (OIDC completes in-shell) + deep-link intake (tel/callto/sip + App Links) shipped, 88 tests + full gate green, retry() detour-clear defect found in review, 18 next steps, 3 operator questions        |
-| [2026-10-25_14-33 — W193 annotation, pushes, concurrent-session fixes](2026-10-25_14-33_annotation-push-and-concurrent-session-fixes.md)                 | 06-38 plan annotated (51 rows, ledger-exempt), both remotes pushed to `f585c6d` + mirror OK, CI billing-block re-confirmed, 13:43 report rescued, dprint×status-items mauling + recovery catalogued, 25 next steps |
-| [2026-10-25_13-56 — SUPERB pass: verification, hardening, docs truth](2026-10-25_13-56_superb-pass-verification-hardening-and-docs-truth.md)             | SUPERB plan executed: emulator proofs (uimode, offline overlay, renderer crash, ntfy kill-cycle), predictive-back bug fixed, call/push/sip hardening, 72 tests green, docs truth rebuilt, 3 operator questions     |
-| [2026-10-25_13-43 — P06-P10 verification train: status & self-review](2026-10-25_13-43_p06-p10-verification-train-status-and-self-review.md)             | Concurrent session's P06-P10 execution snapshot (emulator verifications, P08 CI billing diagnosis) with self-review; remotes at `28ba2be`, CI billing-blocked                                                      |
-| [2026-10-25_10-00 — execution pass: core hardening + surface modernization](2026-10-25_10-00_execution-pass-core-hardening-and-surface-modernization.md) | Stuck-line bug + confinement + INVITE 401 + watchdog + CallStyle + missed-call + contrast fixed, gate green (55 tests), concurrent WebSurface session detected, 50 next steps                                      |
-| [2026-10-25_06-27 — docs-health AUDIT: annotations + doc rebuild](2026-10-25_06-27_docs-health-audit-annotations-and-doc-rebuild.md)                     | All 7 `2026-0*` files read + 185 items annotated inline, living docs rebuilt (ghost cites, 26→25 tests, MVP path), 2 live probes, 0 archived                                                                       |
-| [2026-10-25_05-48 — Forgejo primary + GitHub mirror wiring, self-review](2026-10-25_05-48_forgejo-primary-github-mirror-wiring-and-self-review.md)       | Forgejo primary + private GitHub twin wired, push mirror deploy-gated, domains 114-commit freeze diagnosed, mistakes catalogued                                                                                    |
-| [2026-10-25_04-58 — UI redesign: design system, screenshots, self-review](2026-10-25_04-58_ui-redesign-status-and-self-review.md)                        | Full visual identity shipped (tokens, 4 surfaces, icon), screenshot-verified, mistakes catalogued, re-ranked 50 next steps                                                                                         |
-| [2026-10-25_03-12 — full status, MVP-on-phone path, and self-review](2026-10-25_03-12_full-status-mvp-path-and-self-review.md)                           | Verified MVP install path (debug APK only, release unsigned), full done/partial/missed/fucked-up review, re-ranked 50 next steps                                                                                   |
-| [2026-10-24_19-14 — full status and brutal self-review](2026-10-24_19-14_full-status-and-self-review.md)                                                 | Done/partial/missed/fucked-up for the execution session, process improvements, 50 next steps, 3 operator questions                                                                                                 |
-| [2026-10-24_18-55 — pareto execution: unblocked tiers + first device smoke](2026-10-24_18-55_pareto-execution-and-first-device-smoke.md)                 | The unblocked plan tiers (T03-T22 pieces) executed, verified, plus the first-ever emulator smoke (found + fixed a real startup crash)                                                                              |
-| [2026-10-24_17-44 — working-app wiring and first docs audit](2026-10-24_17-44_working-app-wiring-and-first-docs-audit.md)                                | Dead wiring fixed (cookie split-brain, ghost systems), docs built, 14-item backlog, 3 open operator questions                                                                                                      |
+## Live reports (newest first)
+
+| Report                                                                                                                                             | Scope                                                                                                                                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [2026-10-28_02-49 — docs-health mega-sweep: corpus annotated + archived](2026-10-28_02-49_docs-health-mega-sweep-corpus-annotated-and-archived.md) | ≈990 items resolved inline across the 21-file corpus; everything archived with manifests; TODO_LIST refilled; living docs rebuilt; as-found 7.75/6.75 |
+| [2026-10-28_02-23 — obtainium lane + phone DNS diagnosis](2026-10-28_02-23_obtainium-lane-and-phone-dns-diagnosis.md)                              | The sibling release-lane session's latest snapshot (not yet annotated)                                                                                |
+| [2026-10-28_02-03 — obtainium + Forgejo release lane](2026-10-28_02-03_obtainium-forgejo-release-lane.md)                                          | The sibling release-lane session's snapshot (not yet annotated)                                                                                       |
+| [2026-10-28_01-36 — SUPERB wave complete + wedge root-caused](2026-10-28_01-36_superb-wave-complete-and-suite-wedge-root-caused.md)                | The sibling session's wave-closure snapshot (not yet annotated)                                                                                       |
+
+## Archive
+
+Everything older (17 status reports, 2026-10-24 → 2026-10-28 01:35) is
+**fully annotated and archived** in [`archived/`](archived/README.md) —
+every numbered item carries an inline verdict (done / Won't implement /
+routed). The 2026-10-28 docs-health sweep resolved ≈990 numbered items
+and table rows across the corpus: shipped work got evidence citations,
+live-stack/owner-blocked work was routed into `TODO_LIST.md` (R-IDs)
+and `ROADMAP.md`, and decided-against work carries `Won't implement` /
+`NOT-DO` verdicts. Start from `TODO_LIST.md`, not the archive.

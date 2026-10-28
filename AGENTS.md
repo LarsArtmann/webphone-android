@@ -78,7 +78,17 @@ nix develop -c ./gradlew ktlintCheck        # Kotlin style gate (official style,
 The verification gate after every code change: `assembleDebug` green +
 `zipalign -c -P 16 4` on the debug APK + `testDebugUnitTest` green +
 `ktlintCheck` green (CI runs all four; `ktlintFormat` fixes
-mechanically).
+mechanically). After any toolchain or dependency jump, add the emulator
+train (`nix develop .#emulator -c bash scripts/emulator-train.sh`) — it
+exercises the wired install/launch path the hermetic JVM suite
+deliberately no longer touches. The contrast gate is one command away:
+`python3 scripts/contrast-check.py` (CI runs it; run it after ANY token
+change).
+
+The two devShells split the SDK deliberately: the BUILD shell carries
+platform 37 + build-tools 36.0.0 (compileSdk 37), while the `.#emulator`
+shell stays on API 36 + its system image (the AVD every train script
+drives) — an API 37 image is a TODO row, not an accident.
 
 Release lane (the update path Obtainium consumes):
 

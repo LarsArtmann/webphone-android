@@ -162,6 +162,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   output boots, 2026-10-25)
 - `scripts/emulator-photos.sh` (light+dark capture in one run) and
   `scripts/mirror-lag.sh` (mirror-lag probe); MIT LICENSE
+- `scripts/emulator-verify.sh`: the WebView verification pass as a
+  script — owns its emulator lifetime (detached host emulators get
+  reaped), single-emulator adb discipline, uninstall-before-install;
+  produced the W101-W107 on-device proofs (dark seam, offline overlay
+  recovery, renderer-kill survival)
 - CI push trigger (`push: branches: [main]`)
 - Deep-link intake hardening: URI params (`;transport=`,
   `;phone-context=`, `;postd=`) no longer reach the dialable, a link
