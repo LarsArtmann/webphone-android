@@ -34,10 +34,11 @@ jobs:
       - name: Unit tests (protocol + wiring)
         run: ./gradlew testDebugUnitTest
 
-      # The 16 KB page-size gate: build-tools 35's zipalign carries
-      # -P 16 (the Android 16 constraint — non-negotiable per release).
+      # The 16 KB page-size gate: build-tools 36's zipalign carries
+      # -P 16 (the Android 16 constraint — non-negotiable per release;
+      # 36.0.0 is AGP 9's floor).
       - name: 16 KB page-alignment gate
-        run: '"$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk'
+        run: '"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk'
 
       # WCAG contrast guard over the color-token pairs (the 2.44:1
       # answer-button class can never drift back silently). Stdlib

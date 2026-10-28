@@ -21,11 +21,11 @@
           };
         };
         android = pkgs.androidenv.composeAndroidPackages {
-          platformVersions = [ "36" ];
-          # 34.0.0: AGP 8.7's packaging default; 35.0.0: the first
-          # zipalign carrying the -P 16 flag (the 16 KB page-size
-          # verification the platform decision mandates per release).
-          buildToolsVersions = [ "34.0.0" "35.0.0" ];
+          platformVersions = [ "37" ];
+          # 36.0.0: AGP 9's floor and packaging default; its zipalign
+          # carries the -P 16 flag — the 16 KB page-size verification
+          # the platform decision mandates per release.
+          buildToolsVersions = [ "36.0.0" ];
           includeEmulator = false;
           includeSystemImages = false;
         };
@@ -34,10 +34,12 @@
         # emulator + system image weigh gigabytes. Enter it only when
         # training: `nix develop .#emulator -c bash scripts/emulator-train.sh`
         # (KVM required; on hosts without /dev/kvm the script is the
-        # documentation of what a real device train does).
+        # documentation of what a real device train does). The platform
+        # stays 36 until the API 37 system image is deliberately pulled
+        # (multi-GB; the existing AVD is API 36).
         emulatorSdk = pkgs.androidenv.composeAndroidPackages {
           platformVersions = [ "36" ];
-          buildToolsVersions = [ "35.0.0" ];
+          buildToolsVersions = [ "36.0.0" ];
           includeEmulator = true;
           includeSystemImages = true;
           systemImageTypes = [ "google_apis" ];

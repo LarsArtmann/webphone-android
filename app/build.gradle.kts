@@ -1,15 +1,14 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
     namespace = "software.larsartmann.webphone"
-    compileSdk = 36
-    // build-tools 35: its zipalign carries -P 16 — the packaging step
-    // must produce 16 KB page-aligned uncompressed .so files (the
-    // Android 16 constraint; verified per release in CI).
-    buildToolsVersion = "35.0.0"
+    compileSdk = 37
+    // build-tools 36: AGP 9's floor; its zipalign carries -P 16 — the
+    // packaging step must produce 16 KB page-aligned uncompressed .so
+    // files (the Android 16 constraint; verified per release in CI).
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "software.larsartmann.webphone"
@@ -43,9 +42,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    // The old `kotlinOptions { jvmTarget }` block is GONE under AGP 9
+    // built-in Kotlin: jvmTarget follows compileOptions.targetCompatibility
+    // (17). Compiler options would move to a top-level `kotlin {}` block
+    // if this project ever needs non-defaults.
     buildFeatures {
         viewBinding = true
     }
@@ -76,7 +76,7 @@ dependencies {
     implementation(libs.webrtc)
     implementation(libs.firebase.messaging)
 
-    testImplementation(kotlin("test"))
+    testImplementation(libs.kotlin.test)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
