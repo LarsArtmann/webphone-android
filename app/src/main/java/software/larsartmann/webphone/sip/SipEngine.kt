@@ -299,14 +299,13 @@ class SipEngine(
         val seq = cseq.incrementAndGet()
         val target = "sip:$destination@${config.sipDomain}"
         val via = "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"
+        val fromTag = UUID.randomUUID().toString().take(8)
         val leg =
             Leg(
                 callId = callId,
                 inviteCseq = seq,
                 remoteTarget = target,
-                fromHeader = "\"${config.displayName}\" <sip:${config.extension}@${config.sipDomain}>;tag=${UUID.randomUUID().toString().take(
-                    8,
-                )}",
+                fromHeader = "\"${config.displayName}\" <sip:${config.extension}@${config.sipDomain}>;tag=$fromTag",
                 toHeader = "<$target>",
                 inviteVia = via,
                 confirmed = false,

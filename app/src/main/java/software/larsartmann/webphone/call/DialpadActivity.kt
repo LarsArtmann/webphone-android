@@ -258,7 +258,8 @@ class DialpadActivity : AppCompatActivity() {
                             when {
                                 registered -> R.string.registration_registered
                                 info.status == CallEngine.Registration.CONNECTING -> R.string.registration_connecting
-                                info.failure == CallEngine.RegistrationFailure.AUTH_REJECTED -> R.string.registration_auth_rejected
+                                info.failure == CallEngine.RegistrationFailure.AUTH_REJECTED ->
+                                    R.string.registration_auth_rejected
                                 else -> R.string.registration_off
                             },
                         )

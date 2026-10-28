@@ -21,9 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - In-app OIDC login completes: the AUTH DETOUR policy keeps the IdP
   (Pocket ID) in-shell for the duration of the login dance — the
   island's same-origin `/api/auth/oauth2/begin` 302 blesses exactly
-  one foreign authority (only redirects/POSTs the verdict never saw
-  can), the callback commit ends the detour, third hosts still hand
-  off, and the session cookie stays scoped to the origin
+  one foreign authority (a MAIN-FRAME SERVER REDIRECT does the
+  blessing — modern Chromium judges redirects; only cross-origin POST
+  arrivals go unjudged, caught by the commit-side hooks), the callback
+  commit ends the detour, third hosts still hand off, and the session
+  cookie stays scoped to the origin
 - Dialpad prefill seam (`DialpadActivity.prefill`) carrying the
   tel:/sip: intake number; JVM test suite grew to 88 tests
 - Hardened WebView shell (`shell/WebSurface.kt`): renderer-crash
@@ -152,6 +154,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `scripts/emulator-photos.sh` (light+dark capture in one run) and
   `scripts/mirror-lag.sh` (mirror-lag probe); MIT LICENSE
 - CI push trigger (`push: branches: [main]`)
+- Deep-link intake hardening: URI params (`;transport=`,
+  `;phone-context=`, `;postd=`) no longer reach the dialable, a link
+  tapped while a call is live routes to the call screen (the
+  single-call policy, one hop earlier than the dialer's own guard),
+  and warm links pin the intent (`setIntent`) so a restored process
+  still sees the deep link
+- `scripts/assetlinks.sh`: emits serve-ready `assetlinks.json` from
+  the real debug keystore (XDG-path discovery, apksigner cross-checked
+  against the built APK — wrong-fingerprint output is refused)
+- Test suite grew to 94 JVM tests: the auth-detour redirect seam (a
+  server redirect blesses, a click never does, the onPageStarted belt,
+  the offline-retry clear), the warm-intent intake (setIntent pinned,
+  tel re-aim), the live-call link routing, the URI-param strip, and
+  the ntfy/CallService test controllers now tear down (a leaked ntfy
+  service kept its reconnect loop armed for the whole suite JVM)
 
 ### Fixed
 
@@ -196,9 +213,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   (previously a zombie connection survived a remote BYE)
 - Notification permission is requested in context (post-registration)
   instead of on a cold launch
+- The auth detour could never fire on a real login: it keyed on
+  committed navigations, but modern Chromium consults the WebView
+  client for SERVER redirects — the IdP 302 was judged and handed off
+  to the browser before the detour existed. A main-frame redirect now
+  blesses the detour at the judgment seam (clicks and JS still hand
+  off), an offline Retry clears a stale blessing, and the commit hooks
+  stay as the belt for unjudged POST arrivals. Proven on-device: the
+  Pocket ID pages render inside the shell with no Chrome task
 
 ### Changed
 
+- **Toolchain jump (2026-10-28)**: Gradle 8.11.1 → 9.8.2, AGP 8.7.3 →
+  9.4.1, Kotlin 2.1.0 → 2.4.21, compileSdk 36 → 37, build-tools
+  35.0.0 → 36.0.0. AGP 9's built-in Kotlin replaces the
+  `org.jetbrains.kotlin.android` plugin (removed); "latest Kotlin"
+  rides a root buildscript classpath pin; `kotlin("test")` became an
+  explicit `kotlin-test-junit` catalog dependency
+- Dependencies refreshed: core-ktx 1.19.1, appcompat 1.8.0, lifecycle
+  2.11.0, okhttp 5.5.1 (+mockwebserver), coroutines 1.11.0, robolectric
+  4.17, androidx.test core-ktx 1.7.0, firebase-messaging 26.0.1; the
+  unused `okhttp-ws` catalog alias is gone (WebSocket ships in the
+  main okhttp artifact)
+- Kotlin style is ktlint-gated now (official style, root
+  `.editorconfig`, plugin 14.2.0, CI step); detekt evaluated and
+  rejected (stalled upstream); `DeepLink.kt` renamed to
+  `DeepLinkTarget.kt` (ktlint filename rule)
+- The JVM suite is hermetic: MainActivity launches in Robolectric no
+  longer phone the live stack (`CallLayer.wiringEnabled` test seam),
+  the ntfy reconnect threads are daemon, and activity tests use the
+  synchronous `Robolectric.buildActivity` (ActivityScenario's
+  close-wait deadlocked bare launches of the singleTask shell — the
+  hours-long executor wedge, jstack-proven); the suite prints per-test
+  outcomes
 - Formatting baseline via dprint (JSON/YAML/Markdown/Dockerfile; `dprint.json`)
 - The `.kotlin/` directory (Kotlin 2.x session state) is local-only —
   gitignored, never committed

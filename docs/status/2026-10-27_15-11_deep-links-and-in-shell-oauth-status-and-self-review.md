@@ -1,5 +1,10 @@
 # Deep Links + In-Shell OAuth — Status & Self-Review
 
+> **DONE-AT 2026-10-28:** every follow-up this report surfaced shipped in
+> the 15-17 plan's wave (R01-R07, R09-R11; 94-test gate). The §b detour
+> premise this report stood on was BUSTED by R03 — server redirects ARE
+> judged; see `docs/planning/2026-10-27_15-17_*.md` header + the 00-20 report.
+
 **Session:** 2026-10-27, ~14:30–15:11 CET · **Prompt:** "Deep Links? Better Oauth support?"
 **Scope:** this session only — the deep-link intake and the OIDC auth-detour work, plus what I noticed while doing it.
 **Baseline at session start:** `c8b5bbe` (main, clean), 72 JVM tests, no VIEW intent filters, same-origin-only navigation verdict.

@@ -1,5 +1,15 @@
 # SUPERB — Detour Hardening, Deep-Link Proof & Train Unblocks (2026-10-27 15:17)
 
+> **EXECUTED 2026-10-28 (done at):** the entire agent wave — R01, R02,
+> R03, R04, R05, R06, R07, R09, R10/R11 — shipped at the 94-test gate
+> (0 failures, zipalign 16KB OK). R03's reality-check BUSTED the
+> session-1 premise (server redirects ARE judged on modern Chromium);
+> the detour fix rode the `isRedirect` seam and is on-device proven.
+> R08, R12-R27 remain owner/credential-blocked as designed. Narrative:
+> `docs/status/2026-10-28_00-20_r03-redirect-truth-and-deep-link-train-status.md`
+>
+> - CHANGELOG [Unreleased].
+
 > **Basis:** `TODO_LIST.md` (17 rows, 15 BLOCKED owner/credential-gated),
 > `ROADMAP.md` (raw ideas only), the prior plan
 > `2026-10-25_10-17_SUPERB-post-hardening-verification-and-daily-driver-plan.md`

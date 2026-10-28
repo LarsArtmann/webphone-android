@@ -34,6 +34,11 @@ jobs:
       - name: Unit tests (protocol + wiring)
         run: ./gradlew testDebugUnitTest
 
+      # Kotlin style gate (official style, .editorconfig). Failure
+      # blocks merge; `./gradlew ktlintFormat` fixes mechanically.
+      - name: Kotlin style gate (ktlint)
+        run: ./gradlew ktlintCheck
+
       # The 16 KB page-size gate: build-tools 36's zipalign carries
       # -P 16 (the Android 16 constraint — non-negotiable per release;
       # 36.0.0 is AGP 9's floor).

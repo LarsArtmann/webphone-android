@@ -48,6 +48,25 @@ Raw ideas:
   installable artifact is the debug APK; `assembleRelease` emits an
   unsigned APK)
 
+### 4. Auth surface
+
+The in-shell OIDC detour (ONE blessed authority at a time, emulator-proven
+2026-10-27) is the shipped login path. Raw ideas about what could come
+after it — none actionable today.
+
+Raw ideas:
+
+- OAuth outside the WebView: Custom Tabs + an App-Link callback would
+  give the IdP its own hardened browser surface (no in-shell navigation
+  policy to bend, no shared cookie jar) — it needs the server to serve
+  `assetlinks.json` and a redirect target that lands back in the app
+- A detour TTL: today the blessing dies on the next origin commit/start
+  or an explicit retry-clear, so a stalled dance keeps it indefinitely —
+  a time cap would bound a dance that never completes
+- Multi-host IdP allowance: the single-authority policy hands off
+  mid-dance if the login ever chains through a second host; whether any
+  real IdP fan-out needs an allowance (and its shape) is undefined
+
 ## Decisions
 
 The made-in-head calls, written down (2026-10-25 sweep). Each carries its
@@ -85,10 +104,21 @@ revisit trigger — a decision without one is a grudge.
   knows its own shell); pinch-zoom stays enabled (accessibility over
   app-look); API 31-32 keeps the web app's own theme toggle as the
   dark-mode fallback (algorithmic darkening needs 33+).
-- **Kotlin formatter/linter: none for v0.1.** Style is enforced by
-  review (Ktlint/detekt would fight the programmatic-UI idiom for
-  marginal gain at this size). Revisit when a second heavy Kotlin
-  contributor exists.
+- **Kotlin linter: ktlint (since 2026-10-28).** Official style via the
+  root `.editorconfig`, plugin 14.2.0, CI-gated; `ktlintFormat` fixes
+  mechanically. This supersedes the earlier "none for v0.1,
+  review-enforced" stance — the toolchain jump made a mechanical gate
+  cheap, and the AGP 9 migration itself argued for a codified style.
+  detekt stays REJECTED (stalled at 1.23.8 since 2025-02; KGP 2.4
+  compat risk) — re-evaluate when detekt 2.x stabilizes.
+- **Jetpack Compose: NOT now.** The app is a WebView shell with three
+  small programmatic screens (`CallActivity`, `DialpadActivity`, the
+  shell chrome); Compose adds a runtime dependency, a compiler plugin,
+  and a rewrite for zero user value at v0.1. The DEFAULT for any NEW
+  native surface is Compose (BOM 2026.09.00 +
+  `org.jetbrains.kotlin.plugin.compose` — the built-in Kotlin setup
+  makes the compose compiler plugin a one-liner); the existing screens
+  stay views until a rewrite earns its keep.
 - **values-de (German strings): not now.** The UI is English-only;
   strings are already extractor-safe (positional args, no string
   concatenation in layouts). Revisit when there is a second user who

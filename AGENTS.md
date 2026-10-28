@@ -12,14 +12,15 @@ silently replaces.
 **Status: v0.1 scaffold, first runtime smoke done.** Load-bearing code is
 implemented but untested against LIVE infrastructure (the README
 "honesty contract" section lists the markers). There IS now: a JVM test
-source set (91 tests: protocol unit tests + Robolectric smoke + the
-deep-link/auth-detour surface) and a CI workflow (mirrored to GitHub
-2026-10-25, but its triggers are `pull_request`/`workflow_dispatch`
-only — it has never run). First emulator smoke (install + launch)
-passed 2026-10-24. Deep links (tel/callto/sip/stack-https) and the
-in-shell OIDC auth detour SHIPPED 2026-10-27 and are emulator-proven
-(the 404-echo probe + the live `begin`→Pocket-ID redirect); the live
-Pocket ID login itself still awaits credentials (R17).
+source set (94 tests: protocol unit tests + Robolectric smoke + the
+deep-link/auth-detour surface, ktlint-gated) and a CI workflow
+(mirrored to GitHub 2026-10-25, but its triggers are
+`pull_request`/`workflow_dispatch` only — it has never run). First
+emulator smoke (install + launch) passed 2026-10-24. Deep links
+(tel/callto/sip/stack-https) and the in-shell OIDC auth detour SHIPPED
+2026-10-27 and are emulator-proven (the 404-echo probe + the live
+`begin`→Pocket-ID redirect); the live Pocket ID login itself still
+awaits credentials (R17).
 
 ## Repository & mirrors
 
@@ -59,14 +60,17 @@ mirror. Both are **private**.
 ## Build and verify
 
 ```console
-nix develop                        # JDK 21 + Android SDK (platform 36, build-tools 34+35)
+nix develop                        # JDK 21 + Android SDK (platform 37, build-tools 36.0.0)
 nix develop -c ./gradlew assembleDebug      # debug APK
 nix develop -c ./gradlew assembleRelease    # minified + resource-shrunk (R8, proguard-rules.pro)
 nix develop -c ./gradlew testDebugUnitTest  # JVM unit tests (protocol + Robolectric smoke)
+nix develop -c ./gradlew ktlintCheck        # Kotlin style gate (official style, .editorconfig)
 ```
 
 The verification gate after every code change: `assembleDebug` green +
-`zipalign -c -P 16 4` on the debug APK + `testDebugUnitTest` green.
+`zipalign -c -P 16 4` on the debug APK + `testDebugUnitTest` green +
+`ktlintCheck` green (CI runs all four; `ktlintFormat` fixes
+mechanically).
 
 The self-serve device train (headless API 36 emulator, requires
 `/dev/kvm`; the AVD lives in `.avd/`):
@@ -80,20 +84,26 @@ nix develop .#emulator -c bash scripts/emulator-smoke.sh   # keeps the emulator 
   scoped to the Android SDK). Never add a Makefile or justfile —
   `flake.nix` is the task surface in LarsArtmann projects.
 - 16 KB page-alignment check (mandatory per release and per
-  `webrtc` dependency bump; requires build-tools 35 — the `-P` flag
+  `webrtc` dependency bump; requires build-tools 35+ — the `-P` flag
   does not exist in 34). NOTE: `zipalign` is NOT on the devShell PATH
   (and `find $ANDROID_HOME` misses it through symlinked dirs) — use
-  the full build-tools 35 path:
+  the full build-tools 36 path:
 
   ```console
-  nix develop -c bash -c '"$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk'
+  nix develop -c bash -c '"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk'
   ```
 
 - Formatting: `dprint.json` covers JSON/YAML/Markdown/Dockerfile only.
-  Kotlin style is enforced by review, not tooling.
+  Kotlin style is ktlint (official style via the root `.editorconfig`,
+  plugin `org.jlleitschuh.gradle.ktlint` 14.2.0, CI-gated);
+  `ktlintFormat` fixes mechanically. detekt is REJECTED (stalled at
+  1.23.8 since 2025-02, KGP 2.4 compat risk — re-evaluate when 2.x
+  stabilizes).
 - Dependency versions live exclusively in `gradle/libs.versions.toml`;
   module build files use `libs.*` aliases. `settings.gradle.kts` sets
-  `FAIL_ON_PROJECT_REPOS` — never add repositories to `app/build.gradle.kts`.
+  `FAIL_ON_PROJECT_REPOS` — never add repositories to `app/build.gradle.kts`
+  (the root `buildscript {}` block is the sanctioned exception — see
+  the KGP pin gotcha below).
 - Dependabot handles version bumps.
 
 ## Architecture
@@ -236,6 +246,44 @@ tracked in TODO_LIST.
   sequences; a CANCEL after 200 is a protocol crime the guard refuses.
 - `POST_NOTIFICATIONS` is requested in context — once registration
   proves the session works — not on a cold launch (API 33+).
+- **AGP 9 built-in Kotlin** (since the 2026-10-28 toolchain jump:
+  Gradle 9.8.2 + AGP 9.4.1 + Kotlin 2.4.21): the
+  `org.jetbrains.kotlin.android` plugin is GONE from both plugin
+  blocks (incompatible with built-in Kotlin) and `android.kotlinOptions{}`
+  no longer exists (jvmTarget follows `compileOptions.targetCompatibility`).
+  "Latest Kotlin" rides the root `build.gradle.kts` classpath pin
+  `kotlin-gradle-plugin:2.4.21` — its version MUST equal the catalog's
+  `kotlin` (kotlin-test aligns to it); change BOTH or neither.
+  `android.builtInKotlin=false` is a temporary escape hatch that dies
+  in AGP 10 — never plan around it.
+- **`kotlin("test")` is gone** (it needed the KGP plugin DSL): the
+  catalog entry `kotlin-test` points at `kotlin-test-JUNIT` (not the
+  bare `kotlin-test` artifact — an aggregator whose JVM redirect the
+  built-in toolchain's compiler does not honor; `kotlin.test.Test`
+  came up UNRESOLVED with the bare artifact).
+- **Robolectric activity tests NEVER use `ActivityScenario`**: its
+  `close()` parks in a wait-for-DESTROYED loop ON the Robolectric main
+  thread, so a bare launch of the singleTask shell can never be
+  destroyed — the executor sat at ~20 s CPU forever (the hours-long
+  wedge, jstack-proven 2026-10-28). Use the synchronous
+  `Robolectric.buildActivity(...).setup()` + `pause().stop().destroy()`
+  (see `DeepLinkIntakeTest`).
+- **Unit tests must never phone the live stack**: MainActivity's
+  onCreate/resume calls `CallLayer.ensureWired`, which used to start a
+  REAL session-HTTP + SIP-WSS + ntfy-websocket wire from every
+  Robolectric launch. `CallLayer.wiringEnabled = false` (test seam,
+  per-sandbox classloader so it cannot leak) gates it off in
+  `DeepLinkIntakeTest`/`MainActivityLaunchTest`; the ntfy reconnect
+  threads are DAEMON so a leaked sleep can never hold the executor
+  JVM. The wired path is exercised on the emulator train only.
+- **A test run hangs silently for hours WITHOUT test logging**: the
+  suite now prints per-test outcomes (`testOptions.unitTests.all {
+  testLogging }`) — a stalled run is visible as a missing line.
+  Pre-flight every build: `pgrep -f gradle` (the `crush-daily`
+  scheduler dispatches agent sessions that run the gate
+  `testDebugUnitTest assembleDebug` on this repo — NEVER run a
+  concurrent build), and stream long builds to a log file instead of
+  piping through `tail` (which buffers until exit).
 
 ## Conventions
 
@@ -291,22 +339,22 @@ tracked in TODO_LIST.
   construction, the origin's own chain → bless that authority and
   keep it in-shell (clicks, `isRedirect=false`, still hand off — W105
   stays true); (2) the commit-side hooks (`doUpdateVisitedHistory`
-  + the `onPageStarted` belt, idempotent) catch the unjudged POST
-  arrivals. While the detour is live, `navigationVerdict` lets that
-  ONE authority navigate in-shell so the Pocket ID dance completes
-  (without it, the IdP's own links eject the login to Chrome and the
-  session mints in the WRONG cookie jar). One authority at a time
-  (replace, not union); an origin commit/start ends the detour;
-  `retry()` clears it explicitly (an offline retry never commits, so
-  the hooks alone would leave a stale blessing). Downloads NEVER ride
-  the detour (no cookie to a foreign host), and the session cookie
-  never leaves the origin (per-authority cookie scoping, third-party
-  cookies off). On-device proof: deep-link the begin URL → logcat
-  `WebSurface: auth detour blessed via redirect: auth.larsartmann.cloud`
-  + the Pocket ID pages render in the shell, no Chrome task.
-  Multi-host IdPs would need a different allowance (operator question
-  stands). Keep this shape — it is what makes "same-origin only" and
-  "OIDC works" true at the same time.
+  - the `onPageStarted` belt, idempotent) catch the unjudged POST
+    arrivals. While the detour is live, `navigationVerdict` lets that
+    ONE authority navigate in-shell so the Pocket ID dance completes
+    (without it, the IdP's own links eject the login to Chrome and the
+    session mints in the WRONG cookie jar). One authority at a time
+    (replace, not union); an origin commit/start ends the detour;
+    `retry()` clears it explicitly (an offline retry never commits, so
+    the hooks alone would leave a stale blessing). Downloads NEVER ride
+    the detour (no cookie to a foreign host), and the session cookie
+    never leaves the origin (per-authority cookie scoping, third-party
+    cookies off). On-device proof: deep-link the begin URL → logcat
+    `WebSurface: auth detour blessed via redirect: auth.larsartmann.cloud`
+  - the Pocket ID pages render in the shell, no Chrome task.
+    Multi-host IdPs would need a different allowance (operator question
+    stands). Keep this shape — it is what makes "same-origin only" and
+    "OIDC works" true at the same time.
 - **The debug keystore lives at `~/.config/.android/debug.keystore`
   (found 2026-10-27)**: the nix JDK resolves AGP's debug keystore via
   the XDG config home, so the CLASSIC `~/.android/debug.keystore` can

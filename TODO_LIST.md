@@ -27,17 +27,14 @@
 
 ## Ready (agent-executable)
 
-| Task                                                                                                        | Status     | Impact | Effort | Evidence                                                                                                |
-| ----------------------------------------------------------------------------------------------------------- | ---------- | ------ | ------ | ------------------------------------------------------------------------------------------------------- |
-| Detour hardening: `retry()` clears the auth detour + `onPageStarted` second blessing hook + tests           | 🟢 `READY` | High   | 30min  | Plan R01 (N001-N004); 15-11 report §e1/e3 — the retry miss is a found defect, not hypothetical          |
-| Redirect reality-check: emulator proof the detour activates on a REAL 302 commit (`doUpdateVisitedHistory`) | 🟢 `READY` | High   | 60min  | Plan R03 (N005-N011); 15-11 report §b1 — the detour's ONE load-bearing assumption, unproven on Chromium |
-| Emulator deep-link train: `am start` tel:/callto:/sip:/https → dialer prefill / shell path / home-state     | 🟢 `READY` | Med    | 30min  | Plan R02 (N006-N009); 15-11 report §b3 — manifest merge proven, intent resolution not                   |
-| `scripts/assetlinks.sh`: emit serve-ready assetlinks.json from the debug keystore                           | 🟢 `READY` | Med    | 30min  | Plan R04 (N012-N013); 15-11 report f-8                                                                  |
-| Memory/doc hygiene: AGENTS header refresh (88 tests), zipalign full path, rg `-r` trap lesson               | 🟢 `READY` | Med    | 30min  | Plan R05 (N014-N016); 15-11 report §d3/d4, §e4 — all three misses found by self-review                  |
-| `onNewIntent` test coverage (delegate + `setIntent` pinned)                                                 | 🟢 `READY` | Low    | 30min  | Plan R06 (N017-N018); 15-11 report §e2                                                                  |
-| sip:/tel: URI edge params (`;transport=`, `;phone-context=`, `postd=`) + tests                              | 🟢 `READY` | Low    | 30min  | Plan R07 (N019-N020); 15-11 report §e/§c4                                                               |
-| tel: deep link mid-call → route straight to `CallActivity` (single-call policy)                             | 🟢 `READY` | Low    | 30min  | Plan R09 (N021); 15-11 report f-16                                                                      |
-| ROADMAP note: OAuth outside the WebView (Custom Tabs) + post-batch docs sweep                               | 🟢 `READY` | Low    | 30min  | Plan R10/R11 (N022-N024)                                                                                |
+> 2026-10-28: the ENTIRE 2026-10-27 Ready wave shipped — R01, R02, R03,
+> R04, R05, R06, R07, R09, R10/R11 done at the 94-test gate (0 failures,
+> zipalign 16KB OK). R03's redirect reality-check BUSTED the session-1
+> premise and the detour fix is on-device proven. History:
+> CHANGELOG [Unreleased]; the full narrative:
+> `docs/status/2026-10-28_00-20_r03-redirect-truth-and-deep-link-train-status.md`.
+> This section refills from the next status report's harvest. The 2026-10-27
+> harvest note above predates the wave.
 
 ## High Impact
 
@@ -63,10 +60,13 @@
 | Cut the `v0.1.0` annotated tag (CHANGELOG entries are in; the tag itself is the operator's timing call)                                                                 | 🔵 `BLOCKED` | Med    | 5min   | Before-or-after the trains is the operator's call (F074b). R24 (N062-N063). Source: 10-00 §b (P11)                 |
 | Cross-repo: serve `/.well-known/assetlinks.json` from the stack (webphone repo, SHA256 of the install signing key) so the Android App Link verifies without the chooser | 🔵 `BLOCKED` | Med    | 30min  | Owner of both repos; android side shipped (filter + intake, 2026-10-27). R18 (N047-N048); generator = R04          |
 | Verify the OIDC auth detour against the live Pocket ID (login completes in-shell, session mints in the WebView jar)                                                     | 🔵 `BLOCKED` | Med    | 30min  | Needs operator IdP credential; policy pinned in `WebSurfacePolicyTest`. R17 (N045-N046). Adjacent: W104-W106 (P06) |
+| targetSdk 36 → 37 (compileSdk is ALREADY 37 since the 2026-10-28 toolchain jump): a device train must validate Android 17 behavior changes first                        | 🔵 `BLOCKED` | Med    | 30min  | Behavior opt-in, not a compile bump — the deliberate hold from the toolchain jump. Gate: first device train        |
 
 ## Low Impact
 
-| Task                                                                                   | Status       | Impact  | Effort | Effort bar                                                                                                         |
-| -------------------------------------------------------------------------------------- | ------------ | ------- | ------ | ------------------------------------------------------------------------------------------------------------------ |
-| Repo meta tail: Forgejo description (needs token), icon parity (owner both-or-neither) | 🔵 `BLOCKED` | Low     | 30min  | R25 (N064-N065). Source: 06-38 §T25 (P26; photos/ gitignore + formatter + values-de decisions RESOLVED in ROADMAP) |
-| Post-train docs sweep: honesty retirement, CHANGELOG cut for the next version          | 🔵 `BLOCKED` | Low-Med | 100min | Needs both trains green. R26/R27 (N066-N069). Source: 06-38 §T27 (P27)                                             |
+| Task                                                                                                       | Status       | Impact  | Effort                    | Effort bar                                                                                                         |
+| ---------------------------------------------------------------------------------------------------------- | ------------ | ------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Repo meta tail: Forgejo description (needs token), icon parity (owner both-or-neither)                     | 🔵 `BLOCKED` | Low     | 30min                     | R25 (N064-N065). Source: 06-38 §T25 (P26; photos/ gitignore + formatter + values-de decisions RESOLVED in ROADMAP) |
+| Post-train docs sweep: honesty retirement, CHANGELOG cut for the next version                              | 🔵 `BLOCKED` | Low-Med | 100min                    | Needs both trains green. R26/R27 (N066-N069). Source: 06-38 §T27 (P27)                                             |
+| API 37 emulator system image for the train (the AVD stays API 36; the build shell already has platform 37) | 🔵 `BLOCKED` | Low     | 15min + multi-GB download | Deferred from the toolchain jump (2026-10-28); only needed when targetSdk 37 work starts                           |
+| mockwebserver3 migration (okhttp 5's new test API; classic mockwebserver still published at 5.5.1)         | 🔵 `BLOCKED` | Low     | 1h                        | Mechanical test migration after the okhttp 5 bump (2026-10-28); no urgency while the classic artifact resolves     |

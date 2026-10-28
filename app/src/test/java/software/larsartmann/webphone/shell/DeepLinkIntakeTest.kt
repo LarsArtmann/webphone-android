@@ -13,7 +13,10 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.annotation.Config
 import software.larsartmann.webphone.App
+import software.larsartmann.webphone.call.CallActivity
+import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.call.DialpadActivity
+import software.larsartmann.webphone.sip.SipEngine
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -150,5 +153,34 @@ class DeepLinkIntakeTest {
         assertEquals(DialpadActivity::class.java.name, started?.component?.className)
         assertEquals("+49170999", started?.getStringExtra(DialpadActivity.EXTRA_NUMBER))
         controller.teardown()
+    }
+
+    @Test
+    fun `a tel link while a call is live opens the call screen not the dialer`() {
+        CallEngine.onIncomingCall(
+            SipEngine.IncomingInvite(
+                callId = "link-live",
+                fromUser = "100",
+                fromDisplay = "Alice",
+                sdp = "v=0",
+                respondWith = { _, _ -> },
+            ),
+        )
+        try {
+            val controller = launchMain(viewIntent(Uri.parse("tel:+49170999")))
+            val started = shadowOf(controller.get()).nextStartedActivity
+            assertEquals(
+                CallActivity::class.java.name,
+                started?.component?.className,
+                "single-call policy: a live line routes the link to the call screen",
+            )
+            assertNull(
+                started?.getStringExtra(DialpadActivity.EXTRA_NUMBER),
+                "the link's number must not seed a second dialer",
+            )
+            controller.teardown()
+        } finally {
+            CallEngine.cancelRinging()
+        }
     }
 }

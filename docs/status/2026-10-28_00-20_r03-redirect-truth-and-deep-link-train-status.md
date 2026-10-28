@@ -1,5 +1,14 @@
 # Status — R03 Redirect Truth, Deep-Link Train, Detour Hardening (2026-10-28 00:20)
 
+> **DONE-AT 2026-10-28 (post-report):** the gate this report waited on
+> closed GREEN (94 tests / 0 failures, zipalign 16KB OK) after two
+> fixes: the suite-wedge root cause (leaked ntfy service controllers
+> kept reconnect threads armed for the whole JVM — destroy-in-finally)
+> and the Robolectric teardown doctrine (synchronous ActivityController,
+> never ActivityScenario.close). R07/R09/R10/R11 then shipped; the wave
+> is COMPLETE. The report's "next tasks" list rows covering R07-R11 are
+> done; the owner/credential rows stand.
+
 > **Session scope:** execution of the agent-executable wave from
 > `docs/planning/2026-10-27_15-17_SUPERB-detour-hardening-and-train-unblocks.md`
 > — R03 (redirect reality-check) first, then R01 (detour hardening), R02
