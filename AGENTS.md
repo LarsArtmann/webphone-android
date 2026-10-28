@@ -322,12 +322,12 @@ tracked in TODO_LIST.
   together, which is why both come from one line. Never reintroduce a
   literal `versionCode`/`versionName` in `app/build.gradle.kts`.
 - **Release key lives in `~/.config/webphone-android/`** (`release.keystore`
-  + `release.properties`, chmod 600, written by
-  `scripts/release.sh --init-key`). Losing it is not a build problem: every
-  installed device must UNINSTALL before it can take the next update
-  (Android refuses a signing-key change). Back both files up. No key →
-  `assembleRelease` still emits `app-release-unsigned.apk` and CI stays
-  green, so the absence is silent until someone tries to install.
+  - `release.properties`, chmod 600, written by
+    `scripts/release.sh --init-key`). Losing it is not a build problem: every
+    installed device must UNINSTALL before it can take the next update
+    (Android refuses a signing-key change). Back both files up. No key →
+    `assembleRelease` still emits `app-release-unsigned.apk` and CI stays
+    green, so the absence is silent until someone tries to install.
 - **The debug build and the release build are different packages to
   Android**: the currently sideloaded APK is debug-signed (per-machine
   key), so switching to the release key needs one manual uninstall. That

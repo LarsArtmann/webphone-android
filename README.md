@@ -81,9 +81,11 @@ neither USB nor wireless debugging.
 ### Install once, update forever (Obtainium)
 
 1. In Forgejo create an access token (Settings → Applications,
-   `read:repository`), then add the app in Obtainium with the URL
-   `https://forgejo.home.lan/lars/webphone-android`, source
-   **Forgejo (Codeberg)**, and paste the token — the repo is private.
+   `read:repository`). In Obtainium add the app with the URL
+   `https://forgejo.home.lan/lars/webphone-android`, tap **Override
+   Source** and pick **Forgejo (Codeberg)** (that source only
+   auto-detects `codeberg.org`), then paste the token — the repo is
+   private.
 2. Enable the per-app option **"Allow insecure HTTP requests"**. The
    forge serves a certificate from the internal `dnsblockd` CA, which is
    not in Android's system trust store; without the toggle every check

@@ -55,6 +55,10 @@ die() {
 	exit 1
 }
 
+# The forge's SSH endpoint prints an "AUTHORIZED ACCESS ONLY" banner on
+# every connection — twice per release is noise, not information.
+GIT_SSH_QUIET=(-c core.sshCommand="ssh -o LogLevel=ERROR")
+
 note() {
 	echo "== $*"
 }
@@ -178,8 +182,15 @@ preflight() {
 	[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] ||
 		die "releases are cut from main (currently on '$(git rev-parse --abbrev-ref HEAD)')"
 
-	[ -z "$(git status --porcelain)" ] ||
-		die "working tree is dirty — commit the release state first so the tag and the artifact match"
+	# A dry run is a rehearsal, so it tolerates a dirty tree; a real
+	# release does not — the tag must describe exactly what was built.
+	if [ -n "$(git status --porcelain)" ]; then
+		if [ "$DRY_RUN" = "1" ]; then
+			echo "warning: working tree is dirty (allowed for --dry-run only)" >&2
+		else
+			die "working tree is dirty — commit the release state first so the tag and the artifact match"
+		fi
+	fi
 
 	[ -f "$PROPS" ] ||
 		die "no signing properties at $PROPS — run 'scripts/release.sh --init-key' first"
@@ -201,8 +212,8 @@ preflight() {
 	fi
 
 	if git remote get-url origin >/dev/null 2>&1; then
-		git fetch --quiet origin main || die "cannot fetch origin (network / SSH agent?)"
-		head_tags="$(git ls-remote --tags origin "refs/tags/$tag" || true)"
+		git "${GIT_SSH_QUIET[@]}" fetch --quiet origin main || die "cannot fetch origin (network / SSH agent?)"
+		head_tags="$(git "${GIT_SSH_QUIET[@]}" ls-remote --tags origin "refs/tags/$tag" || true)"
 		[ -z "$head_tags" ] || die "tag $tag already exists on the forge"
 		local behind
 		behind="$(git rev-list --count "HEAD..origin/main")"
@@ -216,7 +227,7 @@ preflight() {
 		FORGEJO_TOKEN="$(tr -d '[:space:]' <"$TOKEN_FILE")"
 		export FORGEJO_TOKEN
 	fi
-	if [ "$MODE" = "release" ] && [ -z "${FORGEJO_TOKEN:-}" ]; then
+	if [ "$MODE" = "release" ] && [ "$DRY_RUN" = "0" ] && [ -z "${FORGEJO_TOKEN:-}" ]; then
 		die "no Forgejo token — create one (Forgejo > Settings > Applications, scope write:repository) and either export FORGEJO_TOKEN or write it to $TOKEN_FILE (chmod 600)"
 	fi
 
@@ -280,7 +291,8 @@ stage() {
 		echo
 		echo '```'
 		"${ANDROID_HOME:?}/build-tools/36.0.0/apksigner" verify --print-certs "$asset" |
-			awk -F': ' '/Signer #1 certificate SHA-256 digest/ { print $2 }'
+			awk -F': ' '/Signer #1 certificate SHA-256 digest/ { print $2 }' |
+			tr 'a-f' 'A-F' | sed 's/\(..\)/\1:/g; s/:$//'
 		echo '```'
 	} >>"$notes"
 	STAGED_ASSET="$asset"
@@ -296,7 +308,7 @@ publish() {
 
 	note "tagging $tag"
 	git tag -a "$tag" -m "webphone-android $version"
-	git push origin main "$tag" || die "push failed — the tag exists locally; delete it (git tag -d $tag) and retry"
+	git "${GIT_SSH_QUIET[@]}" push origin main "$tag" || die "push failed — the tag exists locally; delete it (git tag -d $tag) and retry"
 
 	note "publishing release to $REPO"
 	"$PYTHON" scripts/forgejo-release.py \
