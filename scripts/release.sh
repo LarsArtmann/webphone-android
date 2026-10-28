@@ -64,7 +64,9 @@ note() {
 }
 
 usage() {
-	sed -n '5,22p' "$0" | sed 's/^# \{0,1\}//'
+	# The header block is the usage text: print it up to the `set -euo
+	# pipefail` line, without the comment markers.
+	sed -n '2,/^set -euo pipefail$/p' "$0" | sed -e '$d' -e 's/^# \{0,1\}//'
 }
 
 read_version() {
@@ -74,7 +76,9 @@ read_version() {
 	v="${v#v}"
 	[[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] ||
 		die "version.txt must hold MAJOR.MINOR.PATCH, found '$v'"
-	printf '%s' "$v"
+	# Newline-terminated: `IFS=. read -r a b c < <(read_version)` needs a
+	# delimiter or `read` reports EOF and `set -e` kills the caller.
+	printf '%s\n' "$v"
 }
 
 version_code() {
@@ -182,11 +186,12 @@ preflight() {
 	[ "$(git rev-parse --abbrev-ref HEAD)" = "main" ] ||
 		die "releases are cut from main (currently on '$(git rev-parse --abbrev-ref HEAD)')"
 
-	# A dry run is a rehearsal, so it tolerates a dirty tree; a real
-	# release does not — the tag must describe exactly what was built.
+	# A dry run and a doctor probe are rehearsals, so they tolerate a dirty
+	# tree; a real release does not — the tag must describe exactly what
+	# was built.
 	if [ -n "$(git status --porcelain)" ]; then
-		if [ "$DRY_RUN" = "1" ]; then
-			echo "warning: working tree is dirty (allowed for --dry-run only)" >&2
+		if [ "$DRY_RUN" = "1" ] || [ "$MODE" = "doctor" ]; then
+			echo "warning: working tree is dirty (allowed for --dry-run/--doctor only)" >&2
 		else
 			die "working tree is dirty — commit the release state first so the tag and the artifact match"
 		fi
@@ -332,6 +337,7 @@ while [ $# -gt 0 ]; do
 		NOTES_FILE="${1:?--notes needs a file}"
 		;;
 	bump)
+		MODE="bump"
 		shift
 		BUMP="${1:?bump takes patch|minor|major}"
 		;;

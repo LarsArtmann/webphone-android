@@ -60,7 +60,10 @@ mirror. Both are **private**.
   only (verified 2026-10-25: both remotes lagged local while the mirror was
   unattached). Until the push mirror attaches (next SystemNix deploy):
   after every session `git push origin main && git push github main` by
-  hand, or both the canonical repo and the twin silently drift.
+  hand, or both the canonical repo and the twin silently drift. The one
+  exception is deliberate: `scripts/release.sh` pushes `main` and the
+  release tag to `origin` as part of publishing (the tag must exist on the
+  forge for the release asset to mean anything).
 
 ## Build and verify
 
@@ -91,7 +94,10 @@ nix develop -c bash scripts/release.sh              # gate, sign, tag, push, pub
 APK, `apksigner verify`, `scripts/contrast-check.py`) and
 `scripts/forgejo-release.py` owns the forge API (stdlib python3; the
 devShell has no `curl`/`tea`). The version lives in `version.txt` —
-never retyped in Gradle.
+never retyped in Gradle. After a publish, run `bump patch` and commit:
+a tree that still claims an already-published version can never produce
+the next update (Obtainium compares versions, Android compares
+versionCodes).
 
 The self-serve device train (headless API 36 emulator, requires
 `/dev/kvm`; the AVD lives in `.avd/`):
