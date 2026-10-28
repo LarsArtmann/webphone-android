@@ -82,7 +82,7 @@
 
 ## c) NOT STARTED
 
-1. **First device train** — ALL live-infrastructure validation (REGISTER,
+1. **First device train** — ALL live-infrastructure validation (REGISTER, **→ TODO_LIST (First device train row, R15/R16 — operator-blocked Q1)**
    dial, answer, DTMF, hold, push lanes, REFER/NOTIFY).
 2. ~~**Settings surface** — `App.origin` still hardcoded~~ done at `dac60c9`
    ~~`https://pbx.example.org`; the app is unusable against a real stack until~~
@@ -91,9 +91,9 @@
    ~~or cookie poll).~~
 4. ~~**CI** — `.github/` holds only dependabot; `app/build.gradle.kts:11`~~ done at `dac60c9`
    ~~claims "verified per release in CI" that does not exist.~~
-5. **CallStyle-composed notification** — planned with first device train.
+5. ~~**CallStyle-composed notification** — planned with first device train.~~ done — docs/status/2026-10-25_10-00 §a T21 (CallStyle shipped; device verify → TODO R23)
 6. ~~**Tests** — zero test source set; nothing started.~~ done at `dac60c9`
-7. **Answer-path race verification** — does the server re-INVITE long enough
+7. **Answer-path race verification** — does the server re-INVITE long enough **→ TODO_LIST (Verify the answer-path race, R16/N041)**
    for the closed-app bootstrap? Unknown until live test or a webphone-repo
    answer.
 8. ~~**Release build** — `assembleRelease` never run; R8 config (keeps only~~ done at `dac60c9`
