@@ -61,27 +61,27 @@ then-current APK.
 
 ## b) PARTIALLY DONE
 
-1. **The R06-wave gate is NOT green-confirmed.** What works: the R06 code +
-   tests compile; the R01-R05 gate passed at 91/0. What remains: a clean
-   `testDebugUnitTest` (93 expected) + zipalign on the CURRENT APK + dprint
-   on the touched `.md` files. Blocker: the Gradle queue (see (d)1) — at
-   report time the clean re-run is STILL waiting (2 gradlew clients, empty
-   results dir). Effort: S once the daemon queue is untangled.
-2. **R07 (sip:/tel: URI edges) — designed, not implemented.** Known: Android's
-   `schemeSpecificPart` returns the DECODED form (proven by the existing
-   `tel:%20` → None test), so a literal `;`-param strip
-   (`substringBefore(';')`) uniformly covers `;transport=`, `;phone-context=`,
-   `;postd=`, `;isub=` (RFC 3261 §19.1 / RFC 3966). Effort: S. Not started
-   because editing files under a running gate risks half-built states.
-3. **Cancel-leg of the detour on device**: my tap (estimated coordinates)
+1. ~~**The R06-wave gate is NOT green-confirmed.** What works: the R06 code +~~ done — RESOLVED post-report — the clean gate closed GREEN (94/94) after the teardown doctrine fixes; recorded in the header
+   ~~tests compile; the R01-R05 gate passed at 91/0. What remains: a clean~~
+   ~~`testDebugUnitTest` (93 expected) + zipalign on the CURRENT APK + dprint~~
+   ~~on the touched `.md` files. Blocker: the Gradle queue (see (d)1) — at~~
+   ~~report time the clean re-run is STILL waiting (2 gradlew clients, empty~~
+   ~~results dir). Effort: S once the daemon queue is untangled.~~
+2. ~~**R07 (sip:/tel: URI edges) — designed, not implemented.** Known: Android's~~ done — R07 shipped (URI params stripped; DeepLinkTargetTest)
+   ~~`schemeSpecificPart` returns the DECODED form (proven by the existing~~
+   ~~`tel:%20` → None test), so a literal `;`-param strip~~
+   ~~(`substringBefore(';')`) uniformly covers `;transport=`, `;phone-context=`,~~
+   ~~`;postd=`, `;isub=` (RFC 3261 §19.1 / RFC 3966). Effort: S. Not started~~
+   ~~because editing files under a running gate risks half-built states.~~
+3. **Cancel-leg of the detour on device**: my tap (estimated coordinates) **→ TODO_LIST (re-run the detour CANCEL leg with uiautomator coordinates — agent-executable)**
    landed on the IdP's "Alternative Sign In Methods" instead of the consent
    Cancel, so the IdP→origin return (detour CLEAR on device) is still only
    unit-pinned, not device-proven. The IdP-internal navigation (consent →
    authenticate page) IS device-proven. Effort: S with uiautomator dump
    (emulator currently shut down).
-4. **TODO_LIST / FEATURES / CHANGELOG flips for this session** — not yet
-   written (planned as R11/N023-N024). The Ready rows R01-R04 should flip to
-   done-at. Effort: S.
+4. ~~**TODO_LIST / FEATURES / CHANGELOG flips for this session** — not yet~~ done — R11/N023 (TODO_LIST Ready note, CHANGELOG bullets, FEATURES rows landed)
+   ~~written (planned as R11/N023-N024). The Ready rows R01-R04 should flip to~~
+   ~~done-at. Effort: S.~~
 
 ## c) NOT STARTED
 
@@ -155,73 +155,73 @@ then-current APK.
 7. **Doctrine discipline**: any AGENTS.md "the platform does X" gotcha gets
    a `proven <date>` or `unverified` tag at write time — the stale-premise
    incident is the recurring cost of skipping this.
-8. **Consider a detour TTL** (design note, not urgent): a blessed IdP
-   authority lives until the next origin commit; a time bound would shrink
-   the theoretical window. Single-authority + cookie scoping already bound
-   the risk; decide with the operator, don't unilaterally reshape.
+8. ~~**Consider a detour TTL** (design note, not urgent): a blessed IdP~~ done — recorded — ROADMAP Auth theme carries the detour-TTL raw idea (decide with the operator)
+   ~~authority lives until the next origin commit; a time bound would shrink~~
+   ~~the theoretical window. Single-authority + cookie scoping already bound~~
+   ~~the risk; decide with the operator, don't unilaterally reshape.~~
 
 ## f) Next tasks (harvest ground — ranked, with impact/effort/category)
 
 **Agent-executable NOW (this wave's tail):**
 
-1. Untangle the Gradle queue (`pkill -f gradlew`, one clean daemon), then run the full gate: 93 tests + zipalign + dprint on touched files. Impact: Critical, Effort: S, Quality.
-2. R07/N019-N020: strip `;`-params in `deepLinkTarget` (sip before/after `@`, tel/callto) + tests for `;transport=`, `;phone-context=`, `;postd=`, `;isub=`, params-only-blank → None. Impact: Medium, S, Feature.
-3. R09/N021: a Dial deep link while a call is LIVE routes to `CallActivity` (single-call policy one hop earlier) + test. Impact: Medium, S, Feature.
-4. R11/N023: FEATURES/CHANGELOG flips for R01-R06 (incl. the redirect-seam FIX — a behavioral change worth a changelog bullet). Impact: Medium, S, Documentation.
-5. R11/N024: annotate the 15-17 plan + 15-11 report with `done at` markers (docs-health ANNOTATE). Impact: Medium, S, Documentation.
-6. TODO_LIST harvest: flip R01-R06 Ready rows to done-at; re-parent R07/R09/R10/R11 remainders. Impact: Medium, S, Documentation.
-7. R10/N022: ROADMAP raw ideas — "OAuth outside the WebView" (Custom Tabs + app-link callback), detour-TTL note, multi-host IdP allowance note. Impact: Low, S, Documentation.
-8. Re-run the detour CANCEL leg on the emulator with uiautomator coordinates: consent Cancel → IdP error redirect → origin commit → `auth detour cleared` in logcat. Impact: Medium, S, Quality.
-9. Investigate the DialpadActivity default "100" display (observed opening via FAB with no intent extra — seeded from where?) and decide blank-vs-seeded. Impact: Low, S, Bug/Quality.
-10. Push both remotes when the operator says so (last explicit instruction covered up to `2e06567`; this session is unpushed). Impact: Medium, S, Ops.
+1. ~~Untangle the Gradle queue (`pkill -f gradlew`, one clean daemon), then run the full gate: 93 tests + zipalign + dprint on touched files. Impact: Critical, Effort: S, Quality.~~ done — clean gate closed GREEN (94/94, zipalign OK) post-report
+2. ~~R07/N019-N020: strip `;`-params in `deepLinkTarget` (sip before/after `@`, tel/callto) + tests for `;transport=`, `;phone-context=`, `;postd=`, `;isub=`, params-only-blank → None. Impact: Medium, S, Feature.~~ done — R07 (sip/tel URI edges + tests)
+3. ~~R09/N021: a Dial deep link while a call is LIVE routes to `CallActivity` (single-call policy one hop earlier) + test. Impact: Medium, S, Feature.~~ done — R09/N021 (live-call Dial link → CallActivity)
+4. ~~R11/N023: FEATURES/CHANGELOG flips for R01-R06 (incl. the redirect-seam FIX — a behavioral change worth a changelog bullet). Impact: Medium, S, Documentation.~~ done — R11/N023 (FEATURES/CHANGELOG flips landed)
+5. ~~R11/N024: annotate the 15-17 plan + 15-11 report with `done at` markers (docs-health ANNOTATE). Impact: Medium, S, Documentation.~~ done — THIS sweep — the 15-17 plan + 15-11 report are annotated row-by-row (2026-10-28)
+6. ~~TODO_LIST harvest: flip R01-R06 Ready rows to done-at; re-parent R07/R09/R10/R11 remainders. Impact: Medium, S, Documentation.~~ done — TODO_LIST Ready note flipped R01-R06; this sweep re-harvests remainders
+7. ~~R10/N022: ROADMAP raw ideas — "OAuth outside the WebView" (Custom Tabs + app-link callback), detour-TTL note, multi-host IdP allowance note. Impact: Low, S, Documentation.~~ done — R10/N022 (ROADMAP raw ideas: OAuth outside the WebView, detour TTL, multi-host IdP)
+8. Re-run the detour CANCEL leg on the emulator with uiautomator coordinates: consent Cancel → IdP error redirect → origin commit → `auth detour cleared` in logcat. Impact: Medium, S, Quality. **→ TODO_LIST (detour CANCEL leg re-run with uiautomator coordinates)**
+9. Investigate the DialpadActivity default "100" display (observed opening via FAB with no intent extra — seeded from where?) and decide blank-vs-seeded. Impact: Low, S, Bug/Quality. **→ TODO_LIST (investigate the dialpad default "100" display — blank-vs-seeded)**
+10. ~~Push both remotes when the operator says so (last explicit instruction covered up to `2e06567`; this session is unpushed). Impact: Medium, S, Ops.~~ done — policy — NOTHING pushes automatically (AGENTS); the operator pushes by hand (confirmed 2026-10-27)
 
 **Owner/BLK (unchanged from the plan, re-ranked):**
 
-11. R12a: SystemNix deploy → phase-5 attaches the push mirror. Impact: Critical, S, Ops.
-12. R12b: regenerate sync PAT with `repo`+`workflow`, sops update, redeploy. Impact: Critical, S, Ops.
-13. R12c: GitHub billing fix (payment/spending limit). Impact: Critical, S, Ops.
-14. Mirror-lag verify (`scripts/mirror-lag.sh`) after the deploy. Impact: High, S, Ops.
-15. R13: watch the first green CI run; fix what it exposes. Impact: High, S, Quality.
-16. R14: physical install + first-run walk (fresh APK, mic+notification grants, battery Unrestricted). Impact: Critical, S, Feature.
-17. R15: outbound device train (session, REGISTER, INVITE ladder, audio, hangup) — needs Q1 test extension. Impact: Critical, L, Feature.
-18. R16: ring train (ring-while-closed, bootstrap race measurement, answer paths, ring_end). Impact: Critical, L, Feature.
-19. R17: live Pocket ID detour pass — login IN-SHELL, cookie mints in the WebView jar, registration follows. Impact: High, S, Feature.
-20. R18: serve `scripts/assetlinks.sh` output from webphone + `adb verify-app-links` green + implicit stack links without user-selection. Impact: High, S, Feature.
-21. R19: logged-in emulator tail (W104 composer attach, W105 external hand-off — NOTE: W105 now interacts with the redirect seam, re-verify, W106 back stack). Impact: Medium, S, Quality.
-22. R20: live contract checks folded into the trains (session fields, payload shapes, CSRF). Impact: Medium, M, Quality.
-23. R21: logout deregistration (KEEP-vs-PURGE answer → JS bridge or cookie-poll). Impact: Medium, M, Feature.
-24. R22: island-standdown seam (native-shell-present signal, owner nod first). Impact: Medium, L, Feature.
-25. R23: device-verify batch (CallStyle post-time, TalkBack, battery allow/deny). Impact: Medium, M, Quality.
-26. R24: `v0.1.0` annotated tag + CHANGELOG cut (operator timing). Impact: Medium, S, Release.
-27. R25: Forgejo description (token) + icon parity both-or-neither. Impact: Low, S, Cleanup.
-28. R26: post-train docs sweep — honesty-marker retirement. Impact: Medium, M, Documentation.
-29. R27: visibility end-state decision (private vs public flip). Impact: Low, S, Decision.
+11. R12a: SystemNix deploy → phase-5 attaches the push mirror. Impact: Critical, S, Ops. **→ TODO_LIST (Owner: SystemNix deploy, R12/N025)**
+12. R12b: regenerate sync PAT with `repo`+`workflow`, sops update, redeploy. Impact: Critical, S, Ops. **→ TODO_LIST (Owner: PAT repo+workflow, R12/N026)**
+13. R12c: GitHub billing fix (payment/spending limit). Impact: Critical, S, Ops. **→ TODO_LIST (GitHub billing fix, R12/N027)**
+14. Mirror-lag verify (`scripts/mirror-lag.sh`) after the deploy. Impact: High, S, Ops. **→ TODO_LIST (mirror-lag verify after the deploy, R12/N028)**
+15. R13: watch the first green CI run; fix what it exposes. Impact: High, S, Quality. **→ TODO_LIST (first green CI run, R13/N029)**
+16. R14: physical install + first-run walk (fresh APK, mic+notification grants, battery Unrestricted). Impact: Critical, S, Feature. **→ TODO_LIST (First physical install, R14/N030-N032)**
+17. R15: outbound device train (session, REGISTER, INVITE ladder, audio, hangup) — needs Q1 test extension. Impact: Critical, L, Feature. **→ TODO_LIST (outbound device train, R15/N033-N038)**
+18. R16: ring train (ring-while-closed, bootstrap race measurement, answer paths, ring_end). Impact: Critical, L, Feature. **→ TODO_LIST (ring train + race, R16/N039-N044)**
+19. R17: live Pocket ID detour pass — login IN-SHELL, cookie mints in the WebView jar, registration follows. Impact: High, S, Feature. **→ TODO_LIST (live Pocket ID detour pass, R17/N045-N046)**
+20. R18: serve `scripts/assetlinks.sh` output from webphone + `adb verify-app-links` green + implicit stack links without user-selection. Impact: High, S, Feature. **→ TODO_LIST (assetlinks served + verified, R18/N047-N048)**
+21. R19: logged-in emulator tail (W104 composer attach, W105 external hand-off — NOTE: W105 now interacts with the redirect seam, re-verify, W106 back stack). Impact: Medium, S, Quality. **→ TODO_LIST (logged-in emulator tail, R19/N049-N051)**
+22. R20: live contract checks folded into the trains (session fields, payload shapes, CSRF). Impact: Medium, M, Quality. **→ TODO_LIST (Live contract checks, R20/N052-N053)**
+23. R21: logout deregistration (KEEP-vs-PURGE answer → JS bridge or cookie-poll). Impact: Medium, M, Feature. **→ TODO_LIST (Logout deregistration, R21/N054-N056)**
+24. R22: island-standdown seam (native-shell-present signal, owner nod first). Impact: Medium, L, Feature. **→ TODO_LIST (island-standdown seam, R22/N057-N058)**
+25. R23: device-verify batch (CallStyle post-time, TalkBack, battery allow/deny). Impact: Medium, M, Quality. **→ TODO_LIST (device-verify batch, R23/N059-N061)**
+26. R24: `v0.1.0` annotated tag + CHANGELOG cut (operator timing). Impact: Medium, S, Release. **→ TODO_LIST (v0.1.0 tag + CHANGELOG cut, R24/N062-N063)**
+27. R25: Forgejo description (token) + icon parity both-or-neither. Impact: Low, S, Cleanup. **→ TODO_LIST (Forgejo description + icon parity, R25/N064-N065)**
+28. R26: post-train docs sweep — honesty-marker retirement. Impact: Medium, M, Documentation. **→ TODO_LIST (post-train docs sweep, R26/N066-N068)**
+29. R27: visibility end-state decision (private vs public flip). Impact: Low, S, Decision. **→ TODO_LIST / ROADMAP Open questions (visibility end-state, R27/N069)**
 
 **New items discovered this session:**
 
-30. Cross-repo note to webphone: the OIDC begin→IdP hop MUST stay a server 302 (never a client-side JS redirect "optimization") or the Android detour seam breaks. Impact: Medium, S, Documentation.
-31. Cross-repo observation: the island's unauthenticated probe appears to have redirected the backgrounded WebView to /login while the dialpad covered it (18:12 observation) — confirm intended server behavior for hidden shells. Impact: Low, S, Investigation.
-32. Emit a release-keystore assetlinks variant once a signing config exists (the script already accepts an explicit keystore argument). Impact: Low, S, Feature.
-33. tel: resolver UX note for end users (pick WebPhone → Always) in the eventual user docs. Impact: Low, S, Documentation.
-34. Consider `shouldInterceptRequest` debug logging for nav diagnosability (optional, only if trains need it). Impact: Low, S, Quality.
-35. After R17's live login: re-verify `retry()`-clears and the belt against a REAL logged-in flow (not just unit pins). Impact: Medium, S, Quality.
+30. Cross-repo note to webphone: the OIDC begin→IdP hop MUST stay a server 302 (never a client-side JS redirect "optimization") or the Android detour seam breaks. Impact: Medium, S, Documentation. **→ TODO_LIST (Cross-repo: the begin→IdP hop must stay a server 302 — note for webphone)**
+31. ~~Cross-repo observation: the island's unauthenticated probe appears to have redirected the backgrounded WebView to /login while the dialpad covered it (18:12 observation) — confirm intended server behavior for hidden shells. Impact: Low, S, Investigation.~~ **NOT-DO — cosmetic observation; no user impact demonstrated — revisit only if a train surfaces it.**
+32. Emit a release-keystore assetlinks variant once a signing config exists (the script already accepts an explicit keystore argument). Impact: Low, S, Feature. **→ TODO_LIST (release-keystore assetlinks variant — rides the release-signing decision)**
+33. tel: resolver UX note for end users (pick WebPhone → Always) in the eventual user docs. Impact: Low, S, Documentation. **→ TODO_LIST (post-train docs sweep — tel: resolver UX note goes into the eventual user docs, R26)**
+34. ~~Consider `shouldInterceptRequest` debug logging for nav diagnosability (optional, only if trains need it). Impact: Low, S, Quality.~~ **NOT-DO — only if trains need it — logcat + the detour-transition log cover diagnosis today.**
+35. After R17's live login: re-verify `retry()`-clears and the belt against a REAL logged-in flow (not just unit pins). Impact: Medium, S, Quality. **→ TODO_LIST (re-verify retry-clear + belt against the REAL logged-in flow, R17/N045-N046)**
 
 ## g) Top questions (up to 3, unanswerable from the repo)
 
-1. **Pocket ID test credentials for R17**: can you mint a test identity (or
+1. **Pocket ID test credentials for R17**: can you mint a test identity (or **→ TODO_LIST (live Pocket ID pass, R17/N045-N046 — operator credential)**
    an extension + login method) on `auth.larsartmann.cloud` the emulator can
    complete a login with? Without it, the detour's RETURN leg (IdP → origin
    callback → session cookie mints in the WebView jar → registration
    follows) stays unit-pinned but never device-proven — and that is the
    last unproven half of the OAuth story.
-2. **IdP cancel/error redirect target**: when the user taps Cancel on the
+2. **IdP cancel/error redirect target**: when the user taps Cancel on the **→ ROADMAP Open questions (IdP cancel/error redirect target — webphone-server question)**
    Pocket ID consent (or the IdP errors), where does the server land the
    callback — island root `/`, a styled origin error page, or the IdP? The
    Android detour clears on ANY origin commit, so all three work, but the
    on-device assertion (and any future UX polish) depends on knowing the
    intended target. I tried: `internal/sso/sso.go` handles the success
    callback; I did not find an explicit error-callback handler.
-3. **Dialpad default "100"**: opening the dialer via the shell FAB (no
+3. **Dialpad default "100"**: opening the dialer via the shell FAB (no **→ TODO_LIST (investigate the dialpad default "100" display — blank-vs-seeded)**
    intent extra) showed `100` in the number display on the emulator. Is
    that your extension number seeded from somewhere I haven't found
    (prefs? a default?), and should a plain FAB tap open the dialer BLANK
