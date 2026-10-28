@@ -1,3 +1,4 @@
+import java.time.Duration
 import java.util.Properties
 
 plugins {
@@ -134,6 +135,14 @@ android {
                 test.testLogging {
                     events("passed", "failed", "skipped")
                 }
+                // J05 wedge-proof fence: a hung suite must FAIL the
+                // build, not hide. The task timeout aborts a wedged run
+                // after 20 minutes; forkEvery = 1 gives every class a
+                // fresh JVM so cross-class static leakage (an engine
+                // scope left running, a stale dispatcher) cannot poison
+                // the next class.
+                test.timeout = Duration.ofMinutes(20)
+                test.forkEvery = 1
             }
         }
     }

@@ -1,13 +1,19 @@
 package software.larsartmann.webphone.sip
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.Timeout
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
@@ -25,6 +31,27 @@ import kotlin.test.assertTrue
  * native offer — JVM-impossible by design).
  */
 class SipEngineOverTheWireTest {
+    companion object {
+        /** The fence client (J05/M024): ONE client for the whole class
+         *  with TEST-tight timeouts. The 20 s ping keeps a healthy link
+         *  alive (MockWebServer answers pings) under the 30 s read
+         *  timeout, so only a truly wedged peer trips it — loudly,
+         *  inside the failing test, instead of hanging the suite. */
+        private val fenceClient: OkHttpClient =
+            OkHttpClient
+                .Builder()
+                .pingInterval(20, TimeUnit.SECONDS)
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build()
+    }
+
+    /** J05/M022: JUnit's per-test fence — no single test may exceed
+     *  90 s. The ladders finish in seconds, so 90 s is headroom, not a
+     *  target; a breach is a wedge and must surface as a red test. */
+    @get:Rule
+    val perTestFence: Timeout = Timeout.seconds(90)
+
     private class States {
         val seen = LinkedBlockingQueue<SipEngine.RegistrationState>()
 
@@ -45,6 +72,10 @@ class SipEngineOverTheWireTest {
     private var socket: WebSocket? = null
     private val frames = LinkedBlockingQueue<String>()
     private var registersSeen = 0
+    /** Kept per test so tearDown can cancel the engine's coroutines —
+     *  an un-cancelled Dispatchers.IO scope is exactly the static
+     *  leakage the forkEvery fence exists to bound (J05/M023). */
+    private var engineScope: CoroutineScope? = null
 
     /** Echo helpers: SIP responses MUST reuse the request's Call-ID,
      *  CSeq and Via or the engine drops them as foreign transactions. */
@@ -127,13 +158,16 @@ class SipEngineOverTheWireTest {
 
     @After
     fun tearDown() {
+        engineScope?.cancel()
         socket?.close(1000, "test done")
         server.shutdown()
     }
 
-    private fun engine(): SipEngine =
-        SipEngine(
-            scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO),
+    private fun engine(): SipEngine {
+        val scope = CoroutineScope(Dispatchers.IO)
+        engineScope = scope
+        return SipEngine(
+            scope = scope,
             config =
                 SipEngine.Config(
                     wsUrl = server.url("/sip").toString(),
@@ -141,6 +175,7 @@ class SipEngineOverTheWireTest {
                     extension = "100",
                     password = "secret",
                 ),
+            injectedClient = fenceClient,
         ).apply {
             listener =
                 object : SipEngine.Listener {
@@ -168,6 +203,7 @@ class SipEngineOverTheWireTest {
                     ) = Unit
                 }
         }
+    }
 
     @Test
     fun `the challenge ladder registers over a real socket`() =

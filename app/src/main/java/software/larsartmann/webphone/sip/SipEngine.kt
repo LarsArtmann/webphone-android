@@ -38,6 +38,13 @@ class SipEngine(
     /** Test seam: when set, every outbound frame is handed here
      *  instead of the websocket (the protocol tests ride it). */
     private val sender: ((String) -> Unit)? = null,
+    /** Test seam (J05/M024): inject an OkHttp client with TEST-tight
+     *  timeouts so a wedged socket fails the suite loudly instead of
+     *  hanging it. Production passes null and keeps the default below:
+     *  no read timeout (a registered leg idles minutes between
+     *  refreshes), a 20 s ping to keep the link honest, a 10 s connect
+     *  timeout to bound dial attempts. */
+    private val injectedClient: OkHttpClient? = null,
 ) {
     data class Config(
         val wsUrl: String,
@@ -88,12 +95,13 @@ class SipEngine(
 
     var listener: Listener? = null
 
-    private val client =
-        OkHttpClient
-            .Builder()
-            .pingInterval(20, TimeUnit.SECONDS)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .build()
+    private val client: OkHttpClient =
+        injectedClient
+            ?: OkHttpClient
+                .Builder()
+                .pingInterval(20, TimeUnit.SECONDS)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .build()
 
     private var socket: WebSocket? = null
     private val cseq = AtomicLong(0)
