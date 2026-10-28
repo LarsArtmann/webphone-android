@@ -114,7 +114,7 @@ answers "where are we, what did we get wrong, what's next"._
    mapping.txt existence verified).
 6. Gradle version-catalog update plugin (would retire manual matrix **→ TODO_LIST (Gradle version-catalog update plugin evaluation)**
    research like R28's).
-7. ~~README toolchain-mention audit (R28 item 40 — never opened the~~ done — README toolchain audit landed in THIS sweep (platform 37 / build-tools 36.0.0 / ktlint)
+7. ~~README toolchain-mention audit (R28 item 40 — never opened the~~ done — CORRECTED (M037, 2026-10-28): the rewrite landed in the release-lane session, NOT THIS sweep (its 02-03 report §a item 9; the original verdict claimed the wrong actor)
    ~~README this session).~~
 8. CI has still NEVER run (billing/PAT blockers are owner items). **→ TODO_LIST (CI first green run, R13/N029 — billing first)**
 9. ~~detekt re-evaluation (parked until 2.x stabilizes).~~ done — recorded — ROADMAP (detekt re-evaluation when 2.x stabilizes)
@@ -219,7 +219,7 @@ answers "where are we, what did we get wrong, what's next"._
 
 6. Dependabot config audit: confirm the catalog reshaping (ktlint **→ TODO_LIST (Dependabot config audit — ktlint plugin entry; removed kotlin-android/okhttp-ws aliases)**
    plugin entry; removed kotlin-android/okhttp-ws) still maps.
-7. ~~README toolchain mentions audit (platform 36 references).~~ done — README toolchain mentions fixed in THIS sweep
+7. ~~README toolchain mentions audit (platform 36 references).~~ done — CORRECTED (M037, 2026-10-28): landed in the release-lane session, NOT THIS sweep (its 02-03 report §a item 9)
 8. `--warning-mode all` sweep; read the Problems report; kill the **→ TODO_LIST (--warning-mode all sweep + Problems report + Gradle-10 deprecation source)**
    Gradle-10 deprecation source.
 9. Mechanize KGP-pin ↔ catalog version parity (check task). **→ TODO_LIST (mechanize KGP-pin ↔ catalog parity — check task)**

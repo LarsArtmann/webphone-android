@@ -216,7 +216,7 @@ the existing screens stay views. Not adopting now.
 37. ~~CHANGELOG entry for the toolchain jump.~~ done — CHANGELOG toolchain-jump entry
 38. ~~TODO_LIST harvest from this report.~~ done — TODO_LIST +3 rows; THIS sweep completed the full harvest
 39. ~~dprint fmt over touched `.md`/`.yml`.~~ done — dprint clean
-40. ~~README toolchain mentions, if any.~~ done — README toolchain mentions audited + fixed in THIS sweep (platform 37, build-tools 36.0.0, ktlint)
+40. ~~README toolchain mentions, if any.~~ done — CORRECTED (M037, 2026-10-28): the README toolchain rewrite landed in the release-lane session, NOT THIS sweep — its 02-03 report §a item 9. The original verdict claimed the work for the wrong actor.
 
 **Group F — verification + closure:**
 
