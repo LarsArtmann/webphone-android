@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import androidx.test.core.app.ActivityScenario
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -26,6 +27,11 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class WebSurfaceTest {
+
+    @Before
+    fun keepTheShellUnwired() {
+        CallLayer.wiringEnabled = false
+    }
 
     @Test
     fun `offline overlay shows on failure and retry reloads the origin`() {

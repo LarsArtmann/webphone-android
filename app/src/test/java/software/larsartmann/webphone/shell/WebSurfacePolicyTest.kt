@@ -8,6 +8,7 @@ import android.net.Uri
 import android.webkit.WebResourceRequest
 import android.webkit.WebViewClient
 import androidx.test.core.app.ActivityScenario
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -32,6 +33,11 @@ import kotlin.test.assertTrue
 class WebSurfacePolicyTest {
 
     private val origin = "https://pbx.artmann.tech"
+
+    @Before
+    fun keepTheShellUnwired() {
+        CallLayer.wiringEnabled = false
+    }
 
     private class FakeRequest(
         private val uri: Uri,
