@@ -63,7 +63,7 @@ re-scoped; non-workflow commits flow fine.
 
 ## b) PARTIALLY DONE
 
-1. **"GitHub mirror" — the actual automated push mirror is NOT
+1. **"GitHub mirror" — the actual automated push mirror is NOT **→ TODO_LIST (Owner: SystemNix deploy — phase-5 mirror attach, R12/N025)**
    attached.** What exists: the twin (manually kept current via the
    documented `github` fallback push) + the deploy-gated attach path
    (phase 5 of `forgejo-github-sync`). Attaching requires the SystemNix
@@ -71,35 +71,35 @@ re-scoped; non-workflow commits flow fine.
    shells; polkit denied `systemd-run` transient units and the
    agent-unit-control allowlist does not include forgejo units).
    Owner action #1.
-2. **PAT workflow scope** — root-caused and documented in two places,
+2. **PAT workflow scope** — root-caused and documented in two places, **→ TODO_LIST (Owner: regenerate sync PAT repo+workflow, R12/N026)**
    but not fixable from an agent shell (classic PAT regeneration is
    GitHub-UI-only; the sops secret is root-rendered). Owner action #2.
-3. **End-to-end mirror proof** — planned (commit → sync_on_commit →
+3. **End-to-end mirror proof** — planned (commit → sync_on_commit → **→ TODO_LIST (mirror-lag verify after the deploy, R12/N028)**
    twin advances), impossible without the attach; substituted with
    tip-equality after fallback pushes. Not the same proof.
-4. **eventcatalog-hub mirror health** — probe attempted, script exited
-   1, numbers never extracted (thread dropped for the domains
-   diagnosis). State: unknown.
+4. ~~**eventcatalog-hub mirror health** — probe attempted, script exited~~ **Won't implement — eventcatalog-hub is another repo — its mirror health is not this project scope.**
+   ~~1, numbers never extracted (thread dropped for the domains~~
+   ~~diagnosis). State: unknown.~~
 
 ## c) NOT STARTED
 
 - Forgejo repo description (GitHub twin has one; Forgejo has none —
-  phase 5 does not set it, and I never made the API/UI pass).
-- Forgejo default-branch verification (`ls-remote --symref origin
+  phase 5 does not set it, and I never made the API/UI pass). **→ TODO_LIST (R25/N064)**
+- ~~Forgejo default-branch verification (`ls-remote --symref origin
   HEAD`) — company-master-data precedent shows push-to-create CAN
-  pick a surprising branch; assumed `main`, never proven.
-- README staleness audit — the "honesty contract" section may mention
+  pick a surprising branch; assumed `main`, never proven.~~ done — verified `refs/heads/main` (docs-health audit 2026-10-25, docs/status/2026-10-25_06-27 §a3)
+- ~~README staleness audit — the "honesty contract" section may mention
   repo/CI state that changed today. AGENTS.md was updated; README was
-  never opened this session.
-- `dependabot.yml` — AGENTS.md claims "Dependabot handles version
+  never opened this session.~~ done — README audited + modernized in the docs-health audit (06-27 §a6)
+- ~~`dependabot.yml` — AGENTS.md claims "Dependabot handles version
   bumps" but `.github/` contains only `ci.yml` (pre-existing gap,
-  noticed mid-session, not acted on).
-- CI execution home — see questions.
-- Porting `scripts/mirror-lag.sh` (fleet-proven in domains) instead of
-  the inline two-liner now documented in AGENTS.md.
-- SystemNix commit push status — never checked whether SystemNix's own
+  noticed mid-session, not acted on).~~ non-issue — `.github/dependabot.yml` exists (gradle ×2 + github-actions; 06-27 §a2)
+- ~~CI execution home — see questions.~~ done — GitHub Actions + push trigger (10-00 §a F040); first green run → TODO R13
+- ~~Porting `scripts/mirror-lag.sh` (fleet-proven in domains) instead of
+  the inline two-liner now documented in AGENTS.md.~~ done — docs/status/2026-10-25_10-00 §a F078
+- ~~SystemNix commit push status — never checked whether SystemNix's own
   remote should carry the new commit (deploy reads the local tree, so
-  it works either way).
+  it works either way).~~ Won't implement — deploy reads the local tree; no push needed.
 
 ## d) TOTALLY FUCKED UP (this session's mistakes, unvarnished)
 
@@ -163,12 +163,12 @@ re-scoped; non-workflow commits flow fine.
 
 Unblock (owner, minutes):
 
-1. Run `cd ~/projects/SystemNix && nix run .#deploy` — phase 5
+1. Run `cd ~/projects/SystemNix && nix run .#deploy` — phase 5 **→ TODO_LIST (Owner: SystemNix deploy → phase-5 attach, R12/N025)**
    attaches the webphone-android push mirror (idempotent).
-2. Regenerate the sync PAT with `repo`+`workflow` at GitHub, update
+2. Regenerate the sync PAT with `repo`+`workflow` at GitHub, update **→ TODO_LIST (Owner: sync PAT repo+workflow re-scope, R12/N026)**
    the sops `github_token` secret, redeploy — unfreezes domains
    (114 behind) AND future-proofs this repo's ci.yml commits.
-3. After both: trigger a sync and run the AGENTS.md lag probe —
+3. After both: trigger a sync and run the AGENTS.md lag probe — **→ TODO_LIST (mirror-lag verify after the deploy, R12/N028)**
    first true end-to-end mirror proof.
 4. ~~Push-or-drift: while the window is open, `git push github main`~~ done — landed 2026-10-25 — AGENTS.md carries the push-both-remotes warning (docs-health audit)
    ~~after every session (and after the daemon's local commits).~~
@@ -177,44 +177,44 @@ Verification debt (agent, quick):
 
 5. ~~`git ls-remote --symref origin HEAD` — confirm forgejo default~~ done — 2026-10-25 — git ls-remote --symref origin HEAD returns ref: refs/heads/main
    ~~branch is `main`; fix via UI/API if not.~~
-6. Resolve the eventcatalog-hub mirror-lag probe (right branch name?
-   fetch failure?) — its health is unknown since today.
-7. Re-run domains `mirror-lag` after the PAT fix; confirm 114→0.
+6. ~~Resolve the eventcatalog-hub mirror-lag probe (right branch name?~~ **Won't implement — another repo health probe — domains/system scope, not this project.**
+   ~~fetch failure?) — its health is unknown since today.~~
+7. Re-run domains `mirror-lag` after the PAT fix; confirm 114→0. **→ TODO_LIST (unfrozen by the same PAT re-scope, R12/N026 — domains is the other repo)**
 8. ~~README audit for stale remote/CI claims after today's wiring.~~ done — 2026-10-25 — README audited and modernized during the docs-health audit (MVP path + release honesty added)
-9. Check SystemNix's own remote state (should the canonicalRepos
-   commit be pushed anywhere?).
+9. ~~Check SystemNix's own remote state (should the canonicalRepos~~ **Won't implement — deploy reads the local tree — SystemNix push state is irrelevant to deploys.**
+   ~~commit be pushed anywhere?).~~
 
 Repo hygiene (agent, small):
 
-10. Set the Forgejo repo description (UI or one API call).
+10. Set the Forgejo repo description (UI or one API call). **→ TODO_LIST (Forgejo repo description, R25/N064)**
 11. ~~Add `.github/dependabot.yml` (gradle + github-actions ecosystems)~~ done — non-issue — .github/dependabot.yml EXISTS (gradle x2 + github-actions, landed 1caa45e); the report's '.github/ contains only ci.yml' was wrong
     ~~or delete the claim from AGENTS.md — currently a doc lie.~~
-12. Port `scripts/mirror-lag.sh` from domains (or extract a
-    fleet-shared variant) instead of the inline two-liner.
-13. Add a `push: branches: [main]` trigger decision for ci.yml (see
-    question 2) — today NOTHING builds on merge-to-main.
-14. Consider `.forgejo/workflows/ci.yml` port for the native runner
-    (fleet direction per domains) — pending the capacity question.
+12. ~~Port `scripts/mirror-lag.sh` from domains (or extract a~~ done — docs/status/2026-10-25_10-00 §a F078 (scripts/mirror-lag.sh ported)
+    ~~fleet-shared variant) instead of the inline two-liner.~~
+13. ~~Add a `push: branches: [main]` trigger decision for ci.yml (see~~ done — docs/status/2026-10-25_10-00 §a F040 (push: branches: [main] added)
+    ~~question 2) — today NOTHING builds on merge-to-main.~~
+14. ~~Consider `.forgejo/workflows/ci.yml` port for the native runner~~ **Won't implement — CI home DECIDED — GitHub Actions (10-00 F040); the Forgejo runner stays a recorded future option.**
+    ~~(fleet direction per domains) — pending the capacity question.~~
 
 Durability (agent, one SystemNix change):
 
-15. Allowlist `forgejo-github-sync.service` in
+15. Allowlist `forgejo-github-sync.service` in **→ TODO_LIST (rides the R12 owner deploy — SystemNix-side one-liner)**
     `services.agent-unit-control.units` (needs one deploy; kills the
     polkit wall for all future attach/reconcile work).
-16. Mirror-lag-style health probe for ALL canonicalRepos in the fleet
-    (gatus/journal alert on growing behind-count — the 114-commit
-    freeze ran silent for days; only a manual cross-check caught the
-    last one).
+16. ~~Mirror-lag-style health probe for ALL canonicalRepos in the fleet~~ **Won't implement — fleet-wide gatus/journal alerting is SystemNix scope, not this repo.**
+    ~~(gatus/journal alert on growing behind-count — the 114-commit~~
+    ~~freeze ran silent for days; only a manual cross-check caught the~~
+    ~~last one).~~
 
 Standing backlog (pre-existing, re-referenced not re-researched —
 see `docs/status/2026-10-25_04-58_*` f) for the full ranked list):
 
-17. First LIVE-infrastructure smoke (the honesty-contract markers).
-18. Answer-path race vs the server re-INVITE window (open question in
+17. First LIVE-infrastructure smoke (the honesty-contract markers). **→ TODO_LIST (first device trains, R15/R16 — Q1)**
+18. Answer-path race vs the server re-INVITE window (open question in **→ TODO_LIST (Verify the answer-path race, R16/N041)**
     AGENTS.md Gotchas).
-19. Release signing config (deliberate, currently debug-APK-only).
-20. FCM lane activation (google-services.json drop-in) vs ntfy-only.
-21. CallStyle-composed notification UI (planned, not present).
+19. Release signing config (deliberate, currently debug-APK-only). **→ ROADMAP Distribution (release signing config — deliberate future step)**
+20. FCM lane activation (google-services.json drop-in) vs ntfy-only. **→ FEATURES (FCM lane DISABLED — awaits google-services.json)**
+21. ~~CallStyle-composed notification UI (planned, not present).~~ done — docs/status/2026-10-25_10-00 §a T21 (CallStyle shipped; device verify → TODO R23)
 22. The prior session's three open operator questions (live stack **→ routed to ROADMAP Open questions**
     502/test extension; logout semantics; icon parity) — still open.
 
@@ -237,4 +237,4 @@ the prior report's f) carries the long tail.)
 3. **Do you want the agent-unblock made durable?** I can add
    `forgejo-github-sync.service` to the `agent-unit-control` polkit
    allowlist in SystemNix (one line + the same deploy) so future
-   agent sessions can attach/reconcile mirrors without you — yes/no?
+   agent sessions can attach/reconcile mirrors without you — yes/no? **→ routed — TODO_LIST (rides the R12 owner deploy)**

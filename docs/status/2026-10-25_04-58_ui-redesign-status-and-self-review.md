@@ -42,13 +42,13 @@ auto-finish, save-teardown) is untouched code path.
 
 | Work                            | Done                                                                     | Missing                                                                                                         |
 | ------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| Call-screen VISUAL verification | Code + build + theme wiring verified                                     | Never SEEN: the ringing/active/ended screens need a live call (no stack available this session — see 502 below) |
-| Pulse animation                 | Implemented + reduced-motion guard                                       | Static screenshots cannot show it; never observed running (emulator never reached REGISTERED)                   |
-| Redesigned build on YOUR phone  | APK built and gate-green                                                 | Your phone still carries the PRE-redesign install — one `adb install -r` away                                   |
-| `scripts/emulator-photos.sh`    | The working photo script exists — in `/tmp`, session-local               | Should be promoted into the repo (it encodes the serial-pinning + adb-root + wait lessons)                      |
-| PWA icon parity                 | Native icon deliberately diverged (handset vs the PWA's link glyph)      | Needs your decision — change both or neither (noted in AGENTS.md)                                               |
-| Day/night on the shell          | Chrome is fixed dark glass BY DESIGN; dark screenshot identical to light | The web island's own pages don't dark-mode (WebView darkening is a separate decision)                           |
-| Live device trains              | Everything self-serve is done                                            | Still blocked: your stack served **502 Bad Gateway** all session (nginx up, backend down)                       |
+| Call-screen VISUAL verification **→ TODO_LIST (ring train, R16/N044)**                         | Code + build + theme wiring verified                                     | Never SEEN: the ringing/active/ended screens need a live call (no stack available this session — see 502 below) |
+| Pulse animation **→ TODO_LIST (ring train, R16)**                                              | Implemented + reduced-motion guard                                       | Static screenshots cannot show it; never observed running (emulator never reached REGISTERED)                   |
+| Redesigned build on YOUR phone **→ TODO_LIST (First physical install, R14/N030-N032)**         | APK built and gate-green                                                 | Your phone still carries the PRE-redesign install — one `adb install -r` away                                   |
+| ~~`scripts/emulator-photos.sh`~~ done — docs/status/2026-10-25_10-00 §a F057 (promoted + light/dark run 13-56 F058) | ~~The working photo script exists — in `/tmp`, session-local~~           | ~~Should be promoted into the repo (it encodes the serial-pinning + adb-root + wait lessons)~~                  |
+| PWA icon parity **→ ROADMAP Open questions (icon parity)**                                     | Native icon deliberately diverged (handset vs the PWA's link glyph)      | Needs your decision — change both or neither (noted in AGENTS.md)                                               |
+| ~~Day/night on the shell~~ done — the island pages ARE theme-aware; algorithmic darkening shipped (09-59) + visually proven (13-43 W101/W102) | ~~Chrome is fixed dark glass BY DESIGN; dark screenshot identical to light~~ | ~~The web island's own pages don't dark-mode (WebView darkening is a separate decision)~~                       |
+| Live device trains **→ TODO_LIST (first device trains, R15/R16 — Q1)**                         | Everything self-serve is done                                            | Still blocked: your stack served **502 Bad Gateway** all session (nginx up, backend down)                       |
 
 ## c) NOT STARTED (standing list, unaffected by this session)
 
@@ -61,6 +61,7 @@ checks (F073-F075) · thread-confinement audit (F093) ·
 shutdown-vs-ensureWired race (F094) · logout deregistration decision
 (F063/F064) · F055 ntfy kill-cycle · TalkBack pass · contrast audit ·
 emulator snapshots. None were promised this session.
+**→ all resolved since:** 401 ladder + watchdog, busy UX, CallStyle, TLS memo (ROADMAP), missed-call, duration timer, haptics, battery prompt — shipped in the 10-00 pass; CI trigger added (10-00 F040, first green → TODO R13); live contracts → TODO R20; F093/F094 shipped (confinement + AttachGuard); logout decision → TODO R21; F055 proven (13-56); TalkBack → TODO R23; contrast gated (P10, CI); snapshots → ROADMAP Decisions (OFF).
 
 ## d) TOTALLY FUCKED UP (this session's mistakes, unvarnished)
 
