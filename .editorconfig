@@ -16,5 +16,9 @@ indent_size = 4
 indent_size = 2
 
 [*.{kt,kts}]
-ktlint_code_style = official
+# "official" is not a valid ktlint code style — the valid value is
+# "ktlint_official" (an invalid value logged a warning per file and
+# silently fell back to the default, which happens to be the same
+# style; pinned explicitly so the warning never returns).
+ktlint_code_style = ktlint_official
 max_line_length = 120

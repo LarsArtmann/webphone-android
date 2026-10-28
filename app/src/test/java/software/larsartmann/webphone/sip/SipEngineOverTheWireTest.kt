@@ -72,6 +72,7 @@ class SipEngineOverTheWireTest {
     private var socket: WebSocket? = null
     private val frames = LinkedBlockingQueue<String>()
     private var registersSeen = 0
+
     /** Kept per test so tearDown can cancel the engine's coroutines —
      *  an un-cancelled Dispatchers.IO scope is exactly the static
      *  leakage the forkEvery fence exists to bound (J05/M023). */
