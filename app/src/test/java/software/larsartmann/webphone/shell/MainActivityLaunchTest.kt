@@ -2,9 +2,9 @@ package software.larsartmann.webphone.shell
 
 import android.app.Application
 import android.view.ViewGroup
-import androidx.test.core.app.ActivityScenario
 import org.junit.Before
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.Test
@@ -28,12 +28,15 @@ class MainActivityLaunchTest {
 
     @Test
     fun `main activity launches with the webview chrome`() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.onActivity { activity ->
-                assertNotNull(activity.window)
-                val decor = activity.window.decorView as ViewGroup
-                assertTrue(decor.childCount > 0, "the shell must render content")
-            }
-        }
+        // The synchronous ActivityController, never ActivityScenario:
+        // its close() wait-for-DESTROYED loop deadlocks the Robolectric
+        // main thread on a bare launch of the singleTask shell
+        // (jstack-proven 2026-10-28; DeepLinkIntakeTest tells the story).
+        val controller = Robolectric.buildActivity(MainActivity::class.java).setup()
+        val activity = controller.get()
+        assertNotNull(activity.window)
+        val decor = activity.window.decorView as ViewGroup
+        assertTrue(decor.childCount > 0, "the shell must render content")
+        controller.pause().stop().destroy()
     }
 }
