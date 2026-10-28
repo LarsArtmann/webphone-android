@@ -80,7 +80,8 @@ The verification gate after every code change: `assembleDebug` green +
 `ktlintCheck` green (CI runs all four; `ktlintFormat` fixes
 mechanically). The one-command form is
 `bash scripts/verify-gate.sh` — it refuses to start while another
-Gradle process is alive, then runs assemble + tests + ktlint + the 16 KB
+Gradle process is alive, then runs assemble + tests + ktlint + the
+KGP-parity check + the 16 KB
 zipalign + contrast + `dprint check` in order, each Gradle step
 time-bounded so a wedged build fails loudly (it is the gate, wrapped;
 run its steps by hand only when debugging one of them). After any

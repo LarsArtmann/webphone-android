@@ -39,6 +39,12 @@ jobs:
       - name: Kotlin style gate (ktlint)
         run: ./gradlew ktlintCheck
 
+      # The built-in-Kotlin pin (buildscript classpath) and the catalog
+      # `kotlin` version are one version by hand-rule; this task turns
+      # silent drift into a red build with the fix in the message.
+      - name: KGP-pin parity gate
+        run: ./gradlew kgpParityCheck
+
       # The 16 KB page-size gate: build-tools 36's zipalign carries
       # -P 16 (the Android 16 constraint — non-negotiable per release;
       # 36.0.0 is AGP 9's floor).

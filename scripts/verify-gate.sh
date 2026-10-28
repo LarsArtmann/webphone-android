@@ -44,8 +44,8 @@ timeout 900 nix develop -c ./gradlew assembleDebug --console=plain
 step "2/6 testDebugUnitTest (94 tests, wedge-fenced)"
 timeout 1500 nix develop -c ./gradlew testDebugUnitTest --console=plain
 
-step "3/6 ktlintCheck"
-timeout 600 nix develop -c ./gradlew ktlintCheck --console=plain
+step "3/6 ktlintCheck + KGP parity"
+timeout 600 nix develop -c ./gradlew ktlintCheck kgpParityCheck --console=plain
 
 step "4/6 16 KB page alignment (build-tools 36 zipalign)"
 # ANDROID_HOME exists only INSIDE the nix devShell — resolve it through
