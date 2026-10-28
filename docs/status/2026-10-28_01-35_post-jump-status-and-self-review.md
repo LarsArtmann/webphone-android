@@ -78,49 +78,49 @@ answers "where are we, what did we get wrong, what's next"._
 
 ## b) PARTIALLY DONE
 
-1. **The jump is compile- and smoke-verified, not LIVE-verified.**
+1. **The jump is compile- and smoke-verified, not LIVE-verified.** **→ TODO_LIST (first device trains R15/R16 — the new honesty-contract layer)**
    Robolectric + emulator smoke only: no REGISTER/INVITE has flowed
    through Kotlin 2.4.21 / okhttp 5.5.1 / compileSdk 37 against the
    real stack. The honesty contract just grew a new layer.
-2. **Wedge-proofing**: per-test logging done; the fence is NOT done —
+2. **Wedge-proofing**: per-test logging done; the fence is NOT done — **→ TODO_LIST (wedge-proofing: task fence + per-test timeouts + forkEvery)**
    no task-level timeout, no per-test timeouts, no
    `forkEvery`. A fresh wedge would still hang until a human polls.
-3. **KGP-pin ↔ catalog version parity** is enforced by DOC ONLY
+3. **KGP-pin ↔ catalog version parity** is enforced by DOC ONLY **→ TODO_LIST (mechanize the KGP-pin ↔ catalog parity check)**
    ("change BOTH or neither" — AGENTS.md + code comments). Nothing
    mechanical fails the build when they drift.
-4. **TODO_LIST harvest**: I added 3 rows by hand, but neither this
-   report's (f) list nor R28's 50-item list has been through
-   docs-health HARVEST; R28's report is not annotated as executed.
-5. **The ktlint adoption commit is a 48-file blob** (daemon
-   auto-commit): correct in content, poor for bisect — the format
-   pass should have been its own quiet-window commit by hand.
-6. **Sibling-agent work**: merged around, not verified — I never
+4. ~~**TODO_LIST harvest**: I added 3 rows by hand, but neither this~~ done — THIS sweep harvested the R28/R30 lists + annotated R28 as executed
+   ~~report's (f) list nor R28's 50-item list has been through~~
+   ~~docs-health HARVEST; R28's report is not annotated as executed.~~
+5. ~~**The ktlint adoption commit is a 48-file blob** (daemon~~ **NOT-DO — history note only — the blob is committed; a rewrite would risk more than it fixes.**
+   ~~auto-commit): correct in content, poor for bisect — the format~~
+   ~~pass should have been its own quiet-window commit by hand.~~
+6. **Sibling-agent work**: merged around, not verified — I never **→ TODO_LIST (review AttachGuardTest + pin wiringEnabled semantics + read the sibling FEATURES edit)**
    read the sibling's FEATURES.md edit or ran a review over
    AttachGuardTest; I also did not pin the `wiringEnabled` gate
    semantics in a test.
-7. **Dependabot**: the catalog changed shape (plugin entry added,
+7. **Dependabot**: the catalog changed shape (plugin entry added, **→ TODO_LIST (Dependabot config audit after the catalog reshaping)**
    two aliases removed) and I did NOT verify the dependabot config
    still maps everything (R28 plan item 43 — skipped).
 
 ## c) NOT STARTED
 
-1. targetSdk 36 → 37 (deliberate hold; TODO row gates it on the
+1. targetSdk 36 → 37 (deliberate hold; TODO row gates it on the **→ TODO_LIST (targetSdk 36 → 37 behind the device-train gate)**
    device train).
-2. API 37 emulator system image (multi-GB; TODO row).
-3. mockwebserver3 migration (TODO row).
-4. Per-test timeouts for network-ish suites (R28 plan item 4 — never
+2. API 37 emulator system image (multi-GB; TODO row). **→ TODO_LIST (API 37 emulator system image)**
+3. mockwebserver3 migration (TODO row). **→ TODO_LIST (mockwebserver3 migration)**
+4. Per-test timeouts for network-ish suites (R28 plan item 4 — never **→ TODO_LIST (per-test timeouts for network-ish suites)**
    implemented).
-5. R8 full-mode sanity + baseline-profile check under AGP 9 (only
+5. R8 full-mode sanity + baseline-profile check under AGP 9 (only **→ ROADMAP (R8 full-mode sanity + baseline-profile check under AGP 9)**
    mapping.txt existence verified).
-6. Gradle version-catalog update plugin (would retire manual matrix
+6. Gradle version-catalog update plugin (would retire manual matrix **→ TODO_LIST (Gradle version-catalog update plugin evaluation)**
    research like R28's).
-7. README toolchain-mention audit (R28 item 40 — never opened the
-   README this session).
-8. CI has still NEVER run (billing/PAT blockers are owner items).
-9. detekt re-evaluation (parked until 2.x stabilizes).
-10. Kotlin 2.5.0 pin (pre-release; watch).
-11. v0.1.0 tag (operator's timing call).
-12. Pushes to origin/github (policy: owner by hand; remotes lag).
+7. ~~README toolchain-mention audit (R28 item 40 — never opened the~~ done — README toolchain audit landed in THIS sweep (platform 37 / build-tools 36.0.0 / ktlint)
+   ~~README this session).~~
+8. CI has still NEVER run (billing/PAT blockers are owner items). **→ TODO_LIST (CI first green run, R13/N029 — billing first)**
+9. ~~detekt re-evaluation (parked until 2.x stabilizes).~~ done — recorded — ROADMAP (detekt re-evaluation when 2.x stabilizes)
+10. ~~Kotlin 2.5.0 pin (pre-release; watch).~~ **NOT-DO — Dependabot owns version currency.**
+11. v0.1.0 tag (operator's timing call). **→ TODO_LIST (v0.1.0 annotated tag, R24/N062 — operator timing)**
+12. ~~Pushes to origin/github (policy: owner by hand; remotes lag).~~ done — policy — owner pushes by hand (AGENTS); remotes lag by design until then
 
 ## d) TOTALLY FUCKED UP!
 
@@ -176,7 +176,7 @@ answers "where are we, what did we get wrong, what's next"._
    `pgrep -f gradle` (recorded) PLUS `git log --since=5min` freshness
    check before ANY write, and treat a rejected edit as a stop sign
    to re-read ALL sibling-touched files, not just the rejected one.
-4. **Make the KGP-pin/catalog pairing mechanically enforced** (a
+4. **Make the KGP-pin/catalog pairing mechanically enforced** (a **→ TODO_LIST (mechanize the KGP-pin ↔ catalog parity check — a check task failing the build on drift)**
    check task comparing the buildscript literal against the catalog
    version; fail the build on drift) — doc-only invariants rot.
 5. **Do mass reformat passes in quiet windows and commit them by
@@ -191,140 +191,140 @@ answers "where are we, what did we get wrong, what's next"._
    pass** under this plugin version — script the retry (run
    ktlintFormat until reports are empty, max 3) instead of driving
    it by hand.
-8. **Add the emulator train to the post-jump gate list in AGENTS.md**
-   — it exercised the wired path (install/launch) that unit tests
-   deliberately no longer touch.
-9. **Read the Gradle Problems report** (`build/reports/problems/`) —
+8. ~~**Add the emulator train to the post-jump gate list in AGENTS.md**~~ done — AGENTS verification-gate note now includes the emulator train after toolchain/dependency jumps (THIS sweep)
+   ~~— it exercised the wired path (install/launch) that unit tests~~
+   ~~deliberately no longer touch.~~
+9. **Read the Gradle Problems report** (`build/reports/problems/`) — **→ TODO_LIST (read the Gradle Problems report; kill the Gradle-10 deprecation source)**
    AGP 9 wrote one; the "incompatible with Gradle 10" line in the
    logs is unidentified and should not survive to the next jump.
-10. **Pin ONE Robolectric test SDK policy** (@Config(sdk=[34]) is
+10. **Pin ONE Robolectric test SDK policy** (@Config(sdk=[34]) is **→ TODO_LIST (one documented Robolectric SDK policy — replace scattered @Config(sdk=[34]))**
     scattered per class; decide and document instead of drifting).
 
 ## f) Next: up to 50 things
 
 **Group A — prove the jump live (highest impact):**
 
-1. Device train under the new toolchain: REGISTER + INVITE + media
+1. Device train under the new toolchain: REGISTER + INVITE + media **→ TODO_LIST (first device train under the new toolchain, R15/R16)**
    through Kotlin 2.4.21 / okhttp 5.5.1 / compileSdk 37 (the
    honesty contract's new layer).
-2. Verify the answer-path race (push → FSI vs INVITE) post-jump.
-3. Live contract checks: session fields, CSRF dance, push-device
+2. Verify the answer-path race (push → FSI vs INVITE) post-jump. **→ TODO_LIST (Verify the answer-path race, R16/N041)**
+3. Live contract checks: session fields, CSRF dance, push-device **→ TODO_LIST (Live contract checks vs okhttp 5, R20/N052-N053)**
    upsert, ntfy payload shapes against okhttp 5.
-4. First physical install of the new-toolchain APK on the operator's
+4. First physical install of the new-toolchain APK on the operator's **→ TODO_LIST (First physical install of the new-toolchain APK, R14/N030-N032)**
    phone.
-5. Re-run `scripts/emulator-train.sh` AFTER any next dependency bump
-   (it is now the only wired-path exercise in the JVM-free gate).
+5. ~~Re-run `scripts/emulator-train.sh` AFTER any next dependency bump~~ done — AGENTS verification-gate note carries the post-bump train requirement (THIS sweep)
+   ~~(it is now the only wired-path exercise in the JVM-free gate).~~
 
 **Group B — repo hygiene the jump created (do first, cheap):**
 
-6. Dependabot config audit: confirm the catalog reshaping (ktlint
+6. Dependabot config audit: confirm the catalog reshaping (ktlint **→ TODO_LIST (Dependabot config audit — ktlint plugin entry; removed kotlin-android/okhttp-ws aliases)**
    plugin entry; removed kotlin-android/okhttp-ws) still maps.
-7. README toolchain mentions audit (platform 36 references).
-8. `--warning-mode all` sweep; read the Problems report; kill the
+7. ~~README toolchain mentions audit (platform 36 references).~~ done — README toolchain mentions fixed in THIS sweep
+8. `--warning-mode all` sweep; read the Problems report; kill the **→ TODO_LIST (--warning-mode all sweep + Problems report + Gradle-10 deprecation source)**
    Gradle-10 deprecation source.
-9. Mechanize KGP-pin ↔ catalog version parity (check task).
-10. docs-health HARVEST of this (f) list into TODO_LIST; ANNOTATE
-    R28's report as executed (its groups A–F are done except the
-    parked rows).
-11. Read the sibling agent's FEATURES.md edit + review
+9. Mechanize KGP-pin ↔ catalog version parity (check task). **→ TODO_LIST (mechanize KGP-pin ↔ catalog parity — check task)**
+10. ~~docs-health HARVEST of this (f) list into TODO_LIST; ANNOTATE~~ done — THIS sweep (docs-health HARVEST + R28 annotated as executed)
+    ~~R28's report as executed (its groups A–F are done except the~~
+    ~~parked rows).~~
+11. Read the sibling agent's FEATURES.md edit + review **→ TODO_LIST (review AttachGuardTest + pin wiringEnabled gate semantics in a test)**
     AttachGuardTest; pin `wiringEnabled` gate semantics in a test
     (default true; per-class sandbox; no leak).
-12. Suppress-or-migrate the 4 deprecation warnings (FcmReceiver
+12. Suppress-or-migrate the 4 deprecation warnings (FcmReceiver **→ TODO_LIST (suppress-or-migrate the 4 compileSdk-37 deprecations — FcmReceiver annotation is a 2-line fix)**
     annotation is a 2-line fix; Telecom + onBackPressed need
     platform decisions recorded in AGENTS.md).
-13. Verify `ktlintKotlinScriptFormat` reports stay empty (build
+13. Verify `ktlintKotlinScriptFormat` reports stay empty (build **→ TODO_LIST (verify ktlintKotlinScriptFormat stays empty — build scripts are gated too)**
     script sources are gated too).
-14. Confirm dprint + ktlint ownership boundary stays clean
+14. Confirm dprint + ktlint ownership boundary stays clean **→ TODO_LIST (confirm dprint + ktlint ownership boundary — .editorconfig is ktlint domain; dprint must not touch .kt)**
     (.editorconfig is ktlint's; dprint must not touch .kt).
 
 **Group C — wedge-proofing the suite:**
 
-15. Task-level fence for testDebugUnitTest (Test task timeout or
+15. Task-level fence for testDebugUnitTest (Test task timeout or **→ TODO_LIST (task-level fence for testDebugUnitTest — a future wedge dies in minutes)**
     equivalent) so a future wedge dies in minutes.
-16. Per-test timeouts (JUnit level) for MockWebServer/WebSocket-ish
+16. Per-test timeouts (JUnit level) for MockWebServer/WebSocket-ish **→ TODO_LIST (per-test timeouts, JUnit level, for MockWebServer/WebSocket suites)**
     suites.
-17. `forkEvery`/fresh-executor policy to bound cross-class static
+17. `forkEvery`/fresh-executor policy to bound cross-class static **→ TODO_LIST (forkEvery / fresh-executor policy to bound cross-class leakage)**
     leakage (CallEngine singletons live across classes in one JVM).
-18. Named helper for the `nextStartedActivity` drain-loop idiom
-    (duplicated, reads oddly).
-19. One documented Robolectric SDK policy (replace scattered
+18. ~~Named helper for the `nextStartedActivity` drain-loop idiom~~ **NOT-DO — micro-refactor — the drain-loop reads fine at two call sites.**
+    ~~(duplicated, reads oddly).~~
+19. One documented Robolectric SDK policy (replace scattered **→ TODO_LIST (one documented Robolectric SDK policy)**
     @Config(sdk=[34])).
-20. A shared test OkHttp dispatcher with idle timeout so leaked
+20. A shared test OkHttp dispatcher with idle timeout so leaked **→ TODO_LIST (shared test OkHttp dispatcher with idle timeout)**
     dispatcher threads exit promptly post-suite.
-21. CI: add assembleRelease (R8) to the verify job — it currently
+21. CI: add assembleRelease (R8) to the verify job — it currently **→ TODO_LIST (CI: add assembleRelease to the verify job)**
     runs only locally.
-22. CI: artifact the R8 mapping.txt on release builds (retrace
+22. CI: artifact the R8 mapping.txt on release builds (retrace **→ TODO_LIST (CI: artifact the R8 mapping.txt on release builds)**
     needs it later; free to save now).
 
 **Group D — toolchain depth:**
 
-23. Version-catalog update plugin (Retake/version-catalog-update) to
+23. Version-catalog update plugin (Retake/version-catalog-update) to **→ TODO_LIST (version-catalog update plugin — Retake/version-catalog-update)**
     retire hand-run version matrices.
-24. Gradle build-cache evaluation (build scan shows 45–96 task runs
+24. Gradle build-cache evaluation (build scan shows 45–96 task runs **→ TODO_LIST (Gradle build-cache evaluation — cache hits are currently incidental)**
     per gate; cache hits are currently incidental).
-25. R8 full-mode sanity under AGP 9 (proguard-rules.pro keeps
+25. R8 full-mode sanity under AGP 9 (proguard-rules.pro keeps **→ ROADMAP (R8 full-mode sanity under AGP 9 — stretch)**
     verified only for shrink success, not full-mode).
-26. Baseline profile experiment (ROADMAP item; measure on device
-    first).
-27. Kotlin 2.5.0 pin when stable.
-28. AGP 9.5.x when stable (9.5.0-rc02 exists; watch its notes).
-29. Investigate `androidx.databinding:viewbinding:9.4.1` landing on
+26. ~~Baseline profile experiment (ROADMAP item; measure on device~~ done — recorded — ROADMAP theme 1 (baseline profiles; measure on device first)
+    ~~first).~~
+27. ~~Kotlin 2.5.0 pin when stable.~~ **NOT-DO — Dependabot owns version currency.**
+28. ~~AGP 9.5.x when stable (9.5.0-rc02 exists; watch its notes).~~ **NOT-DO — Dependabot owns version currency.**
+29. Investigate `androidx.databinding:viewbinding:9.4.1` landing on **→ TODO_LIST (investigate androidx.databinding:viewbinding on the unit-test classpath — confirm harmless)**
     the unit-test classpath (AGP-generated; confirm harmless).
-30. Document the deliberate 36/37 flake split (build shell 37,
-    emulator shell 36) in one canonical place — it is currently
-    spread across flake comments.
-31. sdkManager license line for the API 37 system image in the
+30. ~~Document the deliberate 36/37 flake split (build shell 37,~~ done — AGENTS build section now states the 36/37 flake split in one place (THIS sweep)
+    ~~emulator shell 36) in one canonical place — it is currently~~
+    ~~spread across flake comments.~~
+31. sdkManager license line for the API 37 system image in the **→ TODO_LIST (sdkManager license line for the API 37 image — prep with the image row)**
     emulator shell (prep for when the image is pulled).
-32. Consider a `pre-<jump>` git tag convention before future big
+32. Consider a `pre-<jump>` git tag convention before future big **→ ROADMAP (pre-jump git tag convention before big migrations)**
     migrations (bisect anchor; daemon commits make history dense).
 
 **Group E — product surface (pre-existing, now unblocked only by
 owner items):**
 
-33. Pocket ID live login verification (operator credential).
-34. assetlinks.json cross-repo (owner; unfreezes App Links).
-35. CallStyle device verification (both trains).
-36. TalkBack + battery-prompt walkthrough.
-37. Logout deregistration decision (JS bridge vs cookie poll).
-38. Island standdown seam (duplicate registration observed).
-39. v0.1.0 tag (operator timing).
-40. Mirror/PAT unblock (owner): repo+workflow scope PAT, SystemNix
+33. Pocket ID live login verification (operator credential). **→ TODO_LIST (live Pocket ID login verification, R17/N045-N046)**
+34. assetlinks.json cross-repo (owner; unfreezes App Links). **→ TODO_LIST (assetlinks.json cross-repo, R18/N047-N048)**
+35. CallStyle device verification (both trains). **→ TODO_LIST (CallStyle device verification, R23/N059)**
+36. TalkBack + battery-prompt walkthrough. **→ TODO_LIST (TalkBack + battery-prompt walkthrough, R23/N060-N061)**
+37. Logout deregistration decision (JS bridge vs cookie poll). **→ TODO_LIST (Logout deregistration decision, R21/N054-N056)**
+38. Island standdown seam (duplicate registration observed). **→ TODO_LIST (island standdown seam, R22/N057-N058)**
+39. v0.1.0 tag (operator timing). **→ TODO_LIST (v0.1.0 tag, R24/N062 — operator timing)**
+40. Mirror/PAT unblock (owner): repo+workflow scope PAT, SystemNix **→ TODO_LIST (Owner mirror/PAT unblock, R12/N025-N026)**
     deploy to attach the push mirror.
-41. CI billing fix (owner) — the workflow has never actually run.
-42. Island safe-area fix coordination (the W01 header overlap —
+41. CI billing fix (owner) — the workflow has never actually run. **→ TODO_LIST (CI billing fix, R12/N027)**
+42. Island safe-area fix coordination (the W01 header overlap — **→ TODO_LIST (cross-repo: island safe-area fix — webphone repo call)**
     cross-repo, webphone's call).
 
 **Group F — later / ROADMAP fuel:**
 
-43. detekt re-evaluation when 2.x stabilizes.
-44. mockwebserver3 migration (TODO row).
-45. targetSdk 37 bump behind the device-train gate (TODO row).
-46. API 37 emulator system image (TODO row).
-47. Compose adoption for the NEXT new native surface (ROADMAP
-    decision recorded; BOM 2026.09.00 reference).
-48. Multi-host IdP allowance design (the auth detour blesses ONE
-    authority; operator question stands).
-49. Session deregistration UX (the watcher's best-effort DELETE is
+43. ~~detekt re-evaluation when 2.x stabilizes.~~ done — recorded — ROADMAP (detekt re-evaluation when 2.x stabilizes)
+44. mockwebserver3 migration (TODO row). **→ TODO_LIST (mockwebserver3 migration)**
+45. targetSdk 37 bump behind the device-train gate (TODO row). **→ TODO_LIST (targetSdk 37 behind the device-train gate)**
+46. API 37 emulator system image (TODO row). **→ TODO_LIST (API 37 emulator system image)**
+47. ~~Compose adoption for the NEXT new native surface (ROADMAP~~ done — recorded — ROADMAP (Compose for the NEXT new native surface; BOM 2026.09.00)
+    ~~decision recorded; BOM 2026.09.00 reference).~~
+48. ~~Multi-host IdP allowance design (the auth detour blesses ONE~~ done — recorded — ROADMAP Auth theme (multi-host IdP allowance; operator question stands)
+    ~~authority; operator question stands).~~
+49. Session deregistration UX (the watcher's best-effort DELETE is **→ TODO_LIST (Logout deregistration UX — R21/N054-N056)**
     unauthorized by design — the JS-bridge alternative needs an
     operator pick).
-50. Schedule the next toolchain review cadence (quarterly?) so the
+50. Schedule the next toolchain review cadence (quarterly?) so the **→ ROADMAP (quarterly toolchain-review cadence)**
     repo never sits 3 Kotlin minors behind again.
 
 ## g) Questions I cannot figure out myself
 
-1. **The `crush-daily` gate runner**: it dispatches agent sessions
+1. **The `crush-daily` gate runner**: it dispatches agent sessions **→ ROADMAP Open questions (crush-daily skip/busy policy — scheduler config lives outside the repo)**
    that run `testDebugUnitTest assembleDebug` on this repo on a
    schedule. Can it be taught to SKIP when a session is actively
    building (flock/lockfile or a "repo busy" marker), or should its
    trigger change for this repo? I cannot see the scheduler's
    config semantics from inside the repo — and without an answer,
    my builds and its builds will keep colliding.
-2. **targetSdk 37 timing — confirm the hold**: I implemented your
+2. **targetSdk 37 timing — confirm the hold**: I implemented your **→ TODO_LIST (targetSdk 37 — confirm the hold; operator)**
    R28 default (hold at 36 until a device train validates Android 17
    behavior changes; compileSdk is already 37). Sideload is
    unaffected either way — do you confirm the hold, or do you want
    Play-forward now?
-3. **Concurrent-agent policy on this repo**: a sibling agent worked
+3. **Concurrent-agent policy on this repo**: a sibling agent worked **→ ROADMAP Open questions (concurrent-agent serialization on this repo)**
    the same files simultaneously today (its AttachGuardTest +
    hermeticity gates were good and I merged around them). Do you
    want sessions on this repo SERIALIZED by the dispatcher (one at

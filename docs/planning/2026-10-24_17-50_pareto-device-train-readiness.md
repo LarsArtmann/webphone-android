@@ -50,8 +50,8 @@ inside each tier. `BLK` = blocked on operator input.
 
 | #       | Task                                                                                             | Tier     | Impact       | Effort     | Customer value                                                 | Depends on    |
 | ------- | ------------------------------------------------------------------------------------------------ | -------- | ------------ | ---------- | -------------------------------------------------------------- | ------------- |
-| T01     | Device train 1: outbound call E2E (login→session→REGISTER→dial→audio→BYE)                        | 1%       | Critical     | 100min BLK | The product's core promise proven                              | Q1            |
-| T02     | Device train 2: ring-while-closed E2E (push→FSI→answer; race measured)                           | 1%       | Critical     | 100min BLK | The differentiating feature proven                             | Q1, T01       |
+| T01     | Device train 1: outbound call E2E (login→session→REGISTER→dial→audio→BYE) **→ TODO_LIST (outbound device train, R15/N033-N038 — Q1)** | 1%       | Critical     | 100min BLK | The product's core promise proven                              | Q1            |
+| T02     | Device train 2: ring-while-closed E2E (push→FSI→answer; race measured) **→ TODO_LIST (ring train + race, R16/N039-N044 — Q1)** | 1%       | Critical     | 100min BLK | The differentiating feature proven                             | Q1, T01       |
 | ~~T03~~ | ~~Fix FSI auto-answer (explicit Answer tap)~~ done at `dac60c9`                                  | ~~4%~~   | ~~Critical~~ | ~~30min~~  | ~~Calls never answer from a pocket-wake~~                      | ~~—~~         |
 | ~~T04~~ | ~~Wire outbound calls through Telecom (`placeCall`) — de-ghost~~ done at `dac60c9`               | ~~4%~~   | ~~High~~     | ~~100min~~ | ~~BT/watches see outbound calls; OS integration complete~~     | ~~—~~         |
 | ~~T05~~ | ~~Settings surface: stack origin persisted (kill hardcoded origin)~~ done at `3a1df59`           | ~~4%~~   | ~~High~~     | ~~100min~~ | ~~App usable against any stack without rebuild~~               | ~~—~~         |
@@ -65,18 +65,18 @@ inside each tier. `BLK` = blocked on operator input.
 | ~~T13~~ | ~~Logout → deregister device (cookie poll or JS bridge)~~ done at `a345360`                      | ~~20%~~  | ~~Med~~      | ~~100min~~ | ~~No ghost rows in the push registry after logout~~            | ~~—~~         |
 | ~~T14~~ | ~~Dialpad UX batch: rotation fix, recents, clear, FAB theming~~ done at `dac60c9`                | ~~20%~~  | ~~Med~~      | ~~60min~~  | ~~The most-touched surface stops feeling like scaffold~~       | ~~—~~         |
 | ~~T15~~ | ~~Robolectric smoke: MainActivity→CallLayer, RingEvent→notification~~ done at `dac60c9`          | ~~20%~~  | ~~Med~~      | ~~100min~~ | ~~Wiring regressions caught before device~~                    | ~~T08 infra~~ |
-| T16     | Live contract checks: session fields, push payload, CSRF                                         | 20%      | Med          | 60min BLK  | Field-drift class of bugs closed                               | T01 access    |
+| T16     | Live contract checks: session fields, push payload, CSRF **→ TODO_LIST (Live contract checks, R20/N052-N053 — T01 access)** | 20%      | Med          | 60min BLK  | Field-drift class of bugs closed                               | T01 access    |
 | ~~T17~~ | ~~Strings extraction + speaker routing + audio focus~~ done at `dac60c9`                         | ~~20%~~  | ~~Med~~      | ~~60min~~  | ~~i18n-ready, real speaker toggle, no audio-focus stealing~~   | ~~—~~         |
 | ~~T18~~ | ~~Accessibility pass (descriptions, touch targets)~~ done at `dac60c9`                           | ~~20%~~  | ~~Med~~      | ~~60min~~  | ~~Usable beyond perfect eyesight + default motor control~~     | ~~—~~         |
 | ~~T19~~ | ~~Notification UX: post-login prompt, unregistered dialer state~~ done at `dac60c9`              | ~~20%~~  | ~~Med~~      | ~~60min~~  | ~~Permission asked in context; dial button honest~~            | ~~T06~~       |
 | ~~T20~~ | ~~Docs sync batch: citations, DOMAIN_LANGUAGE, CHANGELOG, status index~~ done at `2653474`       | ~~20%~~  | ~~Med~~      | ~~60min~~  | ~~Docs stop lying about line numbers; harvest loop closed~~    | ~~—~~         |
-| T21     | CallStyle-composed notifications (incoming + ongoing)                                            | tail     | Med          | 100min     | Native calling look; platform-polish contract                  | T01/T02 run   |
+| ~~T21~~     | ~~CallStyle-composed notifications (incoming + ongoing)~~ done — docs/status/2026-10-25_10-00 §a T21 (CallStyle shipped; device verify → TODO R23) | ~~tail~~ | ~~Med~~ | ~~100min~~ | ~~Native calling look; platform-polish contract~~ | ~~T01/T02 run~~ |
 | ~~T22~~ | ~~CallActivity robustness: onNewIntent re-ring, auto-finish, thread audits~~ done at `dac60c9`   | ~~tail~~ | ~~Med~~      | ~~60min~~  | ~~No zombie screens, no cross-thread state writes~~            | ~~—~~         |
-| T23     | Second-incoming-call UX (FSI suppression, busy heads-up)                                         | tail     | Low-Med      | 60min      | Line-busy behaves deliberately, not accidentally               | —             |
+| ~~T23~~     | ~~Second-incoming-call UX (FSI suppression, busy heads-up)~~ done — docs/status/2026-10-25_10-00 §a T20/T22 (busy policy + missed-call notes) | ~~tail~~ | ~~Low-Med~~ | ~~60min~~ | ~~Line-busy behaves deliberately, not accidentally~~ | ~~—~~ |
 | ~~T24~~ | ~~Repo polish: icon, LICENSE, config cache, dependabot ecosystems~~ done at `29c4e45`, `1caa45e` | ~~tail~~ | ~~Low~~      | ~~60min~~  | ~~Looks owned, builds faster, updates itself~~                 | ~~—~~         |
-| T25     | SipEngine robustness: INVITE 401 ladder, watchdog silence re-register                            | tail     | Med          | 60min      | Long-lived registration survives PBX quirks                    | T08           |
-| T26     | Post-train docs: retire honesty markers, ROADMAP revisit                                         | tail     | Med          | 30min BLK  | README truth matches reality                                   | T01/T02       |
-| T27     | Edge verification: cookie-expiry mid-call, TLS pinning memo                                      | tail     | Low          | 60min      | Known behavior at session boundaries                           | T01 access    |
+| ~~T25~~     | ~~SipEngine robustness: INVITE 401 ladder, watchdog silence re-register~~ done — docs/status/2026-10-25_10-00 §a T09/T13 (INVITE 401 ladder + silence watchdog) | ~~tail~~ | ~~Med~~ | ~~60min~~ | ~~Long-lived registration survives PBX quirks~~ | ~~T08~~ |
+| T26     | Post-train docs: retire honesty markers, ROADMAP revisit **→ TODO_LIST (post-train docs sweep, R26/N066-N068 — T01/T02)** | tail     | Med          | 30min BLK  | README truth matches reality                                   | T01/T02       |
+| ~~T27~~     | ~~Edge verification: cookie-expiry mid-call, TLS pinning memo~~ done — TLS decided (ROADMAP Decisions — NOT pinned); cookie-expiry → TODO R20 | ~~tail~~ | ~~Low~~ | ~~60min~~ | ~~Known behavior at session boundaries~~ | ~~T01 access~~ |
 
 Totals: ~20h across 27 tasks. 2 blocked on operator input (Q1), 2
 soft-blocked on train results (T26, part of T16).
@@ -88,24 +88,24 @@ parent. `BLK` rows need operator input or a prior task.
 
 | ID       | Task (≤12min)                                                                                   | Min    | Parent  | Tier     |
 | -------- | ----------------------------------------------------------------------------------------------- | ------ | ------- | -------- |
-| F001     | Collect stack facts: origin URL, test extension, `/api/session` response shape (operator input) | 5      | T01     | 1% BLK   |
-| F002     | Build + install debug APK on device (`adb install -r`)                                          | 10     | T01     | 1% BLK   |
-| F003     | Login in WebView; verify session cookie minted (inspect/logs)                                   | 10     | T01     | 1% BLK   |
-| F004     | Verify `/api/session` resume → SIP credentials in logs (field names!)                           | 10     | T01     | 1% BLK   |
-| F005     | Verify REGISTER digest challenge → 200 in logs                                                  | 10     | T01     | 1% BLK   |
-| F006     | Dial echo-test extension; observe INVITE/180/200/ACK ladder                                     | 12     | T01     | 1% BLK   |
-| F007     | Verify two-way audio + mute toggle behavior                                                     | 10     | T01     | 1% BLK   |
-| F008     | Hang up; verify BYE, teardown, FGS stop                                                         | 10     | T01     | 1% BLK   |
-| F009     | Log findings; flip FEATURES rows for verified items                                             | 12     | T01     | 1% BLK   |
-| F010     | Verify `/api/push-devices` 204 both lanes + server row exists                                   | 10     | T02     | 1% BLK   |
-| F011     | Kill app; trigger inbound call from another extension                                           | 10     | T02     | 1% BLK   |
-| F012     | Verify FSI fires + Telecom connection rings                                                     | 10     | T02     | 1% BLK   |
-| F013     | Measure bootstrap race: INVITE landed before answer timeout?                                    | 12     | T02     | 1% BLK   |
-| F014     | Answer via FSI; verify 200 OK + audio                                                           | 10     | T02     | 1% BLK   |
-| F015     | Answer via BT headset; verify FGS started from `onAnswer`                                       | 12     | T02     | 1% BLK   |
-| F016     | `ring_end` path: answered elsewhere → ring stands down everywhere                               | 10     | T02     | 1% BLK   |
-| F017     | Decline path: 603; caller sees busy                                                             | 8      | T02     | 1% BLK   |
-| F018     | Record race outcome; open webphone-repo issue if re-INVITE missing                              | 12     | T02     | 1% BLK   |
+| F001     | Collect stack facts: origin URL, test extension, `/api/session` response shape (operator input) **→ TODO_LIST (Q1 stack facts — R15/N033)** | 5      | T01     | 1% BLK   |
+| F002     | Build + install debug APK on device (`adb install -r`) **→ TODO_LIST (fresh APK + install — R14/R15)** | 10     | T01     | 1% BLK   |
+| F003     | Login in WebView; verify session cookie minted (inspect/logs) **→ TODO_LIST (island login mints the cookie — R15/N034)** | 10     | T01     | 1% BLK   |
+| F004     | Verify `/api/session` resume → SIP credentials in logs (field names!) **→ TODO_LIST (/api/session resume — R15/N034 + R20/N052)** | 10     | T01     | 1% BLK   |
+| F005     | Verify REGISTER digest challenge → 200 in logs **→ TODO_LIST (REGISTER digest → 200 — R15/N035)** | 10     | T01     | 1% BLK   |
+| F006     | Dial echo-test extension; observe INVITE/180/200/ACK ladder **→ TODO_LIST (echo extension INVITE ladder — R15/N036)** | 12     | T01     | 1% BLK   |
+| F007     | Verify two-way audio + mute toggle behavior **→ TODO_LIST (two-way audio + AEC/NS — R15/N037)** | 10     | T01     | 1% BLK   |
+| F008     | Hang up; verify BYE, teardown, FGS stop **→ TODO_LIST (BYE teardown + FGS stop — R15/N038)** | 10     | T01     | 1% BLK   |
+| F009     | Log findings; flip FEATURES rows for verified items **→ TODO_LIST (train findings → FEATURES flips — R26/N066)** | 12     | T01     | 1% BLK   |
+| F010     | Verify `/api/push-devices` 204 both lanes + server row exists **→ TODO_LIST (push-device rows both lanes — R16/N039)** | 10     | T02     | 1% BLK   |
+| F011     | Kill app; trigger inbound call from another extension **→ TODO_LIST (inbound trigger — R16/N040)** | 10     | T02     | 1% BLK   |
+| F012     | Verify FSI fires + Telecom connection rings **→ TODO_LIST (FSI + Telecom ring — R16/N041)** | 10     | T02     | 1% BLK   |
+| F013     | Measure bootstrap race: INVITE landed before answer timeout? **→ TODO_LIST (bootstrap race measurement — R16/N041)** | 12     | T02     | 1% BLK   |
+| F014     | Answer via FSI; verify 200 OK + audio **→ TODO_LIST (explicit-tap answer — R16/N042)** | 10     | T02     | 1% BLK   |
+| F015     | Answer via BT headset; verify FGS started from `onAnswer` **→ TODO_LIST (BT/watch answer + FGS — R16/N042)** | 12     | T02     | 1% BLK   |
+| F016     | `ring_end` path: answered elsewhere → ring stands down everywhere **→ TODO_LIST (ring_end stand-down everywhere — R16/N043)** | 10     | T02     | 1% BLK   |
+| F017     | Decline path: 603; caller sees busy **→ TODO_LIST (decline 603 — R16/N043)** | 8      | T02     | 1% BLK   |
+| F018     | Record race outcome; open webphone-repo issue if re-INVITE missing **→ TODO_LIST (race outcome + webphone issue — R16, file at train time)** | 12     | T02     | 1% BLK   |
 | ~~F019~~ | ~~Remove `answer()` from `CallActivity.startCall()`; keep FGS + render~~ done at `dac60c9`      | ~~8~~  | ~~T03~~ | ~~4%~~   |
 | ~~F020~~ | ~~Answer ONLY from Answer button / Telecom `onAnswer`~~ done at `dac60c9`                       | ~~5~~  | ~~T03~~ | ~~4%~~   |
 | ~~F021~~ | ~~Rebuild + re-verify ring flow (emulator/device)~~ done at `dac60c9`                           | ~~12~~ | ~~T03~~ | ~~4%~~   |
@@ -127,7 +127,7 @@ parent. `BLK` rows need operator input or a prior task.
 | ~~F037~~ | ~~Write `.github/workflows/ci.yml`: JDK 21 + `assembleDebug`~~ done at `dac60c9`                | ~~12~~ | ~~T07~~ | ~~4%~~   |
 | ~~F038~~ | ~~Add `zipalign -c -P 16 4` gate step (build-tools 35)~~ done at `dac60c9`                      | ~~12~~ | ~~T07~~ | ~~4%~~   |
 | ~~F039~~ | ~~Add `dprint fmt --check` step~~ done at `dac60c9`                                             | ~~10~~ | ~~T07~~ | ~~4%~~   |
-| F040     | Triggers: PR + workflow_dispatch; verify first green run                                        | 8      | T07     | 4%       |
+| F040     | Triggers: PR + workflow_dispatch; verify first green run **→ TODO_LIST (first green CI run, R13/N029 — billing)** | 8      | T07     | 4%       |
 | ~~F041~~ | ~~Add test source set + `kotlin.test` deps to `app/build.gradle.kts`~~ done at `dac60c9`        | ~~10~~ | ~~T08~~ | ~~4%~~   |
 | ~~F042~~ | ~~SipMessage tests: request parse/render round-trips~~ done at `dac60c9`                        | ~~12~~ | ~~T08~~ | ~~4%~~   |
 | ~~F043~~ | ~~SipMessage tests: response parse + CSeq/Call-ID extraction~~ done at `dac60c9`                | ~~12~~ | ~~T08~~ | ~~4%~~   |
@@ -142,7 +142,7 @@ parent. `BLK` rows need operator input or a prior task.
 | ~~F052~~ | ~~Unit test: hang-up-during-ring-out message sequence~~ done at `dac60c9`                       | ~~12~~ | ~~T09~~ | ~~20%~~  |
 | ~~F053~~ | ~~Persist ntfy server/topic to prefs on start~~ done at `dac60c9`                               | ~~10~~ | ~~T10~~ | ~~20%~~  |
 | ~~F054~~ | ~~Null-intent sticky restart: read prefs, resubscribe~~ done at `dac60c9`                       | ~~10~~ | ~~T10~~ | ~~20%~~  |
-| F055     | Kill/restart test (`adb shell am kill`) — lane survives                                         | 12     | T10     | 20%      |
+| ~~F055~~     | ~~Kill/restart test (`adb shell am kill`) — lane survives~~ done — docs/status/2026-10-25_13-56 §a F035 (kill-cycle PROVEN) | ~~12~~ | ~~T10~~ | ~~20%~~ |
 | ~~F056~~ | ~~Run `assembleRelease`; catalog R8 failures~~ done at `dac60c9`                                | ~~10~~ | ~~T11~~ | ~~20%~~  |
 | ~~F057~~ | ~~Add minimal keeps for cataloged failures~~ done at `dac60c9`                                  | ~~10~~ | ~~T11~~ | ~~20%~~  |
 | ~~F058~~ | ~~Re-run release + install/launch smoke~~ done at `dac60c9`                                     | ~~10~~ | ~~T11~~ | ~~20%~~  |
@@ -150,8 +150,8 @@ parent. `BLK` rows need operator input or a prior task.
 | ~~F060~~ | ~~Script: create AVD + boot + install + screenshot~~ done at `dac60c9`                          | ~~12~~ | ~~T12~~ | ~~20%~~  |
 | ~~F061~~ | ~~Document train-kit usage in AGENTS.md~~ done at `dac60c9`                                     | ~~10~~ | ~~T12~~ | ~~20%~~  |
 | ~~F062~~ | ~~Cookie-poll watcher in CallLayer (session 401 → deregister)~~ done at `a345360`               | ~~12~~ | ~~T13~~ | ~~20%~~  |
-| F063     | Alternative: JS-bridge logout hook (pick ONE with operator)                                     | 12     | T13     | 20%      |
-| F064     | Test: island logout → device row removed server-side                                            | 10     | T13     | 20%      |
+| F063     | Alternative: JS-bridge logout hook (pick ONE with operator) **→ TODO_LIST (Logout deregistration KEEP-vs-PURGE, R21/N054-N056)** | 12     | T13     | 20%      |
+| F064     | Test: island logout → device row removed server-side **→ TODO_LIST (server-side row removal verify, R21/N056)** | 10     | T13     | 20%      |
 | ~~F065~~ | ~~Dialpad rotation fix: view IDs / state restoration~~ done at `dac60c9`                        | ~~8~~  | ~~T14~~ | ~~20%~~  |
 | ~~F066~~ | ~~Recents: store last 5 dialed numbers (prefs)~~ done at `dac60c9`                              | ~~12~~ | ~~T14~~ | ~~20%~~  |
 | ~~F067~~ | ~~Recents chips row in dialpad UI~~ done at `dac60c9`                                           | ~~12~~ | ~~T14~~ | ~~20%~~  |
@@ -160,14 +160,14 @@ parent. `BLK` rows need operator input or a prior task.
 | ~~F070~~ | ~~Add Robolectric deps + test config~~ done at `dac60c9`                                        | ~~10~~ | ~~T15~~ | ~~20%~~  |
 | ~~F071~~ | ~~Test: MainActivity launch → CallLayer.ensureWired invoked~~ done at `dac60c9`                 | ~~12~~ | ~~T15~~ | ~~20%~~  |
 | ~~F072~~ | ~~Test: RingEvent.route ring → notification + telecom (shadowed)~~ done at `dac60c9`            | ~~12~~ | ~~T15~~ | ~~20%~~  |
-| F073     | Verify `/api/session` field names live (`sip_domain` vs `sipDomain`)                            | 10     | T16     | 20% BLK  |
-| F074     | Verify push payload shapes on both lanes (`event`/`from`/`call_id`)                             | 10     | T16     | 20% BLK  |
-| F075     | Verify CSRF dance on `/api/push-devices` POST/DELETE                                            | 10     | T16     | 20% BLK  |
+| F073     | Verify `/api/session` field names live (`sip_domain` vs `sipDomain`) **→ TODO_LIST (/api/session field names live, R20/N052)** | 10     | T16     | 20% BLK  |
+| F074     | Verify push payload shapes on both lanes (`event`/`from`/`call_id`) **→ TODO_LIST (push payload shapes live, R20/N052)** | 10     | T16     | 20% BLK  |
+| F075     | Verify CSRF dance on `/api/push-devices` POST/DELETE **→ TODO_LIST (CSRF dance live, R20/N053)** | 10     | T16     | 20% BLK  |
 | ~~F076~~ | ~~Extract hardcoded CallActivity strings to `strings.xml`~~ done at `dac60c9`                   | ~~10~~ | ~~T17~~ | ~~20%~~  |
 | ~~F077~~ | ~~Wire speaker toggle (dead `speaker` string) or delete it~~ done at `dac60c9`                  | ~~12~~ | ~~T17~~ | ~~20%~~  |
 | ~~F078~~ | ~~Audio focus request/release in CallService lifecycle~~ done at `dac60c9`                      | ~~12~~ | ~~T17~~ | ~~20%~~  |
 | ~~F079~~ | ~~contentDescription pass: dialpad + in-call buttons~~ done at `dac60c9`                        | ~~12~~ | ~~T18~~ | ~~20%~~  |
-| F080     | Touch-target + contrast audit of programmatic UI                                                | 12     | T18     | 20%      |
+| ~~F080~~     | ~~Touch-target + contrast audit of programmatic UI~~ done — docs/status/2026-10-25_10-00 §a T18 (31-pair audit + fixes); CI gate since 13-43 P10 | ~~12~~ | ~~T18~~ | ~~20%~~ |
 | ~~F081~~ | ~~Move POST_NOTIFICATIONS prompt to post-login context~~ done at `dac60c9`                      | ~~10~~ | ~~T19~~ | ~~20%~~  |
 | ~~F082~~ | ~~Unregistered dialer state messaging (disabled + why)~~ done at `dac60c9`                      | ~~10~~ | ~~T19~~ | ~~20%~~  |
 | ~~F083~~ | ~~Refresh all stale `file:line` citations in FEATURES/TODO~~ done at `2653474`                  | ~~12~~ | ~~T20~~ | ~~20%~~  |
@@ -175,26 +175,26 @@ parent. `BLK` rows need operator input or a prior task.
 | ~~F085~~ | ~~CHANGELOG: note `.kotlin/` untracking; tag v0.1.0 decision~~ done at `2653474`                | ~~8~~  | ~~T20~~ | ~~20%~~  |
 | ~~F086~~ | ~~Create `docs/status/README.md` index (first entry exists)~~ done at `2653474`                 | ~~10~~ | ~~T20~~ | ~~20%~~  |
 | ~~F087~~ | ~~AGENTS.md: add test command once F048 lands~~ done at `2653474`                               | ~~8~~  | ~~T20~~ | ~~20%~~  |
-| F088     | Notification.CallStyle for incoming (person, answer/decline actions)                            | 12     | T21     | tail     |
-| F089     | CallStyle ongoing notification for the active call                                              | 12     | T21     | tail     |
-| F090     | Device-verify CallStyle against both trains                                                     | 10     | T21     | tail BLK |
+| ~~F088~~     | ~~Notification.CallStyle for incoming (person, answer/decline actions)~~ done — docs/status/2026-10-25_10-00 §a T21 (incoming CallStyle) | ~~12~~ | ~~T21~~ | ~~tail~~ |
+| ~~F089~~     | ~~CallStyle ongoing notification for the active call~~ done — docs/status/2026-10-25_10-00 §a T21 (ongoing CallStyle + fallbacks) | ~~12~~ | ~~T21~~ | ~~tail~~ |
+| F090     | Device-verify CallStyle against both trains **→ TODO_LIST (CallStyle device verification, R23/N059)** | 10     | T21     | tail BLK |
 | ~~F091~~ | ~~`onNewIntent` in CallActivity: re-ring while alive updates UI~~ done at `dac60c9`             | ~~12~~ | ~~T22~~ | ~~tail~~ |
 | ~~F092~~ | ~~Auto-finish ENDED call screen after timeout~~ done at `dac60c9`                               | ~~8~~  | ~~T22~~ | ~~tail~~ |
-| F093     | Thread-safety audit: confine `_state`/pendingInvite writes to one thread                        | 12     | T22     | tail     |
-| F094     | Decide + document CallLayer.shutdown vs in-flight ensureWired race                              | 10     | T22     | tail     |
-| F095     | Suppress FSI when phase ≠ IDLE (busy path exists in engine)                                     | 10     | T23     | tail     |
-| F096     | Busy heads-up variant ("line busy" notification)                                                | 12     | T23     | tail     |
+| ~~F093~~     | ~~Thread-safety audit: confine `_state`/pendingInvite writes to one thread~~ done — docs/status/2026-10-25_10-00 §a T07 (single-lock confinement) | ~~12~~ | ~~T22~~ | ~~tail~~ |
+| ~~F094~~     | ~~Decide + document CallLayer.shutdown vs in-flight ensureWired race~~ done — docs/status/2026-10-25_10-00 §a T08 (AttachGuard generation) | ~~10~~ | ~~T22~~ | ~~tail~~ |
+| ~~F095~~     | ~~Suppress FSI when phase ≠ IDLE (busy path exists in engine)~~ done — docs/status/2026-10-25_10-00 §a T20/T22 (no second Telecom line; missed-call note) | ~~10~~ | ~~T23~~ | ~~tail~~ |
+| ~~F096~~     | ~~Busy heads-up variant ("line busy" notification)~~ done — docs/status/2026-10-25_10-00 §a T20/T22 (busy → missed-call heads-up) | ~~12~~ | ~~T23~~ | ~~tail~~ |
 | ~~F097~~ | ~~Real adaptive app icon artwork~~ done at `29c4e45`                                            | ~~12~~ | ~~T24~~ | ~~tail~~ |
-| F098     | LICENSE decision + file                                                                         | 10     | T24     | tail     |
+| ~~F098~~     | ~~LICENSE decision + file~~ done — docs/status/2026-10-25_10-00 §a F075 (MIT LICENSE) | ~~10~~ | ~~T24~~ | ~~tail~~ |
 | ~~F099~~ | ~~Enable Gradle configuration cache~~ done at `1caa45e`                                         | ~~8~~  | ~~T24~~ | ~~tail~~ |
 | ~~F100~~ | ~~Dependabot: add `github-actions` ecosystem~~ done at `1caa45e`                                | ~~8~~  | ~~T24~~ | ~~tail~~ |
-| F101     | INVITE 401 re-auth ladder (challenge on INVITE, not just REGISTER)                              | 12     | T25     | tail     |
-| F102     | Watchdog: re-register on silence despite live socket                                            | 12     | T25     | tail     |
-| F103     | Unit tests for both robustness paths                                                            | 12     | T25     | tail     |
-| F104     | Retire honesty-contract markers one by one (README + FEATURES)                                  | 12     | T26     | tail BLK |
-| F105     | ROADMAP revisit: multi-line + provisioning decisions                                            | 10     | T26     | tail BLK |
-| F106     | Cookie-expiry mid-call behavior check                                                           | 10     | T27     | tail BLK |
-| F107     | TLS-pinning consideration memo (decide: pin or not, record why)                                 | 10     | T27     | tail     |
+| ~~F101~~     | ~~INVITE 401 re-auth ladder (challenge on INVITE, not just REGISTER)~~ done — docs/status/2026-10-25_10-00 §a T09 (SipEngineAuthTest) | ~~12~~ | ~~T25~~ | ~~tail~~ |
+| ~~F102~~     | ~~Watchdog: re-register on silence despite live socket~~ done — docs/status/2026-10-25_10-00 §a T13 (silence watchdog) | ~~12~~ | ~~T25~~ | ~~tail~~ |
+| ~~F103~~     | ~~Unit tests for both robustness paths~~ done — SipEngineAuthTest + SipEngineSilenceTest (both paths unit-pinned) | ~~12~~ | ~~T25~~ | ~~tail~~ |
+| F104     | Retire honesty-contract markers one by one (README + FEATURES) **→ TODO_LIST (post-train honesty retirement, R26/N066)** | 12     | T26     | tail BLK |
+| F105     | ROADMAP revisit: multi-line + provisioning decisions **→ TODO_LIST (ROADMAP revisit multi-line/provisioning, R26/N067)** | 10     | T26     | tail BLK |
+| F106     | Cookie-expiry mid-call behavior check **→ TODO_LIST (cookie-expiry mid-call, R20 — needs live stack)** | 10     | T27     | tail BLK |
+| ~~F107~~     | ~~TLS-pinning consideration memo (decide: pin or not, record why)~~ done — ROADMAP Decisions (TLS NOT pinned, why recorded; 3b3d723) | ~~10~~ | ~~T27~~ | ~~tail~~ |
 
 **Totals:** 107 fine tasks, ~18.5h. Blocked on operator (Q1): 18 tasks
 (~3h). Executable right now: 89 tasks (~15.5h).
