@@ -17,40 +17,40 @@ APK="${1:-app/build/outputs/apk/debug/app-debug.apk}"
 SHOT="${2:-webphone-train.png}"
 
 adb_() {
-	adb -s "$SERIAL" "$@"
+    adb -s "$SERIAL" "$@"
 }
 
 # Fail fast on a foreign adb server (the version mismatch kills the
 # server mid-flight and wait-for-device hangs forever).
 if ! adb start-server >/dev/null 2>&1; then
-	echo "adb server unreachable — another adb version may own port 5037" >&2
-	exit 1
+    echo "adb server unreachable — another adb version may own port 5037" >&2
+    exit 1
 fi
 
 if ! adb devices 2>/dev/null | grep -q "emulator"; then
-	echo "== booting emulator =="
-	emulator -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot \
-		-gpu swiftshader_indirect &
-	sleep 3
+    echo "== booting emulator =="
+    emulator -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot \
+        -gpu swiftshader_indirect &
+    sleep 3
 fi
 
 SERIAL="$(adb devices | awk '/emulator-/ {print $1}' | head -1)"
 if [ -z "$SERIAL" ]; then
-	echo "no emulator serial found" >&2
-	exit 1
+    echo "no emulator serial found" >&2
+    exit 1
 fi
 COUNT="$(adb devices | grep -c 'emulator-')"
 if [ "$COUNT" -gt 1 ]; then
-	echo "more than one device online ($COUNT) — refuse to guess; run with exactly one emulator" >&2
-	exit 1
+    echo "more than one device online ($COUNT) — refuse to guess; run with exactly one emulator" >&2
+    exit 1
 fi
 echo "== using $SERIAL =="
 
 adb_ root >/dev/null 2>&1 || true
 adb_ wait-for-device
 for _ in $(seq 1 180); do
-	[ "$(adb_ shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
-	sleep 2
+    [ "$(adb_ shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
+    sleep 2
 done
 echo "== boot completed =="
 

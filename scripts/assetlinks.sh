@@ -34,51 +34,51 @@ PACKAGE="software.larsartmann.webphone"
 APK="${APK:-app/build/outputs/apk/debug/app-debug.apk}"
 
 if [ $# -ge 1 ]; then
-	KEYSTORE="$1"
+    KEYSTORE="$1"
 else
-	# AGP's debug-keystore search, in the order that bites on this stack.
-	candidates=(
-		"${ANDROID_USER_HOME:-}/debug.keystore"
-		"${XDG_CONFIG_HOME:-$HOME/.config}/.android/debug.keystore"
-		"$HOME/.android/debug.keystore"
-	)
-	KEYSTORE=""
-	for c in "${candidates[@]}"; do
-		if [ -n "$(dirname "$c" 2>/dev/null)" ] && [ -f "$c" ]; then
-			KEYSTORE="$c"
-			break
-		fi
-	done
-	if [ -z "$KEYSTORE" ]; then
-		echo "no debug keystore found (tried: ${candidates[*]})" >&2
-		exit 1
-	fi
+    # AGP's debug-keystore search, in the order that bites on this stack.
+    candidates=(
+        "${ANDROID_USER_HOME:-}/debug.keystore"
+        "${XDG_CONFIG_HOME:-$HOME/.config}/.android/debug.keystore"
+        "$HOME/.android/debug.keystore"
+    )
+    KEYSTORE=""
+    for c in "${candidates[@]}"; do
+        if [ -n "$(dirname "$c" 2>/dev/null)" ] && [ -f "$c" ]; then
+            KEYSTORE="$c"
+            break
+        fi
+    done
+    if [ -z "$KEYSTORE" ]; then
+        echo "no debug keystore found (tried: ${candidates[*]})" >&2
+        exit 1
+    fi
 fi
 
 ALIAS="${ANDROID_KEY_ALIAS:-androiddebugkey}"
 STOREPASS="${ANDROID_STORE_PASS:-android}"
 
 if [ ! -f "$KEYSTORE" ]; then
-	echo "keystore not found: $KEYSTORE" >&2
-	exit 1
+    echo "keystore not found: $KEYSTORE" >&2
+    exit 1
 fi
 
 if ! command -v keytool >/dev/null 2>&1; then
-	echo "keytool not on PATH — run inside the dev environment (nix develop)" >&2
-	exit 1
+    echo "keytool not on PATH — run inside the dev environment (nix develop)" >&2
+    exit 1
 fi
 
 fingerprint_of() {
-	keytool -list -v -keystore "$1" -alias "$ALIAS" -storepass "$STOREPASS" 2>/dev/null \
-		| grep -m1 'SHA256:' \
-		| sed 's/^[[:space:]]*SHA256:[[:space:]]*//' \
-		| awk '{print $1}'
+    keytool -list -v -keystore "$1" -alias "$ALIAS" -storepass "$STOREPASS" 2>/dev/null |
+        grep -m1 'SHA256:' |
+        sed 's/^[[:space:]]*SHA256:[[:space:]]*//' |
+        awk '{print $1}'
 }
 
 FINGERPRINT="$(fingerprint_of "$KEYSTORE")"
 if [ -z "$FINGERPRINT" ]; then
-	echo "could not read a SHA256 fingerprint from $KEYSTORE (alias $ALIAS)" >&2
-	exit 1
+    echo "could not read a SHA256 fingerprint from $KEYSTORE (alias $ALIAS)" >&2
+    exit 1
 fi
 
 # Cross-check against the artifact the device actually runs. apksigner
@@ -86,20 +86,20 @@ fi
 # SDK's build-tools.
 APKSIGNER="$(command -v apksigner || true)"
 if [ -z "$APKSIGNER" ] && [ -n "${ANDROID_HOME:-}" ]; then
-	APKSIGNER="$(ls -1 "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)"
+    APKSIGNER="$(ls -1 "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)"
 fi
 if [ -f "$APK" ] && [ -n "$APKSIGNER" ]; then
-	APK_FP="$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null \
-		| grep -m1 'SHA-256 digest' \
-		| awk '{print tolower($NF)}' \
-		| sed 's/\(..\)/\1:/g; s/:$//' \
-		| tr '[:lower:]' '[:upper:]')"
-	if [ -n "$APK_FP" ] && [ "$APK_FP" != "$FINGERPRINT" ]; then
-		echo "REFUSING to emit: $KEYSTORE fingerprint $FINGERPRINT" >&2
-		echo "does NOT sign the built APK (its cert is $APK_FP)." >&2
-		echo "assetlinks.json with the wrong fingerprint bricks app-link verification." >&2
-		exit 1
-	fi
+    APK_FP="$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null |
+        grep -m1 'SHA-256 digest' |
+        awk '{print tolower($NF)}' |
+        sed 's/\(..\)/\1:/g; s/:$//' |
+        tr '[:lower:]' '[:upper:]')"
+    if [ -n "$APK_FP" ] && [ "$APK_FP" != "$FINGERPRINT" ]; then
+        echo "REFUSING to emit: $KEYSTORE fingerprint $FINGERPRINT" >&2
+        echo "does NOT sign the built APK (its cert is $APK_FP)." >&2
+        echo "assetlinks.json with the wrong fingerprint bricks app-link verification." >&2
+        exit 1
+    fi
 fi
 
 cat <<EOF

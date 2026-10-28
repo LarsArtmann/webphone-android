@@ -84,7 +84,9 @@ def call(
         with opener.open(request, timeout=60) as response:
             body = response.read()
             if response.status not in expect:
-                raise ForgejoError(f"{method} {url} -> HTTP {response.status}: {body[:300]!r}")
+                raise ForgejoError(
+                    f"{method} {url} -> HTTP {response.status}: {body[:300]!r}"
+                )
             return json.loads(body) if body else None
     except urllib.error.HTTPError as error:
         detail = error.read()[:400].decode(errors="replace")
@@ -226,7 +228,12 @@ def publish(args) -> int:
         stale = existing.get(asset.name)
         if stale is not None:
             print(f"replacing existing asset {asset.name}")
-            call(opener, "DELETE", f"{api}/releases/{release_id}/assets/{stale['id']}", expect=(204,))
+            call(
+                opener,
+                "DELETE",
+                f"{api}/releases/{release_id}/assets/{stale['id']}",
+                expect=(204,),
+            )
         print(f"uploading {asset.name} ({asset.stat().st_size / 1_048_576:.1f} MiB)")
         uploaded = upload_asset(
             opener,
@@ -253,7 +260,9 @@ def check(args) -> int:
     version = call(opener, "GET", f"{base}/api/v1/version", expect=(200,))
     print(f"forge: {base} (Forgejo {version.get('version')})")
     limits = call(opener, "GET", f"{base}/api/v1/settings/attachment", expect=(200,))
-    print(f"attachment limit: {limits.get('max_size')} MiB, {limits.get('max_files')} files max")
+    print(
+        f"attachment limit: {limits.get('max_size')} MiB, {limits.get('max_files')} files max"
+    )
     if not token:
         print("token: MISSING (set FORGEJO_TOKEN)")
         return 2
@@ -261,17 +270,26 @@ def check(args) -> int:
     print(f"token: valid for {user.get('login')}")
     repo = call(opener, "GET", f"{base}/api/v1/repos/{args.repo}", expect=(200,))
     print(f"repo: {repo.get('full_name')} (private={repo.get('private')})")
-    releases = call(opener, "GET", f"{base}/api/v1/repos/{args.repo}/releases?limit=5", expect=(200,))
+    releases = call(
+        opener,
+        "GET",
+        f"{base}/api/v1/repos/{args.repo}/releases?limit=5",
+        expect=(200,),
+    )
     if not releases:
         print("releases: none yet")
     for release in releases:
-        apks = [a["name"] for a in release.get("assets") or [] if a["name"].endswith(".apk")]
+        apks = [
+            a["name"] for a in release.get("assets") or [] if a["name"].endswith(".apk")
+        ]
         print(f"  {release.get('tag_name')}: {', '.join(apks) or 'no APK asset'}")
     return 0
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--repo", default=DEFAULT_REPO)
     parser.add_argument("--tag")
@@ -284,7 +302,11 @@ def main(argv: list[str]) -> int:
         action="store_true",
         help="skip TLS verification (the LAN/VPN forge serves the internal dnsblockd CA)",
     )
-    parser.add_argument("--check", action="store_true", help="probe forge, token and repo; publish nothing")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="probe forge, token and repo; publish nothing",
+    )
     args = parser.parse_args(argv)
 
     try:
