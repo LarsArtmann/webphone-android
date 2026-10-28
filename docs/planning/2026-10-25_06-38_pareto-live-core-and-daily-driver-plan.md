@@ -91,6 +91,7 @@ or a prior task. Every TODO_LIST row, ROADMAP idea, and open question is
 covered here.
 
 <!-- check-rows:ledger -->
+
 | ID       | Task (≤12min)                                                                                                                                                                                                                 | Min    | Parent  | Tier         |
 | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------- | ------------ |
 | F001     | Owner: run `nix run .#deploy` in SystemNix — phase 5 attaches the push mirror **→ TODO_LIST (Owner: SystemNix deploy, R12/N025)**                                                                                             | 10     | T01     | 1% Owner     |
