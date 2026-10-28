@@ -1,6 +1,5 @@
 package software.larsartmann.webphone.shell
 
-import android.app.Application
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
@@ -12,7 +11,6 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.annotation.Config
 import software.larsartmann.webphone.App
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,7 +27,6 @@ import kotlin.test.assertTrue
  * cookie; foreign → system hand-off, never a cookie leak).
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class WebSurfacePolicyTest {
     private val origin = "https://pbx.artmann.tech"
 

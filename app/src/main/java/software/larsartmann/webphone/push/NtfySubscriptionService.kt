@@ -161,7 +161,11 @@ class NtfySubscriptionService : Service() {
         }.onFailure { Log.w(TAG, "unroutable ntfy frame (${it.message}): $text") }
     }
 
-    private fun scheduleReconnect(
+    /** Test seam (J16/M051): the stop-leak pin invokes the resurrect
+     *  vector DIRECTLY after ACTION_STOP — no dependence on the close
+     *  handshake's latency under Robolectric. Production callers stay
+     *  onFailure/onClosed. */
+    internal fun scheduleReconnect(
         server: String,
         topic: String,
     ) {
@@ -186,7 +190,10 @@ class NtfySubscriptionService : Service() {
     companion object {
         private const val TAG = "NtfySubscription"
         private const val NOTIFICATION_ID = 1003
-        private const val ACTION_STOP = "software.larsartmann.webphone.push.STOP"
+
+        /** Test seam (J16/M051): the stop-leak pin sends this action
+         *  through onStartCommand. */
+        internal const val ACTION_STOP = "software.larsartmann.webphone.push.STOP"
         private const val EXTRA_SERVER = "server"
         private const val EXTRA_TOPIC = "topic"
         internal const val PREFS = "webphone-ntfy"

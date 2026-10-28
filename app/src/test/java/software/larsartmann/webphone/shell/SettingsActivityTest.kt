@@ -9,7 +9,6 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
 import kotlin.test.Test
@@ -23,7 +22,6 @@ import kotlin.test.assertTrue
  * finishes — the teardown-then-rewire contract the shell resume rides.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class SettingsActivityTest {
     private fun views(root: View?): List<android.view.View> =
         when (root) {

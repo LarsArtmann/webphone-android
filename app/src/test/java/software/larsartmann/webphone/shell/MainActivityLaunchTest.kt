@@ -1,12 +1,10 @@
 package software.larsartmann.webphone.shell
 
-import android.app.Application
 import android.view.ViewGroup
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -18,7 +16,6 @@ import kotlin.test.assertTrue
  * contract itself is pinned in AttachGuardTest against a fake.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class MainActivityLaunchTest {
     @Before
     fun keepTheShellUnwired() {

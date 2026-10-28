@@ -9,7 +9,6 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.annotation.Config
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.push.RingEvent.EXTRA_CALL_ID
@@ -27,7 +26,6 @@ import kotlin.test.assertTrue
  * here must fail before a device train does.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class RingEventRouteTest {
     private fun grantedApp(): Application {
         val app = ApplicationProvider.getApplicationContext<Application>()

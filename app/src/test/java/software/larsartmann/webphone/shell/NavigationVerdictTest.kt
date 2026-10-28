@@ -1,11 +1,9 @@
 package software.larsartmann.webphone.shell
 
-import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -16,7 +14,6 @@ import kotlin.test.assertIs
  * else becomes a system hand-off.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class NavigationVerdictTest {
     private val origin = Uri.parse("https://pbx.artmann.tech")
 

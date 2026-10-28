@@ -1,14 +1,17 @@
 package software.larsartmann.webphone.push
 
-import android.app.Application
+import android.app.Service
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
+import okhttp3.WebSocketListener
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.fail
 
 /**
  * The de-Googled ring lane's persistence contract (W151): the service
@@ -26,7 +29,6 @@ import kotlin.test.assertEquals
  * Gradle worker, 2026-10-28).
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class NtfySubscriptionServiceTest {
     private fun startIntent(
         server: String,
@@ -46,6 +48,77 @@ class NtfySubscriptionServiceTest {
             NtfySubscriptionService.subscriptionUrl("https://push.example.org/", "my-topic"),
             "a trailing slash on the server must not double",
         )
+    }
+
+    @Test
+    fun `an explicit stop kills the lane - no pending reconnect resurrects it`() {
+        // The historical leak (2026-10-28 wedge): a stop closed the
+        // socket, scheduleReconnect ran, and ~1 s later a RESURRECTED
+        // websocket landed — the lane rang forever with no owner. The
+        // `stopped` flag is the fix. The pin drives the resurrect
+        // vector DIRECTLY (scheduleReconnect after ACTION_STOP) so the
+        // verdict does not depend on the close handshake's latency
+        // under Robolectric: if the flag fails, a new connection lands
+        // within the backoff (~1 s) and the count moves.
+        val server = MockWebServer()
+        server.enqueue(MockResponse().withWebSocketUpgrade(object : WebSocketListener() {}))
+        server.start()
+        val controller =
+            Robolectric
+                .buildService(
+                    NtfySubscriptionService::class.java,
+                    startIntent(server.url("/").toString(), "stop-leak"),
+                ).create()
+                .startCommand(0, 0)
+        try {
+            awaitCondition(5_000, "the subscription socket to open") { server.requestCount >= 1 }
+
+            val stop =
+                Intent(ApplicationProvider.getApplicationContext(), NtfySubscriptionService::class.java)
+                    .setAction(NtfySubscriptionService.ACTION_STOP)
+            assertEquals(
+                Service.START_NOT_STICKY,
+                controller.get().onStartCommand(stop, 0, 1),
+                "an explicit stop must not come back from the dead via stickiness",
+            )
+
+            // The exact leak vector, fired by hand: schedule the
+            // reconnect the closed socket would have scheduled, then
+            // hold the window past its backoff. Fail FAST on any new
+            // connection — movement IS the leak.
+            val service = controller.get()
+            service.scheduleReconnect(server.url("/").toString(), "stop-leak")
+            val before = server.requestCount
+            repeat(40) {
+                Thread.sleep(100)
+                assertEquals(
+                    before,
+                    server.requestCount,
+                    "a pending reconnect resurrected the lane after ACTION_STOP",
+                )
+            }
+        } finally {
+            controller.destroy()
+            // The close handshake is async — give the server-side
+            // websocket a beat, then treat a lingering queue as teardown
+            // noise (the contract assertions above already held; the
+            // forkEvery fence gives the next class a fresh JVM).
+            Thread.sleep(500)
+            runCatching { server.shutdown() }
+        }
+    }
+
+    private fun awaitCondition(
+        timeoutMs: Long,
+        what: String,
+        condition: () -> Boolean,
+    ) {
+        val deadline = System.nanoTime() + timeoutMs * 1_000_000
+        while (System.nanoTime() < deadline) {
+            if (condition()) return
+            Thread.sleep(50)
+        }
+        fail("timed out after ${timeoutMs}ms waiting for $what")
     }
 
     @Test

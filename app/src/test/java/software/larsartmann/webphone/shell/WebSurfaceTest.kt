@@ -1,6 +1,5 @@
 package software.larsartmann.webphone.shell
 
-import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import androidx.test.core.app.ActivityScenario
@@ -8,7 +7,6 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
-import org.robolectric.annotation.Config
 import software.larsartmann.webphone.App
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,7 +23,6 @@ import kotlin.test.assertTrue
  * in a fresh WebView instead of dying with the renderer).
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class WebSurfaceTest {
     @Before
     fun keepTheShellUnwired() {

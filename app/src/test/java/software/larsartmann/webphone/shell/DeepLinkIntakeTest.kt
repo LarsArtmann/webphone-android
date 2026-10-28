@@ -1,6 +1,5 @@
 package software.larsartmann.webphone.shell
 
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -11,7 +10,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
-import org.robolectric.annotation.Config
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.call.CallActivity
 import software.larsartmann.webphone.call.CallEngine
@@ -40,7 +38,6 @@ import kotlin.test.assertNull
  * lose.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class DeepLinkIntakeTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 

@@ -1,6 +1,5 @@
 package software.larsartmann.webphone.call
 
-import android.app.Application
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -8,7 +7,6 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -20,7 +18,6 @@ import kotlin.test.assertNull
  * registration (dialer honesty is pinned in the UI state, not here).
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class DialpadActivityTest {
     @Test
     fun `the prefill intent seeds the number with the cursor at the end`() {

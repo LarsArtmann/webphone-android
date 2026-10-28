@@ -1,10 +1,8 @@
 package software.larsartmann.webphone.shell
 
-import android.app.Application
 import android.net.Uri
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -14,7 +12,6 @@ import kotlin.test.assertEquals
  * (foreign hosts, odd schemes, blank numbers) is deliberately nothing.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34], application = Application::class)
 class DeepLinkTargetTest {
     private val origin = Uri.parse("https://pbx.artmann.tech")
 
