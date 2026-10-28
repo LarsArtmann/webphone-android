@@ -29,7 +29,6 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class RingEventRouteTest {
-
     private fun grantedApp(): Application {
         val app = ApplicationProvider.getApplicationContext<Application>()
         shadowOf(app).grantPermissions(
@@ -56,9 +55,10 @@ class RingEventRouteTest {
         val app = grantedApp()
         RingEvent.route(app, "ring", "Alice", "call-1")
 
-        val notifications = shadowOf(
-            app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
-        ).allNotifications
+        val notifications =
+            shadowOf(
+                app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
+            ).allNotifications
         assertEquals(1, notifications.size)
         // CallStyle renders the PERSON as the title (the caller's name
         // IS the incoming-call headline); the category stays a call.
@@ -78,9 +78,10 @@ class RingEventRouteTest {
         RingEvent.route(app, "ring", "Alice", "call-1")
         RingEvent.route(app, "ring_end", null, null)
 
-        val notifications = shadowOf(
-            app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
-        ).allNotifications
+        val notifications =
+            shadowOf(
+                app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
+            ).allNotifications
         assertTrue(notifications.isEmpty(), "ring_end must cancel the ring notification")
     }
 
@@ -118,9 +119,10 @@ class RingEventRouteTest {
                 shadowOf(telecom).allIncomingCalls.isEmpty(),
                 "a busy line must not grow a second incoming Telecom call",
             )
-            val notifications = shadowOf(
-                app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
-            ).allNotifications
+            val notifications =
+                shadowOf(
+                    app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
+                ).allNotifications
             assertEquals(1, notifications.size)
             assertEquals(
                 app.getString(R.string.missed_call),
@@ -156,9 +158,10 @@ class RingEventRouteTest {
                 CallEngine.state.value.phase,
                 "a stale ring_end must not kill the answered call",
             )
-            val notifications = shadowOf(
-                app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
-            ).allNotifications
+            val notifications =
+                shadowOf(
+                    app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
+                ).allNotifications
             assertTrue(
                 notifications.none {
                     it.extras.getString(android.app.Notification.EXTRA_TITLE) ==
@@ -188,9 +191,10 @@ class RingEventRouteTest {
                 shadowOf(telecom).allIncomingCalls.isEmpty(),
                 "an auth-rejected line must not ring Telecom",
             )
-            val notifications = shadowOf(
-                app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
-            ).allNotifications
+            val notifications =
+                shadowOf(
+                    app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager,
+                ).allNotifications
             assertEquals(1, notifications.size)
             assertEquals(
                 "Alice",

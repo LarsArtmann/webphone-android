@@ -29,6 +29,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
+import software.larsartmann.webphone.call.CallActivity
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.call.DialpadActivity
 import software.larsartmann.webphone.ui.circleBackground
@@ -55,7 +56,6 @@ import software.larsartmann.webphone.ui.themeColor
  * re-points it (persisted, live teardown on save).
  */
 class MainActivity : AppCompatActivity() {
-
     internal lateinit var webSurface: WebSurface
     private lateinit var statusDot: View
     private lateinit var statusLabel: TextView
@@ -78,13 +78,14 @@ class MainActivity : AppCompatActivity() {
         // without this callback the system back never reached the
         // WebView's tab history (found by review, 2026-10-25).
         if (Build.VERSION.SDK_INT >= 33) {
-            val invoker = OnBackInvokedCallback {
-                if (::webSurface.isInitialized && webSurface.canGoBack()) {
-                    webSurface.goBack()
-                } else {
-                    finish()
+            val invoker =
+                OnBackInvokedCallback {
+                    if (::webSurface.isInitialized && webSurface.canGoBack()) {
+                        webSurface.goBack()
+                    } else {
+                        finish()
+                    }
                 }
-            }
             backInvoker = invoker
             onBackInvokedDispatcher.registerOnBackInvokedCallback(
                 OnBackInvokedDispatcher.PRIORITY_DEFAULT,
@@ -94,62 +95,71 @@ class MainActivity : AppCompatActivity() {
 
         // The line pill: the phone vernacular "line light" — a live
         // dot plus a short label, dark glass so it reads over any page.
-        statusDot = View(this).apply {
-            // Decorative: the label next to it carries the state for
-            // TalkBack; a bare colored dot would only add noise.
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            layoutParams = LinearLayout.LayoutParams(dp(8), dp(8)).apply {
-                gravity = Gravity.CENTER_VERTICAL
-                marginEnd = dp(8)
+        statusDot =
+            View(this).apply {
+                // Decorative: the label next to it carries the state for
+                // TalkBack; a bare colored dot would only add noise.
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                layoutParams =
+                    LinearLayout.LayoutParams(dp(8), dp(8)).apply {
+                        gravity = Gravity.CENTER_VERTICAL
+                        marginEnd = dp(8)
+                    }
             }
-        }
-        statusLabel = TextView(this).apply {
-            styleText(13f, ContextCompat.getColor(this@MainActivity, R.color.chrome_on_glass), medium = true)
-        }
-        val linePill = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            background = pillBackground(ContextCompat.getColor(this@MainActivity, R.color.chrome_glass))
-            setPadding(dp(14), dp(9), dp(14), dp(9))
-            addView(statusDot)
-            addView(statusLabel)
-        }
+        statusLabel =
+            TextView(this).apply {
+                styleText(13f, ContextCompat.getColor(this@MainActivity, R.color.chrome_on_glass), medium = true)
+            }
+        val linePill =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = pillBackground(ContextCompat.getColor(this@MainActivity, R.color.chrome_glass))
+                setPadding(dp(14), dp(9), dp(14), dp(9))
+                addView(statusDot)
+                addView(statusLabel)
+            }
 
-        val dialFab = iconButton(
-            iconRes = R.drawable.ic_call,
-            iconTint = themeColor(R.attr.wpOnAccent),
-            backgroundColor = themeColor(R.attr.wpAccent),
-            sizeDp = 56,
-            contentDescriptionText = getString(R.string.dial),
-        ).apply { elevation = dpf(6f) }
+        val dialFab =
+            iconButton(
+                iconRes = R.drawable.ic_call,
+                iconTint = themeColor(R.attr.wpOnAccent),
+                backgroundColor = themeColor(R.attr.wpAccent),
+                sizeDp = 56,
+                contentDescriptionText = getString(R.string.dial),
+            ).apply { elevation = dpf(6f) }
 
-        val settingsButton = iconButton(
-            iconRes = R.drawable.ic_settings,
-            iconTint = ContextCompat.getColor(this, R.color.chrome_on_glass),
-            backgroundColor = ContextCompat.getColor(this, R.color.chrome_glass),
-            sizeDp = 44,
-            contentDescriptionText = getString(R.string.settings),
-        )
-
-        chrome = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.END
-            addView(
-                linePill,
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                ).apply { bottomMargin = dp(12) },
+        val settingsButton =
+            iconButton(
+                iconRes = R.drawable.ic_settings,
+                iconTint = ContextCompat.getColor(this, R.color.chrome_on_glass),
+                backgroundColor = ContextCompat.getColor(this, R.color.chrome_glass),
+                sizeDp = 44,
+                contentDescriptionText = getString(R.string.settings),
             )
-            addView(dialFab)
-            addView(
-                settingsButton,
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                ).apply { topMargin = dp(12) },
-            )
-        }
+
+        chrome =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.END
+                addView(
+                    linePill,
+                    LinearLayout
+                        .LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ).apply { bottomMargin = dp(12) },
+                )
+                addView(dialFab)
+                addView(
+                    settingsButton,
+                    LinearLayout
+                        .LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ).apply { topMargin = dp(12) },
+                )
+            }
         // Float above the system bars: insets become chrome margins.
         ViewCompat.setOnApplyWindowInsetsListener(chrome) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -172,11 +182,12 @@ class MainActivity : AppCompatActivity() {
         )
         root.addView(
             chrome,
-            FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.BOTTOM or Gravity.END,
-            ).apply { setMargins(dp(16), dp(16), dp(16), dp(16)) },
+            FrameLayout
+                .LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    Gravity.BOTTOM or Gravity.END,
+                ).apply { setMargins(dp(16), dp(16), dp(16), dp(16)) },
         )
 
         setContentView(root)
@@ -238,7 +249,21 @@ class MainActivity : AppCompatActivity() {
         if (intent?.action != Intent.ACTION_VIEW) return
         when (val target = deepLinkTarget(intent.data, Uri.parse(App.origin))) {
             is DeepLinkTarget.ShellPath -> webSurface.loadUri(target.uri)
-            is DeepLinkTarget.Dial -> startActivity(DialpadActivity.prefill(this, target.number))
+            is DeepLinkTarget.Dial -> {
+                val phase = CallEngine.state.value.phase
+                if (phase != CallEngine.Phase.IDLE && phase != CallEngine.Phase.ENDED) {
+                    // The single-call policy, one hop earlier than the
+                    // dialer's own guard: a live call means the call
+                    // screen — the link's number would only matter
+                    // once the line frees up.
+                    startActivity(
+                        Intent(this, CallActivity::class.java)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                    )
+                } else {
+                    startActivity(DialpadActivity.prefill(this, target.number))
+                }
+            }
             DeepLinkTarget.None -> Unit
         }
     }
@@ -249,33 +274,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderRegistration(info: CallEngine.RegistrationInfo) {
-        statusLabel.text = getString(
-            when {
-                info.status == CallEngine.Registration.REGISTERED -> R.string.registration_registered
-                info.status == CallEngine.Registration.CONNECTING -> R.string.registration_connecting
-                // The cause matters: "the PBX refused you" and "no
-                // route to the PBX" ask for different fixes.
-                info.failure == CallEngine.RegistrationFailure.AUTH_REJECTED -> R.string.registration_auth_rejected
-                else -> R.string.registration_off
-            },
-        )
+        statusLabel.text =
+            getString(
+                when {
+                    info.status == CallEngine.Registration.REGISTERED -> R.string.registration_registered
+                    info.status == CallEngine.Registration.CONNECTING -> R.string.registration_connecting
+                    // The cause matters: "the PBX refused you" and "no
+                    // route to the PBX" ask for different fixes.
+                    info.failure == CallEngine.RegistrationFailure.AUTH_REJECTED -> R.string.registration_auth_rejected
+                    else -> R.string.registration_off
+                },
+            )
         val registered = info.status == CallEngine.Registration.REGISTERED
-        statusDot.background = circleBackground(
-            ContextCompat.getColor(
-                this,
-                if (registered) R.color.chrome_dot_on else R.color.chrome_dot_pending,
-            ),
-        )
+        statusDot.background =
+            circleBackground(
+                ContextCompat.getColor(
+                    this,
+                    if (registered) R.color.chrome_dot_on else R.color.chrome_dot_pending,
+                ),
+            )
         // The signature moment: the line light breathes while the
         // line is up (skipped entirely when animations are off).
         linePulse?.cancel()
-        linePulse = if (registered) {
-            statusDot.alpha = 1f
-            pulse(statusDot, this)
-        } else {
-            statusDot.alpha = 1f
-            null
-        }
+        linePulse =
+            if (registered) {
+                statusDot.alpha = 1f
+                pulse(statusDot, this)
+            } else {
+                statusDot.alpha = 1f
+                null
+            }
 
         if (!registered) return
 
@@ -307,10 +335,11 @@ class MainActivity : AppCompatActivity() {
         if (prefs.getBoolean(KEY_BATTERY_ASKED, false)) return
         requestedBatteryExemption = true
         prefs.edit().putBoolean(KEY_BATTERY_ASKED, true).apply()
-        val direct = Intent(
-            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-            Uri.parse("package:$packageName"),
-        )
+        val direct =
+            Intent(
+                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                Uri.parse("package:$packageName"),
+            )
         runCatching { startActivity(direct) }.onFailure {
             runCatching { startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
         }

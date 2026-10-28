@@ -4,8 +4,8 @@ import android.app.Application
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import org.robolectric.Robolectric
+import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -28,11 +28,12 @@ import kotlin.test.assertEquals
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class NtfySubscriptionServiceTest {
-
-    private fun startIntent(server: String, topic: String) =
-        Intent(ApplicationProvider.getApplicationContext(), NtfySubscriptionService::class.java)
-            .putExtra("server", server)
-            .putExtra("topic", topic)
+    private fun startIntent(
+        server: String,
+        topic: String,
+    ) = Intent(ApplicationProvider.getApplicationContext(), NtfySubscriptionService::class.java)
+        .putExtra("server", server)
+        .putExtra("topic", topic)
 
     @Test
     fun `the websocket endpoint is server slash topic slash ws`() {
@@ -49,25 +50,36 @@ class NtfySubscriptionServiceTest {
 
     @Test
     fun `a start persists its topic and a restart aims at the NEW one`() {
-        val firstController = Robolectric.buildService(NtfySubscriptionService::class.java, startIntent("https://push.example.org", "old-topic"))
-            .create()
-            .startCommand(0, 0)
+        val firstController =
+            Robolectric
+                .buildService(
+                    NtfySubscriptionService::class.java,
+                    startIntent("https://push.example.org", "old-topic"),
+                ).create()
+                .startCommand(0, 0)
         try {
-            val prefs = firstController.get()
-                .getSharedPreferences(NtfySubscriptionService.PREFS, android.content.Context.MODE_PRIVATE)
+            val prefs =
+                firstController
+                    .get()
+                    .getSharedPreferences(NtfySubscriptionService.PREFS, android.content.Context.MODE_PRIVATE)
             assertEquals(
                 "old-topic",
                 prefs.getString(NtfySubscriptionService.KEY_TOPIC, null),
                 "the running lane persists what it subscribed to",
             )
 
-            val secondController = Robolectric.buildService(NtfySubscriptionService::class.java, startIntent("https://push.example.org", "new-topic"))
-                .create()
-                .startCommand(0, 0)
+            val secondController =
+                Robolectric
+                    .buildService(
+                        NtfySubscriptionService::class.java,
+                        startIntent("https://push.example.org", "new-topic"),
+                    ).create()
+                    .startCommand(0, 0)
             try {
                 assertEquals(
                     "new-topic",
-                    secondController.get()
+                    secondController
+                        .get()
                         .getSharedPreferences(NtfySubscriptionService.PREFS, android.content.Context.MODE_PRIVATE)
                         .getString(NtfySubscriptionService.KEY_TOPIC, null),
                     "the rotation's restart must aim at the NEW topic",

@@ -1,0 +1,20 @@
+# The Kotlin style surface ktlint enforces (CI runs ktlintCheck).
+# "official" matches kotlin.code.style=official in gradle.properties.
+# dprint owns JSON/YAML/Markdown/Dockerfile; this file's [*.kt]/
+# [*.kts] sections are ktlint's to read.
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.{kt,kts}]
+ktlint_code_style = official
+max_line_length = 120

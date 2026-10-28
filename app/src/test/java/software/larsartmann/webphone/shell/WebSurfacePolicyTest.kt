@@ -1,9 +1,9 @@
 package software.larsartmann.webphone.shell
 
 import android.app.Application
+import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
-import android.app.DownloadManager
 import android.net.Uri
 import android.webkit.WebResourceRequest
 import android.webkit.WebViewClient
@@ -31,7 +31,6 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class WebSurfacePolicyTest {
-
     private val origin = "https://pbx.artmann.tech"
 
     @Before
@@ -45,10 +44,15 @@ class WebSurfacePolicyTest {
         private val redirect: Boolean = false,
     ) : WebResourceRequest {
         override fun getUrl(): Uri = uri
+
         override fun isForMainFrame(): Boolean = mainFrame
+
         override fun isRedirect(): Boolean = redirect
+
         override fun hasGesture(): Boolean = true
+
         override fun getRequestHeaders(): MutableMap<String, String> = mutableMapOf()
+
         override fun getMethod(): String = "GET"
     }
 
@@ -334,6 +338,7 @@ class WebSurfacePolicyTest {
             }
         }
     }
+
     @Test
     fun `main-frame HTTP errors render as pages not the offline overlay`() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
@@ -374,7 +379,9 @@ class WebSurfacePolicyTest {
 
                 // A session cookie exists (the WebView login minted it) —
                 // the same-origin request must carry it without crashing.
-                android.webkit.CookieManager.getInstance().setCookie("$origin/", "wp-session=t")
+                android.webkit.CookieManager
+                    .getInstance()
+                    .setCookie("$origin/", "wp-session=t")
 
                 surface.handleDownload(
                     "$origin/api/messages/42/attachments/photo.jpg",

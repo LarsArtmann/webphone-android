@@ -8,7 +8,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DigestTest {
-
     private val rfc2617Challenge =
         "Digest realm=\"testrealm@host.com\", qop=\"auth,auth-int\", " +
             "nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", " +
@@ -25,15 +24,16 @@ class DigestTest {
         assertEquals("auth,auth-int", challenge?.qop)
         assertEquals("5ccc069c403ebaf9f0171e9517f40e41", challenge?.opaque)
 
-        val authorization = Digest.authorization(
-            method = "GET",
-            uri = "/dir/index.html",
-            username = "Mufasa",
-            password = "Circle Of Life",
-            challenge = challenge!!,
-            cnonce = "0a4f113b",
-            nc = 1,
-        )
+        val authorization =
+            Digest.authorization(
+                method = "GET",
+                uri = "/dir/index.html",
+                username = "Mufasa",
+                password = "Circle Of Life",
+                challenge = challenge!!,
+                cnonce = "0a4f113b",
+                nc = 1,
+            )
         // The CHOSEN qop ("auth"), not the raw challenge list, is what
         // gets hashed and echoed (RFC 2617 §3.2.2: "a single token,
         // not a quoted list of alternatives").
@@ -48,40 +48,46 @@ class DigestTest {
 
     @Test
     fun `no-qop challenge uses the rfc 2069 composition`() {
-        val challenge = Digest.parseChallenge(
-            "Digest realm=\"r\", nonce=\"n\"",
-        )!!
-        val expected = md5(
-            "${md5("user:r:pw")}:n:${md5("REGISTER:sip:example.org")}",
-        )
-        val authorization = Digest.authorization(
-            method = "REGISTER",
-            uri = "sip:example.org",
-            username = "user",
-            password = "pw",
-            challenge = challenge,
-        )
+        val challenge =
+            Digest.parseChallenge(
+                "Digest realm=\"r\", nonce=\"n\"",
+            )!!
+        val expected =
+            md5(
+                "${md5("user:r:pw")}:n:${md5("REGISTER:sip:example.org")}",
+            )
+        val authorization =
+            Digest.authorization(
+                method = "REGISTER",
+                uri = "sip:example.org",
+                username = "user",
+                password = "pw",
+                challenge = challenge,
+            )
         assertTrue("response=\"$expected\"" in authorization)
         assertTrue("qop" !in authorization)
     }
 
     @Test
     fun `sha-256 algorithm is selected from the challenge`() {
-        val challenge = Digest.parseChallenge(
-            "Digest realm=\"r\", nonce=\"n\", algorithm=SHA-256, qop=\"auth\"",
-        )!!
+        val challenge =
+            Digest.parseChallenge(
+                "Digest realm=\"r\", nonce=\"n\", algorithm=SHA-256, qop=\"auth\"",
+            )!!
         assertEquals("SHA-256", challenge.algorithm)
-        val expected = md5ish256(
-            "${md5ish256("user:r:pw")}:n:00000001:cn:auth:${md5ish256("REGISTER:sip:example.org")}",
-        )
-        val authorization = Digest.authorization(
-            method = "REGISTER",
-            uri = "sip:example.org",
-            username = "user",
-            password = "pw",
-            challenge = challenge,
-            cnonce = "cn",
-        )
+        val expected =
+            md5ish256(
+                "${md5ish256("user:r:pw")}:n:00000001:cn:auth:${md5ish256("REGISTER:sip:example.org")}",
+            )
+        val authorization =
+            Digest.authorization(
+                method = "REGISTER",
+                uri = "sip:example.org",
+                username = "user",
+                password = "pw",
+                challenge = challenge,
+                cnonce = "cn",
+            )
         assertTrue("response=\"$expected\"" in authorization)
         assertTrue("algorithm=SHA-256" in authorization)
     }
@@ -120,10 +126,14 @@ class DigestTest {
     }
 
     private fun md5(input: String): String =
-        MessageDigest.getInstance("MD5").digest(input.toByteArray())
+        MessageDigest
+            .getInstance("MD5")
+            .digest(input.toByteArray())
             .joinToString("") { "%02x".format(it) }
 
     private fun md5ish256(input: String): String =
-        MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
+        MessageDigest
+            .getInstance("SHA-256")
+            .digest(input.toByteArray())
             .joinToString("") { "%02x".format(it) }
 }

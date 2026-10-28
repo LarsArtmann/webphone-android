@@ -15,7 +15,6 @@ import software.larsartmann.webphone.shell.SessionApi
  * de-Googled devices.
  */
 class FcmReceiver : FirebaseMessagingService() {
-
     override fun onMessageReceived(message: RemoteMessage) {
         val data = message.data
         RingEvent.route(

@@ -14,7 +14,6 @@ import software.larsartmann.webphone.call.WebRtcEngine
  * audio-processing module is expensive and stateful).
  */
 class App : Application() {
-
     override fun onCreate() {
         super.onCreate()
         val notifications = getSystemService(NotificationManager::class.java)
@@ -65,10 +64,16 @@ class App : Application() {
         @Volatile var origin: String = DEFAULT_ORIGIN
 
         /** Persist a validated origin and make it live immediately. */
-        fun saveOrigin(context: Context, value: String) {
+        fun saveOrigin(
+            context: Context,
+            value: String,
+        ) {
             origin = value
-            context.getSharedPreferences(PREFS_SETTINGS, MODE_PRIVATE)
-                .edit().putString(KEY_ORIGIN, value).apply()
+            context
+                .getSharedPreferences(PREFS_SETTINGS, MODE_PRIVATE)
+                .edit()
+                .putString(KEY_ORIGIN, value)
+                .apply()
         }
     }
 }

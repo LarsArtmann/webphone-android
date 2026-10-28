@@ -7,31 +7,32 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class SipMessageTest {
+    private val invite =
+        listOf(
+            "INVITE sip:100@example.org SIP/2.0",
+            "Via: SIP/2.0/WSS host.invalid;branch=z9hG4bKabc123;rport",
+            "From: \"WebPhone\" <sip:200@example.org>;tag=caller1",
+            "To: <sip:100@example.org>",
+            "Call-ID: call-42",
+            "CSeq: 7 INVITE",
+            "Max-Forwards: 70",
+            "Content-Type: application/sdp",
+            "",
+            "v=0",
+            "o=- 1 1 IN IP4 0.0.0.0",
+        ).joinToString("\r\n")
 
-    private val invite = listOf(
-        "INVITE sip:100@example.org SIP/2.0",
-        "Via: SIP/2.0/WSS host.invalid;branch=z9hG4bKabc123;rport",
-        "From: \"WebPhone\" <sip:200@example.org>;tag=caller1",
-        "To: <sip:100@example.org>",
-        "Call-ID: call-42",
-        "CSeq: 7 INVITE",
-        "Max-Forwards: 70",
-        "Content-Type: application/sdp",
-        "",
-        "v=0",
-        "o=- 1 1 IN IP4 0.0.0.0",
-    ).joinToString("\r\n")
-
-    private val ringing = listOf(
-        "SIP/2.0 180 Ringing",
-        "Via: SIP/2.0/WSS host.invalid;branch=z9hG4bKabc123;rport",
-        "From: \"WebPhone\" <sip:200@example.org>;tag=caller1",
-        "To: <sip:100@example.org>;tag=callee9",
-        "Call-ID: call-42",
-        "CSeq: 7 INVITE",
-        "",
-        "",
-    ).joinToString("\r\n")
+    private val ringing =
+        listOf(
+            "SIP/2.0 180 Ringing",
+            "Via: SIP/2.0/WSS host.invalid;branch=z9hG4bKabc123;rport",
+            "From: \"WebPhone\" <sip:200@example.org>;tag=caller1",
+            "To: <sip:100@example.org>;tag=callee9",
+            "Call-ID: call-42",
+            "CSeq: 7 INVITE",
+            "",
+            "",
+        ).joinToString("\r\n")
 
     @Test
     fun `request renders and parses back identically`() {
@@ -60,9 +61,10 @@ class SipMessageTest {
 
     @Test
     fun `cseq method is normalized to uppercase`() {
-        val parsed = SipMessage.parse(
-            "SIP/2.0 200 OK\r\nCall-ID: c\r\nCSeq: 3 bye\r\n\r\n",
-        )
+        val parsed =
+            SipMessage.parse(
+                "SIP/2.0 200 OK\r\nCall-ID: c\r\nCSeq: 3 bye\r\n\r\n",
+            )
         assertNotNull(parsed)
         assertEquals(3L to "BYE", parsed.cseq())
     }
@@ -86,11 +88,16 @@ class SipMessageTest {
 
     @Test
     fun `request render includes crlf framing and empty body`() {
-        val message = SipMessage(
-            isRequest = true, method = "OPTIONS", uri = "sip:x@y", statusCode = 0, reason = "",
-            headers = listOf(SipHeader("Call-ID", "abc")),
-            body = "",
-        )
+        val message =
+            SipMessage(
+                isRequest = true,
+                method = "OPTIONS",
+                uri = "sip:x@y",
+                statusCode = 0,
+                reason = "",
+                headers = listOf(SipHeader("Call-ID", "abc")),
+                body = "",
+            )
         assertEquals("OPTIONS sip:x@y SIP/2.0\r\nCall-ID: abc\r\n\r\n", message.render())
     }
 }

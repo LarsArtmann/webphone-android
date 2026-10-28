@@ -11,8 +11,10 @@ import android.content.Intent
  * surface's buttons. No UI is launched; the state change is the act.
  */
 class CallNotificationReceiver : BroadcastReceiver() {
-
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         when (intent.action) {
             ACTION_ANSWER -> {
                 CallEngine.answer()

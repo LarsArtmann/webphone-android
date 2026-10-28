@@ -10,7 +10,6 @@ import kotlin.io.encoding.ExperimentalEncodingApi
  * algorithm the challenge names (the island's sip.js does the same).
  */
 object Digest {
-
     data class Challenge(
         val realm: String,
         val nonce: String,
@@ -65,25 +64,31 @@ object Digest {
         // the hash and the echoed qop must be the CHOSEN protection
         // quality ("auth" when offered), never the raw list — the RFC
         // 2617 §3.2.2.1 example is the contract.
-        val qop = challenge.qop?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.let { options ->
-            options.firstOrNull { it.equals("auth", ignoreCase = true) } ?: options.first()
-        }
-        val response = if (qop != null) {
-            hex(md5ish(algo, "$ha1:${challenge.nonce}:$ncHex:$cnonce:$qop:$ha2"))
-        } else {
-            hex(md5ish(algo, "$ha1:${challenge.nonce}:$ha2"))
-        }
+        val qop =
+            challenge.qop?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }?.let { options ->
+                options.firstOrNull { it.equals("auth", ignoreCase = true) } ?: options.first()
+            }
+        val response =
+            if (qop != null) {
+                hex(md5ish(algo, "$ha1:${challenge.nonce}:$ncHex:$cnonce:$qop:$ha2"))
+            } else {
+                hex(md5ish(algo, "$ha1:${challenge.nonce}:$ha2"))
+            }
         val qopPart = if (qop != null) ", qop=$qop, nc=$ncHex, cnonce=\"$cnonce\"" else ""
         val opaquePart = if (challenge.opaque != null) ", opaque=\"${challenge.opaque}\"" else ""
         return "Digest username=\"$username\", realm=\"${challenge.realm}\", nonce=\"${challenge.nonce}\", uri=$uri" +
             ", algorithm=${challenge.algorithm}, response=\"$response\"$qopPart$opaquePart"
     }
 
-    private fun md5ish(algo: String, input: String): ByteArray = when (algo) {
-        "md5" -> MessageDigest.getInstance("MD5").digest(input.toByteArray())
-        "sha256" -> MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
-        else -> MessageDigest.getInstance("MD5").digest(input.toByteArray())
-    }
+    private fun md5ish(
+        algo: String,
+        input: String,
+    ): ByteArray =
+        when (algo) {
+            "md5" -> MessageDigest.getInstance("MD5").digest(input.toByteArray())
+            "sha256" -> MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
+            else -> MessageDigest.getInstance("MD5").digest(input.toByteArray())
+        }
 
     private fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it) }
 }

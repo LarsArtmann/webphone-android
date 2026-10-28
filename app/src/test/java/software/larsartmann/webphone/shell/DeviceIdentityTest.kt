@@ -6,7 +6,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class DeviceIdentityTest {
-
     @Test
     fun `generated topic is 32 lowercase hex characters`() {
         val topic = DeviceIdentity.generateTopic(Random(42))

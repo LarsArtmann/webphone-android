@@ -13,7 +13,6 @@ import kotlin.test.assertTrue
  * pinned.
  */
 class AttachGuardTest {
-
     @Test
     fun `first attempt attaches, second is refused`() {
         val guard = AttachGuard<String>()

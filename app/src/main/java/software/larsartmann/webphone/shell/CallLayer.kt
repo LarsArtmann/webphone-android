@@ -27,7 +27,6 @@ import software.larsartmann.webphone.sip.SipEngine
  * concurrent wire attempt is discarded, never stacked.
  */
 object CallLayer {
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val guard = AttachGuard<SipEngine>()
     private var sessionWatch: Job? = null
@@ -55,19 +54,21 @@ object CallLayer {
         val attempt = guard.begin()
         scope.launch {
             CallEngine.registrationWiringStarted()
-            val identity = SessionApi.resumeSession() ?: run {
-                CallEngine.registrationWiringFailed()
-                return@launch
-            }
-            val created = SipEngine(
-                scope,
-                SipEngine.Config(
-                    wsUrl = identity.websocketUrl,
-                    sipDomain = identity.sipDomain,
-                    extension = identity.extension,
-                    password = identity.sipPassword,
-                ),
-            )
+            val identity =
+                SessionApi.resumeSession() ?: run {
+                    CallEngine.registrationWiringFailed()
+                    return@launch
+                }
+            val created =
+                SipEngine(
+                    scope,
+                    SipEngine.Config(
+                        wsUrl = identity.websocketUrl,
+                        sipDomain = identity.sipDomain,
+                        extension = identity.extension,
+                        password = identity.sipPassword,
+                    ),
+                )
             // A shutdown that raced this resume (settings save, session
             // watcher) anointed this attempt an orphan — refuse to
             // attach; the next ensureWired wires fresh.
@@ -94,16 +95,17 @@ object CallLayer {
      *  stops listening). */
     private fun startSessionWatch(appContext: Context) {
         sessionWatch?.cancel()
-        sessionWatch = scope.launch {
-            while (isActive && guard.current() != null) {
-                delay(SESSION_WATCH_INTERVAL_MS)
-                if (SessionApi.sessionAlive()) continue
-                runCatching { SessionApi.deregisterPushDevice(appContext) }
-                NtfySubscriptionService.stop(appContext)
-                shutdown()
-                break
+        sessionWatch =
+            scope.launch {
+                while (isActive && guard.current() != null) {
+                    delay(SESSION_WATCH_INTERVAL_MS)
+                    if (SessionApi.sessionAlive()) continue
+                    runCatching { SessionApi.deregisterPushDevice(appContext) }
+                    NtfySubscriptionService.stop(appContext)
+                    shutdown()
+                    break
+                }
             }
-        }
     }
 
     /** Register this install's wake addresses with the stack: the ntfy

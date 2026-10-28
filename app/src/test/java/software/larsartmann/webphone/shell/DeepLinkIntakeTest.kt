@@ -39,7 +39,6 @@ import kotlin.test.assertNull
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class DeepLinkIntakeTest {
-
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
     @Before
@@ -53,11 +52,12 @@ class DeepLinkIntakeTest {
      *  origin matched the test's.) */
     private fun launchMain(intent: Intent? = null): ActivityController<MainActivity> {
         App.origin = "https://pbx.artmann.tech"
-        val controller = if (intent == null) {
-            Robolectric.buildActivity(MainActivity::class.java)
-        } else {
-            Robolectric.buildActivity(MainActivity::class.java, intent)
-        }
+        val controller =
+            if (intent == null) {
+                Robolectric.buildActivity(MainActivity::class.java)
+            } else {
+                Robolectric.buildActivity(MainActivity::class.java, intent)
+            }
         return controller.setup()
     }
 

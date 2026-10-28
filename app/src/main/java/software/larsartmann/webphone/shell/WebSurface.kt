@@ -38,13 +38,14 @@ import software.larsartmann.webphone.ui.themeColor
 
 /** Where a navigation attempt must go. */
 internal sealed interface NavigationVerdict {
-
     /** Same-origin pages and WebView-internal schemes: load in the shell. */
     data object LoadInShell : NavigationVerdict
 
     /** Everything else (other hosts, `tel:`, `mailto:`, …): the system
      *  picks a handler — never the shell's WebView. */
-    data class HandOff(val intent: Intent) : NavigationVerdict
+    data class HandOff(
+        val intent: Intent,
+    ) : NavigationVerdict
 }
 
 /**
@@ -94,7 +95,10 @@ internal fun navigationVerdict(
 
 private fun intent(uri: Uri): Intent = Intent(Intent.ACTION_VIEW, uri)
 
-internal fun sameAuthority(uri: Uri, origin: Uri): Boolean {
+internal fun sameAuthority(
+    uri: Uri,
+    origin: Uri,
+): Boolean {
     if (uri.host?.lowercase() != origin.host?.lowercase()) return false
     return effectivePort(uri) == effectivePort(origin)
 }
@@ -102,7 +106,13 @@ internal fun sameAuthority(uri: Uri, origin: Uri): Boolean {
 /** Uri.port is -1 while the port is the scheme default — normalize
  *  before comparing, or `origin:443` links would look foreign. */
 private fun effectivePort(uri: Uri): Int =
-    if (uri.port != -1) uri.port else if (uri.scheme?.lowercase() == "http") 80 else 443
+    if (uri.port != -1) {
+        uri.port
+    } else if (uri.scheme?.lowercase() == "http") {
+        80
+    } else {
+        443
+    }
 
 /**
  * The WebView shell surface, hardened for daily-driver use. Owns the
@@ -165,8 +175,9 @@ private fun effectivePort(uri: Uri): Int =
  *   live updates only matter while visible (EventSource reconnects on
  *   resume), and ring-while-closed never rode the WebView anyway.
  */
-internal class WebSurface(private val activity: ComponentActivity) {
-
+internal class WebSurface(
+    private val activity: ComponentActivity,
+) {
     val container: FrameLayout = FrameLayout(activity)
 
     private var webView: WebView
@@ -212,92 +223,107 @@ internal class WebSurface(private val activity: ComponentActivity) {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    private fun buildWebView(): WebView = WebView(activity).apply {
-        layoutParams = FrameLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT,
-        )
-        settings.javaScriptEnabled = true
-        settings.domStorageEnabled = true
-        settings.mediaPlaybackRequiresUserGesture = false
-        if (Build.VERSION.SDK_INT >= 33) {
-            settings.isAlgorithmicDarkeningAllowed = true
-        }
-        webViewClient = ShellWebViewClient()
-        webChromeClient = ShellWebChromeClient()
-        setDownloadListener { url, _, contentDisposition, mimeType, _ ->
-            handleDownload(url, contentDisposition, mimeType)
-        }
-        // Third-party cookies are OFF per-WebView — the call needs the
-        // WebView param and CRASHES on null under the Chromium glue
-        // (found by the first emulator smoke, 2026-10-24).
-        CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
-    }
-
-    private fun buildOfflineOverlay(): LinearLayout = LinearLayout(activity).apply {
-        orientation = LinearLayout.VERTICAL
-        gravity = Gravity.CENTER
-        setPadding(activity.dp(32), activity.dp(24), activity.dp(32), activity.dp(24))
-        setBackgroundColor(activity.themeColor(R.attr.wpBackground))
-        visibility = View.GONE
-
-        val title = TextView(activity).apply {
-            styleText(18f, activity.themeColor(R.attr.wpOnSurface), medium = true)
-            text = activity.getString(R.string.web_offline_title)
-        }
-        val body = TextView(activity).apply {
-            styleText(14f, activity.themeColor(R.attr.wpOnSurfaceMuted))
-            text = activity.getString(R.string.web_offline_body, App.origin)
-            setPadding(0, activity.dp(8), 0, 0)
-        }
-        offlineBody = body
-        val retry = AppCompatButton(activity).apply {
-            background = activity.pillBackground(activity.themeColor(R.attr.wpAccent))
-            setTextColor(ContextCompat.getColor(activity, R.color.wp_on_accent))
-            textSize = 15f
-            isAllCaps = false
-            setPadding(activity.dp(28), activity.dp(12), activity.dp(28), activity.dp(12))
-            minimumHeight = activity.dp(48)
-            text = activity.getString(R.string.web_offline_retry)
-            setOnClickListener { retry() }
+    private fun buildWebView(): WebView =
+        WebView(activity).apply {
+            layoutParams =
+                FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.mediaPlaybackRequiresUserGesture = false
+            if (Build.VERSION.SDK_INT >= 33) {
+                settings.isAlgorithmicDarkeningAllowed = true
+            }
+            webViewClient = ShellWebViewClient()
+            webChromeClient = ShellWebChromeClient()
+            setDownloadListener { url, _, contentDisposition, mimeType, _ ->
+                handleDownload(url, contentDisposition, mimeType)
+            }
+            // Third-party cookies are OFF per-WebView — the call needs the
+            // WebView param and CRASHES on null under the Chromium glue
+            // (found by the first emulator smoke, 2026-10-24).
+            CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
         }
 
-        addView(
-            title,
-            LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { gravity = Gravity.CENTER_HORIZONTAL },
-        )
-        addView(
-            body,
-            LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = activity.dp(8) },
-        )
-        addView(
-            retry,
-            LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply {
-                topMargin = activity.dp(24)
-                gravity = Gravity.CENTER_HORIZONTAL
-            },
-        )
-    }
+    private fun buildOfflineOverlay(): LinearLayout =
+        LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(activity.dp(32), activity.dp(24), activity.dp(32), activity.dp(24))
+            setBackgroundColor(activity.themeColor(R.attr.wpBackground))
+            visibility = View.GONE
+
+            val title =
+                TextView(activity).apply {
+                    styleText(18f, activity.themeColor(R.attr.wpOnSurface), medium = true)
+                    text = activity.getString(R.string.web_offline_title)
+                }
+            val body =
+                TextView(activity).apply {
+                    styleText(14f, activity.themeColor(R.attr.wpOnSurfaceMuted))
+                    text = activity.getString(R.string.web_offline_body, App.origin)
+                    setPadding(0, activity.dp(8), 0, 0)
+                }
+            offlineBody = body
+            val retry =
+                AppCompatButton(activity).apply {
+                    background = activity.pillBackground(activity.themeColor(R.attr.wpAccent))
+                    setTextColor(ContextCompat.getColor(activity, R.color.wp_on_accent))
+                    textSize = 15f
+                    isAllCaps = false
+                    setPadding(activity.dp(28), activity.dp(12), activity.dp(28), activity.dp(12))
+                    minimumHeight = activity.dp(48)
+                    text = activity.getString(R.string.web_offline_retry)
+                    setOnClickListener { retry() }
+                }
+
+            addView(
+                title,
+                LinearLayout
+                    .LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply { gravity = Gravity.CENTER_HORIZONTAL },
+            )
+            addView(
+                body,
+                LinearLayout
+                    .LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply { topMargin = activity.dp(8) },
+            )
+            addView(
+                retry,
+                LinearLayout
+                    .LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply {
+                        topMargin = activity.dp(24)
+                        gravity = Gravity.CENTER_HORIZONTAL
+                    },
+            )
+        }
 
     private inner class ShellWebViewClient : WebViewClient() {
-
-        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+        override fun shouldOverrideUrlLoading(
+            view: WebView,
+            request: WebResourceRequest,
+        ): Boolean =
             navigateOut(
                 request.url,
                 isServerRedirect = request.isRedirect,
                 isMainFrame = request.isForMainFrame,
             )
 
-        override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
+        override fun onPageStarted(
+            view: WebView,
+            url: String,
+            favicon: android.graphics.Bitmap?,
+        ) {
             hideOffline()
             // The belt (R01): a main-frame page START runs the same
             // bless/clear machine as the commit — idempotent (same
@@ -315,17 +341,28 @@ internal class WebSurface(private val activity: ComponentActivity) {
         // detour's commit-side hook keys on — see [onCommittedNavigation].
         // (Server REDIRECTS are the other half: modern Chromium consults
         // shouldOverrideUrlLoading for them — see [navigateOut].)
-        override fun doUpdateVisitedHistory(view: WebView, url: String?, isReload: Boolean) {
+        override fun doUpdateVisitedHistory(
+            view: WebView,
+            url: String?,
+            isReload: Boolean,
+        ) {
             url?.let { onCommittedNavigation(Uri.parse(it)) }
         }
 
-        override fun onPageFinished(view: WebView, url: String?) {
+        override fun onPageFinished(
+            view: WebView,
+            url: String?,
+        ) {
             // The login POST mints the cookie in-page; flush it to disk
             // immediately so even a foreground process kill cannot eat it.
             runCatching { CookieManager.getInstance().flush() }
         }
 
-        override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+        override fun onReceivedError(
+            view: WebView,
+            request: WebResourceRequest,
+            error: WebResourceError,
+        ) {
             onMainFrameTransportFailure(request.isForMainFrame)
         }
 
@@ -343,7 +380,10 @@ internal class WebSurface(private val activity: ComponentActivity) {
             errorResponse: android.webkit.WebResourceResponse,
         ) = Unit
 
-        override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+        override fun onRenderProcessGone(
+            view: WebView,
+            detail: RenderProcessGoneDetail,
+        ): Boolean {
             // Consumed: the app survives its renderer dying. The dead
             // WebView must be destroyed (holding it leaks the corpse).
             rebuildAfterRendererDeath()
@@ -352,7 +392,6 @@ internal class WebSurface(private val activity: ComponentActivity) {
     }
 
     private inner class ShellWebChromeClient : WebChromeClient() {
-
         override fun onShowFileChooser(
             webView: WebView,
             filePathCallback: ValueCallback<Array<Uri>>,
@@ -534,7 +573,9 @@ internal class WebSurface(private val activity: ComponentActivity) {
             is NavigationVerdict.LoadInShell -> false
             is NavigationVerdict.HandOff -> {
                 val scheme = url.scheme?.lowercase()
-                if (isServerRedirect && isMainFrame && authDetour == null &&
+                if (isServerRedirect &&
+                    isMainFrame &&
+                    authDetour == null &&
                     (scheme == "http" || scheme == "https")
                 ) {
                     authDetour = url
@@ -582,8 +623,11 @@ internal class WebSurface(private val activity: ComponentActivity) {
         if (next?.authority != authDetour?.authority) {
             Log.d(
                 TAG,
-                if (next == null) "auth detour cleared (back on origin: $url)"
-                else "auth detour blessed: ${next.authority}",
+                if (next == null) {
+                    "auth detour cleared (back on origin: $url)"
+                } else {
+                    "auth detour blessed: ${next.authority}"
+                },
             )
         }
         authDetour = next
@@ -604,23 +648,28 @@ internal class WebSurface(private val activity: ComponentActivity) {
     /** Same-origin downloads ride DownloadManager with the session
      *  cookie; foreign downloads hand off — the cookie must never
      *  leave the origin. Internal for direct policy tests. */
-    internal fun handleDownload(url: String, contentDisposition: String?, mimeType: String?) {
+    internal fun handleDownload(
+        url: String,
+        contentDisposition: String?,
+        mimeType: String?,
+    ) {
         val uri = Uri.parse(url)
         if (navigationVerdict(uri, Uri.parse(App.origin)) is NavigationVerdict.HandOff) {
             runCatching { activity.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
                 .onFailure { Log.w(TAG, "no handler for download $url: ${it.message}") }
             return
         }
-        val request = DownloadManager.Request(uri).apply {
-            // The attachment routes are session-gated; DownloadManager
-            // makes its own HTTP fetch and needs the WebView's cookie.
-            CookieManager.getInstance().getCookie(url)?.let { addRequestHeader("Cookie", it) }
-            setMimeType(mimeType ?: "application/octet-stream")
-            setTitle(downloadFileName(contentDisposition, url))
-            // Shared Downloads collection: no destination override, no
-            // legacy storage permission (minSdk 31).
-            setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-        }
+        val request =
+            DownloadManager.Request(uri).apply {
+                // The attachment routes are session-gated; DownloadManager
+                // makes its own HTTP fetch and needs the WebView's cookie.
+                CookieManager.getInstance().getCookie(url)?.let { addRequestHeader("Cookie", it) }
+                setMimeType(mimeType ?: "application/octet-stream")
+                setTitle(downloadFileName(contentDisposition, url))
+                // Shared Downloads collection: no destination override, no
+                // legacy storage permission (minSdk 31).
+                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            }
         val downloads = activity.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         runCatching { downloads.enqueue(request) }
             .onFailure { Log.w(TAG, "download enqueue failed for $url: ${it.message}") }
@@ -629,21 +678,30 @@ internal class WebSurface(private val activity: ComponentActivity) {
     /** Content-Disposition filename > URL path segment > "download",
      *  stripped of path separators and control characters (the title
      *  is user-visible in the Downloads notification). */
-    internal fun downloadFileName(contentDisposition: String?, url: String): String {
-        val fromHeader = Regex("""filename\*?=\s*(?:\"([^\"]+)\"|([^;]+))""", RegexOption.IGNORE_CASE)
-            .find(contentDisposition.orEmpty())
-            ?.groupValues
-            ?.let { values ->
-                // groupValues yields "" (not null) for unmatched groups —
-                // take the first NON-BLANK capture or fall to the URL.
-                values.getOrNull(1)?.takeIf { it.isNotBlank() } ?: values.getOrNull(2)?.trim()
-            }
-            ?.trim()
-            ?.orNullIfBlank()
-        val raw = fromHeader ?: Uri.parse(url).lastPathSegment.orEmpty().substringAfterLast('/')
-        val clean = buildString {
-            for (ch in raw) if (ch.code > 31 && ch !in FORBIDDEN_FILE_CHARS) append(ch)
-        }.trim().trimStart('.')
+    internal fun downloadFileName(
+        contentDisposition: String?,
+        url: String,
+    ): String {
+        val fromHeader =
+            Regex("""filename\*?=\s*(?:\"([^\"]+)\"|([^;]+))""", RegexOption.IGNORE_CASE)
+                .find(contentDisposition.orEmpty())
+                ?.groupValues
+                ?.let { values ->
+                    // groupValues yields "" (not null) for unmatched groups —
+                    // take the first NON-BLANK capture or fall to the URL.
+                    values.getOrNull(1)?.takeIf { it.isNotBlank() } ?: values.getOrNull(2)?.trim()
+                }?.trim()
+                ?.orNullIfBlank()
+        val raw =
+            fromHeader ?: Uri
+                .parse(url)
+                .lastPathSegment
+                .orEmpty()
+                .substringAfterLast('/')
+        val clean =
+            buildString {
+                for (ch in raw) if (ch.code > 31 && ch !in FORBIDDEN_FILE_CHARS) append(ch)
+            }.trim().trimStart('.')
         return clean.ifBlank { "download" }
     }
 

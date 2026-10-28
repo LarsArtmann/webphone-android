@@ -22,19 +22,19 @@ import kotlin.test.assertNull
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class DialpadActivityTest {
-
     @Test
     fun `the prefill intent seeds the number with the cursor at the end`() {
-        ActivityScenario.launch<DialpadActivity>(
-            DialpadActivity.prefill(ApplicationProvider.getApplicationContext(), "+49170"),
-        ).use { scenario ->
-            scenario.onActivity { activity ->
-                val number = firstEditText(activity.findViewById<View>(android.R.id.content))
-                assertEquals("+49170", number.text.toString())
-                assertEquals(6, number.selectionStart)
-                assertEquals(6, number.selectionEnd)
+        ActivityScenario
+            .launch<DialpadActivity>(
+                DialpadActivity.prefill(ApplicationProvider.getApplicationContext(), "+49170"),
+            ).use { scenario ->
+                scenario.onActivity { activity ->
+                    val number = firstEditText(activity.findViewById<View>(android.R.id.content))
+                    assertEquals("+49170", number.text.toString())
+                    assertEquals(6, number.selectionStart)
+                    assertEquals(6, number.selectionEnd)
+                }
             }
-        }
     }
 
     @Test
@@ -49,13 +49,15 @@ class DialpadActivityTest {
 
     /** The programmatic UI carries no view IDs; the dialer's number
      *  field is the one (and only) EditText in the tree. */
-    private fun firstEditText(view: View): EditText = when (view) {
-        is EditText -> view
-        is ViewGroup ->
-            (0 until view.childCount).asSequence()
-                .map { firstEditText(view.getChildAt(it)) }
-                .firstOrNull()
-                ?: error("no EditText found in the dialer tree")
-        else -> error("no EditText found in the dialer tree")
-    }
+    private fun firstEditText(view: View): EditText =
+        when (view) {
+            is EditText -> view
+            is ViewGroup ->
+                (0 until view.childCount)
+                    .asSequence()
+                    .map { firstEditText(view.getChildAt(it)) }
+                    .firstOrNull()
+                    ?: error("no EditText found in the dialer tree")
+            else -> error("no EditText found in the dialer tree")
+        }
 }

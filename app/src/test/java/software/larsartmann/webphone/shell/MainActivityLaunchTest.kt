@@ -20,7 +20,6 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class MainActivityLaunchTest {
-
     @Before
     fun keepTheShellUnwired() {
         CallLayer.wiringEnabled = false

@@ -27,7 +27,6 @@ import kotlin.test.assertNotNull
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class CallServiceTest {
-
     private fun answeredCall() {
         CallEngine.onIncomingCall(
             SipEngine.IncomingInvite(
@@ -86,11 +85,13 @@ class CallServiceTest {
         answeredCall()
         var controller: ServiceController<CallService>? = null
         try {
-            controller = Robolectric.buildService(
-                CallService::class.java,
-                Intent(ApplicationProvider.getApplicationContext(), CallService::class.java)
-                    .setAction("software.larsartmann.webphone.call.STOP"),
-            ).create()
+            controller =
+                Robolectric
+                    .buildService(
+                        CallService::class.java,
+                        Intent(ApplicationProvider.getApplicationContext(), CallService::class.java)
+                            .setAction("software.larsartmann.webphone.call.STOP"),
+                    ).create()
             val sticky = controller.get().onStartCommand(controller.intent, 0, 1)
 
             assertEquals(

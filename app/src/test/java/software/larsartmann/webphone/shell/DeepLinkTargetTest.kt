@@ -16,7 +16,6 @@ import kotlin.test.assertEquals
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class DeepLinkTargetTest {
-
     private val origin = Uri.parse("https://pbx.artmann.tech")
 
     @Test
@@ -43,6 +42,34 @@ class DeepLinkTargetTest {
     fun `blank tel links are nothing`() {
         assertEquals(DeepLinkTarget.None, deepLinkTarget(Uri.parse("tel:"), origin))
         assertEquals(DeepLinkTarget.None, deepLinkTarget(Uri.parse("tel:%20"), origin))
+    }
+
+    @Test
+    fun `uri params are stripped from the dialable`() {
+        // `schemeSpecificPart` returns the DECODED form (the blank
+        // `tel:%20` test above proves it), so a literal `;` split
+        // uniformly covers every param spelling.
+        assertEquals(
+            DeepLinkTarget.Dial("100"),
+            deepLinkTarget(Uri.parse("sip:100;transport=tcp@pbx.artmann.tech"), origin),
+            "a user param rides before the @ — the extension is still 100",
+        )
+        assertEquals(
+            DeepLinkTarget.Dial("+49170"),
+            deepLinkTarget(Uri.parse("tel:+49170;phone-context=x"), origin),
+        )
+        assertEquals(
+            DeepLinkTarget.Dial("+49"),
+            deepLinkTarget(Uri.parse("tel:+49;postd=pp12"), origin),
+            "post-dial digits are PBX menu automation, not the dialed number",
+        )
+        // A params-only link carries no dialable — the blank guard
+        // must see the STRIPPED form, not the raw params.
+        assertEquals(DeepLinkTarget.None, deepLinkTarget(Uri.parse("tel:;phone-context=x"), origin))
+        assertEquals(
+            DeepLinkTarget.None,
+            deepLinkTarget(Uri.parse("sip:;isub=123@pbx.artmann.tech"), origin),
+        )
     }
 
     @Test

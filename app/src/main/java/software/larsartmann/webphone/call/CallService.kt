@@ -27,10 +27,13 @@ import software.larsartmann.webphone.R
  * the plain ongoing pill is the fallback, never a crash.
  */
 class CallService : Service() {
-
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         if (intent?.action == ACTION_STOP) {
             CallEngine.hangUp()
             startForeground(NOTIFICATION_ID, plainNotification(), foregroundTypes())
@@ -63,16 +66,20 @@ class CallService : Service() {
                 // ticks, visible with the screen off.
                 builder.setShowWhen(true).setWhen(startedAtMs)
             }
-            NotificationCompat.CallStyle.forOngoingCall(
-                androidx.core.app.Person.Builder().setName(party).build(),
-                PendingIntent.getBroadcast(
-                    this,
-                    3,
-                    Intent(this, CallNotificationReceiver::class.java)
-                        .setAction(CallNotificationReceiver.ACTION_HANGUP),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                ),
-            ).let { builder.setStyle(it) }
+            NotificationCompat.CallStyle
+                .forOngoingCall(
+                    androidx.core.app.Person
+                        .Builder()
+                        .setName(party)
+                        .build(),
+                    PendingIntent.getBroadcast(
+                        this,
+                        3,
+                        Intent(this, CallNotificationReceiver::class.java)
+                            .setAction(CallNotificationReceiver.ACTION_HANGUP),
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                    ),
+                ).let { builder.setStyle(it) }
         }
         return builder.build()
     }
@@ -80,7 +87,8 @@ class CallService : Service() {
     private fun plainNotification(): Notification = baseNotification().build()
 
     private fun baseNotification(): NotificationCompat.Builder =
-        NotificationCompat.Builder(this, App.CHANNEL_CALLS)
+        NotificationCompat
+            .Builder(this, App.CHANNEL_CALLS)
             .setSmallIcon(android.R.drawable.sym_call_outgoing)
             .setContentTitle(getString(R.string.call_active))
             .setOngoing(true)

@@ -39,7 +39,6 @@ class SipEngine(
      *  instead of the websocket (the protocol tests ride it). */
     private val sender: ((String) -> Unit)? = null,
 ) {
-
     data class Config(
         val wsUrl: String,
         val sipDomain: String,
@@ -53,14 +52,28 @@ class SipEngine(
          *  (the PBX refused our credentials — distinct from a network
          *  outage so the UI can say WHICH lie it told), OFFLINE. */
         fun onRegistrationState(state: RegistrationState)
+
         fun onIncomingCall(invite: IncomingInvite)
-        fun onCallProgress(callId: String, ringing: Boolean)
-        fun onCallEstablished(callId: String, remoteSdp: String)
+
+        fun onCallProgress(
+            callId: String,
+            ringing: Boolean,
+        )
+
+        fun onCallEstablished(
+            callId: String,
+            remoteSdp: String,
+        )
+
         fun onCallEnded(callId: String)
+
         /** A NOTIFY sipfrag body from a REFER we sent: the transfer
          *  verdict (SIP/2.0 200 OK = success; the server executes the
          *  transfer — we only report the verdict). */
-        fun onTransferVerdict(callId: String, verdict: String)
+        fun onTransferVerdict(
+            callId: String,
+            verdict: String,
+        )
     }
 
     enum class RegistrationState { REGISTERED, AUTH_REJECTED, OFFLINE }
@@ -75,10 +88,12 @@ class SipEngine(
 
     var listener: Listener? = null
 
-    private val client = OkHttpClient.Builder()
-        .pingInterval(20, TimeUnit.SECONDS)
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .build()
+    private val client =
+        OkHttpClient
+            .Builder()
+            .pingInterval(20, TimeUnit.SECONDS)
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .build()
 
     private var socket: WebSocket? = null
     private val cseq = AtomicLong(0)
@@ -86,7 +101,9 @@ class SipEngine(
     private val callLegs = ConcurrentHashMap<String, Leg>()
     private var refreshJob: Job? = null
     private var watchdogJob: Job? = null
+
     @Volatile private var registered = false
+
     @Volatile private var lastActivity = 0L
 
     private class Leg(
@@ -118,27 +135,45 @@ class SipEngine(
     fun connect() {
         disconnect()
         val request = Request.Builder().url(config.wsUrl).build()
-        socket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.i(TAG, "wss open")
-                register()
-            }
+        socket =
+            client.newWebSocket(
+                request,
+                object : WebSocketListener() {
+                    override fun onOpen(
+                        webSocket: WebSocket,
+                        response: Response,
+                    ) {
+                        Log.i(TAG, "wss open")
+                        register()
+                    }
 
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                lastActivity = System.currentTimeMillis()
-                receive(text)
-            }
+                    override fun onMessage(
+                        webSocket: WebSocket,
+                        text: String,
+                    ) {
+                        lastActivity = System.currentTimeMillis()
+                        receive(text)
+                    }
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.w(TAG, "wss failure: ${t.message}")
-                onLinkLost()
-            }
+                    override fun onFailure(
+                        webSocket: WebSocket,
+                        t: Throwable,
+                        response: Response?,
+                    ) {
+                        Log.w(TAG, "wss failure: ${t.message}")
+                        onLinkLost()
+                    }
 
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                Log.i(TAG, "wss closed: $code")
-                onLinkLost()
-            }
-        })
+                    override fun onClosed(
+                        webSocket: WebSocket,
+                        code: Int,
+                        reason: String,
+                    ) {
+                        Log.i(TAG, "wss closed: $code")
+                        onLinkLost()
+                    }
+                },
+            )
     }
 
     fun disconnect() {
@@ -154,8 +189,7 @@ class SipEngine(
      *  LIVE socket always answers the expires/2 refresh (300 s), so
      *  anything quieter than 6 minutes is a wedged link the callbacks
      *  will never report (the island's silent-death lesson, ported). */
-    internal fun isSilent(nowMs: Long): Boolean =
-        registered && nowMs - lastActivity > SILENCE_THRESHOLD_MS
+    internal fun isSilent(nowMs: Long): Boolean = registered && nowMs - lastActivity > SILENCE_THRESHOLD_MS
 
     /**
      * The bounded watchdog: the registration must be REFRESHED
@@ -170,10 +204,11 @@ class SipEngine(
 
     private fun startReconnectBackoff() {
         watchdogJob?.cancel()
-        watchdogJob = scope.launch {
-            delay(RECONNECT_BACKOFF_MS)
-            connect()
-        }
+        watchdogJob =
+            scope.launch {
+                delay(RECONNECT_BACKOFF_MS)
+                connect()
+            }
     }
 
     /** The silence half of the watchdog: poll the last wire activity;
@@ -183,17 +218,18 @@ class SipEngine(
      *  is confirmed. */
     private fun startSilenceWatchdog() {
         watchdogJob?.cancel()
-        watchdogJob = scope.launch {
-            while (isActive) {
-                delay(SILENCE_POLL_MS)
-                if (isSilent(System.currentTimeMillis())) {
-                    Log.w(TAG, "socket silent > ${SILENCE_THRESHOLD_MS}ms — rebuilding")
-                    watchdogJob = null
-                    connect()
-                    return@launch
+        watchdogJob =
+            scope.launch {
+                while (isActive) {
+                    delay(SILENCE_POLL_MS)
+                    if (isSilent(System.currentTimeMillis())) {
+                        Log.w(TAG, "socket silent > ${SILENCE_THRESHOLD_MS}ms — rebuilding")
+                        watchdogJob = null
+                        connect()
+                        return@launch
+                    }
                 }
             }
-        }
     }
 
     private fun setRegistration(state: RegistrationState) {
@@ -212,21 +248,39 @@ class SipEngine(
         val uri = "sip:${config.sipDomain}"
         val seq = cseq.incrementAndGet()
         val callId = UUID.randomUUID().toString()
-        val request = SipMessage(
-            isRequest = true, method = "REGISTER", uri = uri, statusCode = 0, reason = "",
-            headers = buildList {
-                add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
-                add(SipHeader("Max-Forwards", "70"))
-                add(SipHeader("From", "<sip:${config.extension}@${config.sipDomain}>;tag=$localTag"))
-                add(SipHeader("To", "<sip:${config.extension}@${config.sipDomain}>"))
-                add(SipHeader("Call-ID", callId))
-                add(SipHeader("CSeq", "$seq REGISTER"))
-                add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>;expires=$REGISTER_EXPIRES"))
-                add(SipHeader("Allow", "INVITE, ACK, CANCEL, BYE, REFER, INFO, NOTIFY, OPTIONS"))
-                if (authorization != null) add(SipHeader("Authorization", authorization))
-            },
-            body = "",
-        )
+        val request =
+            SipMessage(
+                isRequest = true,
+                method = "REGISTER",
+                uri = uri,
+                statusCode = 0,
+                reason = "",
+                headers =
+                    buildList {
+                        add(
+                            SipHeader(
+                                "Via",
+                                "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(
+                                    12,
+                                )};rport",
+                            ),
+                        )
+                        add(SipHeader("Max-Forwards", "70"))
+                        add(SipHeader("From", "<sip:${config.extension}@${config.sipDomain}>;tag=$localTag"))
+                        add(SipHeader("To", "<sip:${config.extension}@${config.sipDomain}>"))
+                        add(SipHeader("Call-ID", callId))
+                        add(SipHeader("CSeq", "$seq REGISTER"))
+                        add(
+                            SipHeader(
+                                "Contact",
+                                "<sip:${config.extension}@${hostToken()};transport=wss>;expires=$REGISTER_EXPIRES",
+                            ),
+                        )
+                        add(SipHeader("Allow", "INVITE, ACK, CANCEL, BYE, REFER, INFO, NOTIFY, OPTIONS"))
+                        if (authorization != null) add(SipHeader("Authorization", authorization))
+                    },
+                body = "",
+            )
         send(request)
     }
 
@@ -236,53 +290,74 @@ class SipEngine(
 
     // -- outbound call ---------------------------------------------
 
-    fun invite(destination: String, offerSdp: String, onLocalAnswerNeeded: (callId: String) -> Unit): String {
+    fun invite(
+        destination: String,
+        offerSdp: String,
+        onLocalAnswerNeeded: (callId: String) -> Unit,
+    ): String {
         val callId = UUID.randomUUID().toString()
         val seq = cseq.incrementAndGet()
         val target = "sip:$destination@${config.sipDomain}"
         val via = "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"
-        val leg = Leg(
-            callId = callId,
-            inviteCseq = seq,
-            remoteTarget = target,
-            fromHeader = "\"${config.displayName}\" <sip:${config.extension}@${config.sipDomain}>;tag=${UUID.randomUUID().toString().take(8)}",
-            toHeader = "<$target>",
-            inviteVia = via,
-            confirmed = false,
-            offerSdp = offerSdp,
-        )
+        val leg =
+            Leg(
+                callId = callId,
+                inviteCseq = seq,
+                remoteTarget = target,
+                fromHeader = "\"${config.displayName}\" <sip:${config.extension}@${config.sipDomain}>;tag=${UUID.randomUUID().toString().take(
+                    8,
+                )}",
+                toHeader = "<$target>",
+                inviteVia = via,
+                confirmed = false,
+                offerSdp = offerSdp,
+            )
         callLegs[callId] = leg
-        val request = SipMessage(
-            isRequest = true, method = "INVITE", uri = target, statusCode = 0, reason = "",
-            headers = buildList {
-                add(SipHeader("Via", via))
-                add(SipHeader("Max-Forwards", "70"))
-                add(SipHeader("From", leg.fromHeader))
-                add(SipHeader("To", leg.toHeader))
-                add(SipHeader("Call-ID", callId))
-                add(SipHeader("CSeq", "$seq INVITE"))
-                add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
-                add(SipHeader("Content-Type", "application/sdp"))
-            },
-            body = offerSdp,
-        )
+        val request =
+            SipMessage(
+                isRequest = true,
+                method = "INVITE",
+                uri = target,
+                statusCode = 0,
+                reason = "",
+                headers =
+                    buildList {
+                        add(SipHeader("Via", via))
+                        add(SipHeader("Max-Forwards", "70"))
+                        add(SipHeader("From", leg.fromHeader))
+                        add(SipHeader("To", leg.toHeader))
+                        add(SipHeader("Call-ID", callId))
+                        add(SipHeader("CSeq", "$seq INVITE"))
+                        add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
+                        add(SipHeader("Content-Type", "application/sdp"))
+                    },
+                body = offerSdp,
+            )
         send(request)
         return callId
     }
 
-    fun ack(callId: String, toHeaderOverride: String? = null) {
+    fun ack(
+        callId: String,
+        toHeaderOverride: String? = null,
+    ) {
         val leg = callLegs[callId] ?: return
         send(
             SipMessage(
-                isRequest = true, method = "ACK", uri = leg.remoteTarget, statusCode = 0, reason = "",
-                headers = buildList {
-                    add(SipHeader("Via", leg.inviteVia))
-                    add(SipHeader("Max-Forwards", "70"))
-                    add(SipHeader("From", leg.fromHeader))
-                    add(SipHeader("To", toHeaderOverride ?: leg.toHeader))
-                    add(SipHeader("Call-ID", callId))
-                    add(SipHeader("CSeq", "${leg.inviteCseq} ACK"))
-                },
+                isRequest = true,
+                method = "ACK",
+                uri = leg.remoteTarget,
+                statusCode = 0,
+                reason = "",
+                headers =
+                    buildList {
+                        add(SipHeader("Via", leg.inviteVia))
+                        add(SipHeader("Max-Forwards", "70"))
+                        add(SipHeader("From", leg.fromHeader))
+                        add(SipHeader("To", toHeaderOverride ?: leg.toHeader))
+                        add(SipHeader("Call-ID", callId))
+                        add(SipHeader("CSeq", "${leg.inviteCseq} ACK"))
+                    },
                 body = "",
             ),
         )
@@ -290,7 +365,11 @@ class SipEngine(
 
     /** Hold/resume re-INVITE: sendonly pauses the stream toward the
      *  network (no silence to hallucinate on, on the ASR seam too). */
-    fun reinvite(callId: String, sdp: String, hold: Boolean) {
+    fun reinvite(
+        callId: String,
+        sdp: String,
+        hold: Boolean,
+    ) {
         val leg = callLegs[callId] ?: return
         val seq = cseq.incrementAndGet()
         leg.inviteCseq = seq
@@ -299,17 +378,22 @@ class SipEngine(
         val munged = sdp.replace(Regex("a=(sendrecv|sendonly|recvonly|inactive)"), "a=$direction")
         send(
             SipMessage(
-                isRequest = true, method = "INVITE", uri = leg.remoteTarget, statusCode = 0, reason = "",
-                headers = buildList {
-                    add(SipHeader("Via", leg.inviteVia))
-                    add(SipHeader("Max-Forwards", "70"))
-                    add(SipHeader("From", leg.fromHeader))
-                    add(SipHeader("To", leg.toHeader))
-                    add(SipHeader("Call-ID", callId))
-                    add(SipHeader("CSeq", "$seq INVITE"))
-                    add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
-                    add(SipHeader("Content-Type", "application/sdp"))
-                },
+                isRequest = true,
+                method = "INVITE",
+                uri = leg.remoteTarget,
+                statusCode = 0,
+                reason = "",
+                headers =
+                    buildList {
+                        add(SipHeader("Via", leg.inviteVia))
+                        add(SipHeader("Max-Forwards", "70"))
+                        add(SipHeader("From", leg.fromHeader))
+                        add(SipHeader("To", leg.toHeader))
+                        add(SipHeader("Call-ID", callId))
+                        add(SipHeader("CSeq", "$seq INVITE"))
+                        add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
+                        add(SipHeader("Content-Type", "application/sdp"))
+                    },
                 body = munged,
             ),
         )
@@ -325,15 +409,20 @@ class SipEngine(
         if (leg.confirmed) return
         send(
             SipMessage(
-                isRequest = true, method = "CANCEL", uri = leg.remoteTarget, statusCode = 0, reason = "",
-                headers = buildList {
-                    add(SipHeader("Via", leg.inviteVia))
-                    add(SipHeader("Max-Forwards", "70"))
-                    add(SipHeader("From", leg.fromHeader))
-                    add(SipHeader("To", leg.toHeader))
-                    add(SipHeader("Call-ID", leg.callId))
-                    add(SipHeader("CSeq", "${leg.inviteCseq} CANCEL"))
-                },
+                isRequest = true,
+                method = "CANCEL",
+                uri = leg.remoteTarget,
+                statusCode = 0,
+                reason = "",
+                headers =
+                    buildList {
+                        add(SipHeader("Via", leg.inviteVia))
+                        add(SipHeader("Max-Forwards", "70"))
+                        add(SipHeader("From", leg.fromHeader))
+                        add(SipHeader("To", leg.toHeader))
+                        add(SipHeader("Call-ID", leg.callId))
+                        add(SipHeader("CSeq", "${leg.inviteCseq} CANCEL"))
+                    },
                 body = "",
             ),
         )
@@ -344,15 +433,27 @@ class SipEngine(
         val seq = cseq.incrementAndGet()
         send(
             SipMessage(
-                isRequest = true, method = "BYE", uri = leg.remoteTarget, statusCode = 0, reason = "",
-                headers = buildList {
-                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
-                    add(SipHeader("Max-Forwards", "70"))
-                    add(SipHeader("From", leg.fromHeader))
-                    add(SipHeader("To", leg.toHeader))
-                    add(SipHeader("Call-ID", callId))
-                    add(SipHeader("CSeq", "$seq BYE"))
-                },
+                isRequest = true,
+                method = "BYE",
+                uri = leg.remoteTarget,
+                statusCode = 0,
+                reason = "",
+                headers =
+                    buildList {
+                        add(
+                            SipHeader(
+                                "Via",
+                                "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(
+                                    12,
+                                )};rport",
+                            ),
+                        )
+                        add(SipHeader("Max-Forwards", "70"))
+                        add(SipHeader("From", leg.fromHeader))
+                        add(SipHeader("To", leg.toHeader))
+                        add(SipHeader("Call-ID", callId))
+                        add(SipHeader("CSeq", "$seq BYE"))
+                    },
                 body = "",
             ),
         )
@@ -360,22 +461,37 @@ class SipEngine(
 
     /** DTMF: the EQUALS form of application/dtmf-relay. Never the
      *  colon form — FreeSWITCH 200-OKs it and drops the digit. */
-    fun dtmf(callId: String, digit: Char) {
+    fun dtmf(
+        callId: String,
+        digit: Char,
+    ) {
         val leg = callLegs[callId] ?: return
         val seq = cseq.incrementAndGet()
         val body = "Signal=$digit\r\nDuration=160"
         send(
             SipMessage(
-                isRequest = true, method = "INFO", uri = leg.remoteTarget, statusCode = 0, reason = "",
-                headers = buildList {
-                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
-                    add(SipHeader("Max-Forwards", "70"))
-                    add(SipHeader("From", leg.fromHeader))
-                    add(SipHeader("To", leg.toHeader))
-                    add(SipHeader("Call-ID", callId))
-                    add(SipHeader("CSeq", "$seq INFO"))
-                    add(SipHeader("Content-Type", "application/dtmf-relay"))
-                },
+                isRequest = true,
+                method = "INFO",
+                uri = leg.remoteTarget,
+                statusCode = 0,
+                reason = "",
+                headers =
+                    buildList {
+                        add(
+                            SipHeader(
+                                "Via",
+                                "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(
+                                    12,
+                                )};rport",
+                            ),
+                        )
+                        add(SipHeader("Max-Forwards", "70"))
+                        add(SipHeader("From", leg.fromHeader))
+                        add(SipHeader("To", leg.toHeader))
+                        add(SipHeader("Call-ID", callId))
+                        add(SipHeader("CSeq", "$seq INFO"))
+                        add(SipHeader("Content-Type", "application/dtmf-relay"))
+                    },
                 body = body,
             ),
         )
@@ -384,22 +500,37 @@ class SipEngine(
     /** Attended/blind transfer: REFER; the server executes it, the
      *  verdict arrives as NOTIFY sipfrag (see the dispatch below).
      *  UNTESTED against live FreeSWITCH (v0 marker). */
-    fun refer(callId: String, target: String) {
+    fun refer(
+        callId: String,
+        target: String,
+    ) {
         val leg = callLegs[callId] ?: return
         val seq = cseq.incrementAndGet()
         send(
             SipMessage(
-                isRequest = true, method = "REFER", uri = leg.remoteTarget, statusCode = 0, reason = "",
-                headers = buildList {
-                    add(SipHeader("Via", "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"))
-                    add(SipHeader("Max-Forwards", "70"))
-                    add(SipHeader("From", leg.fromHeader))
-                    add(SipHeader("To", leg.toHeader))
-                    add(SipHeader("Call-ID", callId))
-                    add(SipHeader("CSeq", "$seq REFER"))
-                    add(SipHeader("Refer-To", "<sip:$target@${config.sipDomain}>"))
-                    add(SipHeader("Supported", "replaces"))
-                },
+                isRequest = true,
+                method = "REFER",
+                uri = leg.remoteTarget,
+                statusCode = 0,
+                reason = "",
+                headers =
+                    buildList {
+                        add(
+                            SipHeader(
+                                "Via",
+                                "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(
+                                    12,
+                                )};rport",
+                            ),
+                        )
+                        add(SipHeader("Max-Forwards", "70"))
+                        add(SipHeader("From", leg.fromHeader))
+                        add(SipHeader("To", leg.toHeader))
+                        add(SipHeader("Call-ID", callId))
+                        add(SipHeader("CSeq", "$seq REFER"))
+                        add(SipHeader("Refer-To", "<sip:$target@${config.sipDomain}>"))
+                        add(SipHeader("Supported", "replaces"))
+                    },
                 body = "",
             ),
         )
@@ -433,8 +564,10 @@ class SipEngine(
                 // sipfrag body carries the REFER verdict
                 // ("Content-Type: message/sipfrag;version=2.0").
                 respond(message, 200)
-                val sipfrag = message.body.lineSequence()
-                    .firstOrNull { it.startsWith("SIP/2.0") }
+                val sipfrag =
+                    message.body
+                        .lineSequence()
+                        .firstOrNull { it.startsWith("SIP/2.0") }
                 if (sipfrag != null) {
                     listener?.onTransferVerdict(message.callId(), sipfrag.removePrefix("SIP/2.0").trim())
                 }
@@ -448,8 +581,18 @@ class SipEngine(
 
     private fun receiveInvite(message: SipMessage) {
         val from = message.header("From").orEmpty()
-        val user = Regex("sip:([^@>]+)").find(from)?.groupValues?.get(1).orEmpty()
-        val display = Regex("\"([^\"]*)\"").find(from)?.groupValues?.get(1).orEmpty()
+        val user =
+            Regex("sip:([^@>]+)")
+                .find(from)
+                ?.groupValues
+                ?.get(1)
+                .orEmpty()
+        val display =
+            Regex("\"([^\"]*)\"")
+                .find(from)
+                ?.groupValues
+                ?.get(1)
+                .orEmpty()
         listener?.onIncomingCall(
             IncomingInvite(
                 callId = message.callId(),
@@ -463,33 +606,44 @@ class SipEngine(
         )
     }
 
-    private fun respondToInvite(invite: SipMessage, status: Int, sdp: String?) {
-        val headers = buildList {
-            add(SipHeader("Via", invite.headersOf("Via").joinToString(", ")))
-            add(SipHeader("From", invite.header("From").orEmpty()))
-            add(SipHeader("To", invite.header("To").orEmpty() + ";tag=${UUID.randomUUID().toString().take(8)}"))
-            add(SipHeader("Call-ID", invite.callId()))
-            add(SipHeader("CSeq", invite.header("CSeq").orEmpty()))
-            add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
-            if (sdp != null) add(SipHeader("Content-Type", "application/sdp"))
-        }
+    private fun respondToInvite(
+        invite: SipMessage,
+        status: Int,
+        sdp: String?,
+    ) {
+        val headers =
+            buildList {
+                add(SipHeader("Via", invite.headersOf("Via").joinToString(", ")))
+                add(SipHeader("From", invite.header("From").orEmpty()))
+                add(SipHeader("To", invite.header("To").orEmpty() + ";tag=${UUID.randomUUID().toString().take(8)}"))
+                add(SipHeader("Call-ID", invite.callId()))
+                add(SipHeader("CSeq", invite.header("CSeq").orEmpty()))
+                add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
+                if (sdp != null) add(SipHeader("Content-Type", "application/sdp"))
+            }
         send(
             SipMessage(
-                isRequest = false, method = "", uri = "", statusCode = status,
-                reason = reasonPhrase(status), headers = headers, body = sdp.orEmpty(),
+                isRequest = false,
+                method = "",
+                uri = "",
+                statusCode = status,
+                reason = reasonPhrase(status),
+                headers = headers,
+                body = sdp.orEmpty(),
             ),
         )
         if (status >= 200) {
-            callLegs[invite.callId()] = Leg(
-                callId = invite.callId(),
-                inviteCseq = invite.cseq()?.first ?: 1,
-                remoteTarget = invite.uri,
-                fromHeader = invite.header("To").orEmpty(),
-                toHeader = invite.header("From").orEmpty(),
-                inviteVia = "",
-                confirmed = true,
-                offerSdp = null,
-            )
+            callLegs[invite.callId()] =
+                Leg(
+                    callId = invite.callId(),
+                    inviteCseq = invite.cseq()?.first ?: 1,
+                    remoteTarget = invite.uri,
+                    fromHeader = invite.header("To").orEmpty(),
+                    toHeader = invite.header("From").orEmpty(),
+                    inviteVia = "",
+                    confirmed = true,
+                    offerSdp = null,
+                )
         }
     }
 
@@ -498,39 +652,42 @@ class SipEngine(
         val cseq = message.cseq()
         when {
             // REGISTER ladder: challenge → authorized → registered.
-            cseq?.second == "REGISTER" -> when (message.statusCode) {
-                401, 407 -> {
-                    // Bounded: a wrong password would otherwise loop
-                    // REGISTER/401 forever (the wire floods, the badge
-                    // flickers). ONE credentialed retry, two when the
-                    // challenge says stale=true (only the nonce was
-                    // old — the retry is guaranteed final).
-                    registerAuthChallenges += 1
-                    val challenge = Digest.parseChallenge(
-                        message.header("WWW-Authenticate") ?: message.header("Proxy-Authenticate").orEmpty(),
-                    )
-                    val limit = if (challenge?.stale == true) 3 else 2
-                    if (registerAuthChallenges >= limit || challenge == null) {
-                        setRegistration(RegistrationState.AUTH_REJECTED)
-                        return
+            cseq?.second == "REGISTER" ->
+                when (message.statusCode) {
+                    401, 407 -> {
+                        // Bounded: a wrong password would otherwise loop
+                        // REGISTER/401 forever (the wire floods, the badge
+                        // flickers). ONE credentialed retry, two when the
+                        // challenge says stale=true (only the nonce was
+                        // old — the retry is guaranteed final).
+                        registerAuthChallenges += 1
+                        val challenge =
+                            Digest.parseChallenge(
+                                message.header("WWW-Authenticate") ?: message.header("Proxy-Authenticate").orEmpty(),
+                            )
+                        val limit = if (challenge?.stale == true) 3 else 2
+                        if (registerAuthChallenges >= limit || challenge == null) {
+                            setRegistration(RegistrationState.AUTH_REJECTED)
+                            return
+                        }
+                        val authorization =
+                            Digest.authorization(
+                                method = "REGISTER",
+                                uri = "sip:${config.sipDomain}",
+                                username = config.extension,
+                                password = config.password,
+                                challenge = challenge,
+                            )
+                        register(authorization)
                     }
-                    val authorization = Digest.authorization(
-                        method = "REGISTER",
-                        uri = "sip:${config.sipDomain}",
-                        username = config.extension,
-                        password = config.password,
-                        challenge = challenge,
-                    )
-                    register(authorization)
+                    200 -> {
+                        registerAuthChallenges = 0
+                        setRegistration(RegistrationState.REGISTERED)
+                        scheduleRefresh()
+                        startSilenceWatchdog()
+                    }
+                    else -> setRegistration(RegistrationState.OFFLINE)
                 }
-                200 -> {
-                    registerAuthChallenges = 0
-                    setRegistration(RegistrationState.REGISTERED)
-                    scheduleRefresh()
-                    startSilenceWatchdog()
-                }
-                else -> setRegistration(RegistrationState.OFFLINE)
-            }
             // INVITE ladder: ring → answer → ACK; a digest challenge
             // re-INVITEs with credentials; other finals tear down.
             cseq?.second == "INVITE" -> {
@@ -584,7 +741,11 @@ class SipEngine(
      *  same dialog — RFC 3261 §13.2.2 / §22.1). Bounded like REGISTER:
      *  one credentialed retry, two when stale=true; exhaustion ends
      *  the call instead of looping. */
-    private fun reinviteWithAuth(leg: Leg, challengeResponse: SipMessage, status: Int) {
+    private fun reinviteWithAuth(
+        leg: Leg,
+        challengeResponse: SipMessage,
+        status: Int,
+    ) {
         val challengeHeader = if (status == 407) "Proxy-Authenticate" else "WWW-Authenticate"
         val challenge = Digest.parseChallenge(challengeResponse.header(challengeHeader).orEmpty())
         leg.authChallenges += 1
@@ -598,44 +759,57 @@ class SipEngine(
         leg.inviteVia = "SIP/2.0/WSS ${hostToken()};branch=z9hG4bK${UUID.randomUUID().toString().take(12)};rport"
         challengeResponse.header("To")?.let { leg.toHeader = it }
         val authHeader = if (status == 407) "Proxy-Authorization" else "Authorization"
-        val authorization = Digest.authorization(
-            method = "INVITE",
-            uri = leg.remoteTarget,
-            username = config.extension,
-            password = config.password,
-            challenge = challenge,
-        )
+        val authorization =
+            Digest.authorization(
+                method = "INVITE",
+                uri = leg.remoteTarget,
+                username = config.extension,
+                password = config.password,
+                challenge = challenge,
+            )
         send(
             SipMessage(
-                isRequest = true, method = "INVITE", uri = leg.remoteTarget, statusCode = 0, reason = "",
-                headers = buildList {
-                    add(SipHeader("Via", leg.inviteVia))
-                    add(SipHeader("Max-Forwards", "70"))
-                    add(SipHeader("From", leg.fromHeader))
-                    add(SipHeader("To", leg.toHeader))
-                    add(SipHeader("Call-ID", leg.callId))
-                    add(SipHeader("CSeq", "$seq INVITE"))
-                    add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
-                    add(SipHeader(authHeader, authorization))
-                    add(SipHeader("Content-Type", "application/sdp"))
-                },
+                isRequest = true,
+                method = "INVITE",
+                uri = leg.remoteTarget,
+                statusCode = 0,
+                reason = "",
+                headers =
+                    buildList {
+                        add(SipHeader("Via", leg.inviteVia))
+                        add(SipHeader("Max-Forwards", "70"))
+                        add(SipHeader("From", leg.fromHeader))
+                        add(SipHeader("To", leg.toHeader))
+                        add(SipHeader("Call-ID", leg.callId))
+                        add(SipHeader("CSeq", "$seq INVITE"))
+                        add(SipHeader("Contact", "<sip:${config.extension}@${hostToken()};transport=wss>"))
+                        add(SipHeader(authHeader, authorization))
+                        add(SipHeader("Content-Type", "application/sdp"))
+                    },
                 body = leg.offerSdp,
             ),
         )
     }
 
-    private fun respond(request: SipMessage, status: Int) {
+    private fun respond(
+        request: SipMessage,
+        status: Int,
+    ) {
         send(
             SipMessage(
-                isRequest = false, method = "", uri = "", statusCode = status,
+                isRequest = false,
+                method = "",
+                uri = "",
+                statusCode = status,
                 reason = reasonPhrase(status),
-                headers = buildList {
-                    add(SipHeader("Via", request.headersOf("Via").joinToString(", ")))
-                    add(SipHeader("From", request.header("From").orEmpty()))
-                    add(SipHeader("To", request.header("To").orEmpty()))
-                    add(SipHeader("Call-ID", request.callId()))
-                    add(SipHeader("CSeq", request.header("CSeq").orEmpty()))
-                },
+                headers =
+                    buildList {
+                        add(SipHeader("Via", request.headersOf("Via").joinToString(", ")))
+                        add(SipHeader("From", request.header("From").orEmpty()))
+                        add(SipHeader("To", request.header("To").orEmpty()))
+                        add(SipHeader("Call-ID", request.callId()))
+                        add(SipHeader("CSeq", request.header("CSeq").orEmpty()))
+                    },
                 body = "",
             ),
         )
@@ -643,10 +817,11 @@ class SipEngine(
 
     private fun scheduleRefresh() {
         refreshJob?.cancel()
-        refreshJob = scope.launch {
-            delay(REGISTER_EXPIRES * 1000L / 2)
-            if (registered) register() else connect()
-        }
+        refreshJob =
+            scope.launch {
+                delay(REGISTER_EXPIRES * 1000L / 2)
+                if (registered) register() else connect()
+            }
     }
 
     private fun send(message: SipMessage) {
@@ -671,16 +846,17 @@ class SipEngine(
         const val SILENCE_THRESHOLD_MS = 6 * 60_000L
         const val SILENCE_POLL_MS = 30_000L
 
-        fun reasonPhrase(status: Int): String = when (status) {
-            100 -> "Trying"
-            180 -> "Ringing"
-            183 -> "Session Progress"
-            200 -> "OK"
-            486 -> "Busy Here"
-            487 -> "Request Terminated"
-            500 -> "Server Internal Error"
-            603 -> "Decline"
-            else -> ""
-        }
+        fun reasonPhrase(status: Int): String =
+            when (status) {
+                100 -> "Trying"
+                180 -> "Ringing"
+                183 -> "Session Progress"
+                200 -> "OK"
+                486 -> "Busy Here"
+                487 -> "Request Terminated"
+                500 -> "Server Internal Error"
+                603 -> "Decline"
+                else -> ""
+            }
     }
 }

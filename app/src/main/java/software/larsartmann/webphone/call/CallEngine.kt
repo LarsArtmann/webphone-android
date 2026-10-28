@@ -29,7 +29,6 @@ import software.larsartmann.webphone.sip.SipEngine
  * read-modify-write sequences atomic.
  */
 object CallEngine : SipEngine.Listener {
-
     enum class Phase { IDLE, DIALLING, RINGING_IN, ACTIVE, HELD, ENDED }
 
     /** Who ended the call — the Telecom connection renders this as
@@ -80,6 +79,7 @@ object CallEngine : SipEngine.Listener {
     @Volatile private var sip: SipEngine? = null
     private var media: WebRtcEngine.CallMedia? = null
     private var pendingInvite: SipEngine.IncomingInvite? = null
+
     @Volatile private var cancelledLocally = false
 
     /** The call epoch: true from the first moment a call claims the
@@ -234,12 +234,13 @@ object CallEngine : SipEngine.Listener {
         }
     }
 
-    fun toggleMute(): Boolean = synchronized(callLock) {
-        val muted = !_state.value.muted
-        media?.setMicrophoneMuted(muted)
-        _state.value = _state.value.copy(muted = muted)
-        muted
-    }
+    fun toggleMute(): Boolean =
+        synchronized(callLock) {
+            val muted = !_state.value.muted
+            media?.setMicrophoneMuted(muted)
+            _state.value = _state.value.copy(muted = muted)
+            muted
+        }
 
     fun toggleHold() {
         synchronized(callLock) {
@@ -271,35 +272,46 @@ object CallEngine : SipEngine.Listener {
     // -- SipEngine.Listener ------------------------------------------
 
     override fun onRegistrationState(state: SipEngine.RegistrationState) {
-        _registration.value = when (state) {
-            SipEngine.RegistrationState.REGISTERED ->
-                RegistrationInfo(Registration.REGISTERED)
-            SipEngine.RegistrationState.AUTH_REJECTED ->
-                RegistrationInfo(Registration.OFF, RegistrationFailure.AUTH_REJECTED)
-            SipEngine.RegistrationState.OFFLINE ->
-                RegistrationInfo(Registration.OFF, RegistrationFailure.OFFLINE)
-        }
+        _registration.value =
+            when (state) {
+                SipEngine.RegistrationState.REGISTERED ->
+                    RegistrationInfo(Registration.REGISTERED)
+                SipEngine.RegistrationState.AUTH_REJECTED ->
+                    RegistrationInfo(Registration.OFF, RegistrationFailure.AUTH_REJECTED)
+                SipEngine.RegistrationState.OFFLINE ->
+                    RegistrationInfo(Registration.OFF, RegistrationFailure.OFFLINE)
+            }
     }
 
-    override fun onCallProgress(callId: String, ringing: Boolean) {
+    override fun onCallProgress(
+        callId: String,
+        ringing: Boolean,
+    ) {
         _state.update { current ->
             if (current.callId == callId && ringing) current.copy(phase = Phase.DIALLING) else current
         }
     }
 
-    override fun onCallEstablished(callId: String, remoteSdp: String) {
+    override fun onCallEstablished(
+        callId: String,
+        remoteSdp: String,
+    ) {
         synchronized(callLock) {
             if (!callLive || _state.value.callId != callId) return
             media?.acceptAnswer(SessionDescription(SessionDescription.Type.ANSWER, remoteSdp))
-            _state.value = _state.value.copy(
-                phase = Phase.ACTIVE,
-                callId = callId,
-                // First establishment only — a re-INVITE's 200 (hold/
-                // unhold) re-enters here and must not reset the clock.
-                startedAtMs =
-                    if (_state.value.startedAtMs == 0L) System.currentTimeMillis()
-                    else _state.value.startedAtMs,
-            )
+            _state.value =
+                _state.value.copy(
+                    phase = Phase.ACTIVE,
+                    callId = callId,
+                    // First establishment only — a re-INVITE's 200 (hold/
+                    // unhold) re-enters here and must not reset the clock.
+                    startedAtMs =
+                        if (_state.value.startedAtMs == 0L) {
+                            System.currentTimeMillis()
+                        } else {
+                            _state.value.startedAtMs
+                        },
+                )
         }
     }
 
@@ -314,7 +326,10 @@ object CallEngine : SipEngine.Listener {
         }
     }
 
-    override fun onTransferVerdict(callId: String, verdict: String) {
+    override fun onTransferVerdict(
+        callId: String,
+        verdict: String,
+    ) {
         if (verdict.startsWith("2")) {
             // Server executed the transfer; our leg is going away.
             hangUp()

@@ -28,7 +28,6 @@ import software.larsartmann.webphone.push.RingEvent
  * the API 36 stubs — `onCreateOutgoingConnection` cannot fire and is
  * deleted (a ghost stays deleted, never polished). */
 class CallConnectionService : ConnectionService() {
-
     override fun onCreateIncomingConnection(
         connectionManagerPhoneAccount: PhoneAccountHandle?,
         request: ConnectionRequest,
@@ -46,8 +45,9 @@ class CallConnectionService : ConnectionService() {
     }
 
     /** The bridge between the Telecom world and our CallEngine. */
-    private class SelfManagedConnection(private val appContext: Context) : Connection() {
-
+    private class SelfManagedConnection(
+        private val appContext: Context,
+    ) : Connection() {
         internal var watcher: Job? = null
         private var lastPhase: CallEngine.Phase? = null
         private var terminated = false
@@ -58,24 +58,26 @@ class CallConnectionService : ConnectionService() {
          *  connection down (before the watcher, a remote hang-up left
          *  a zombie connection the BT stack still believed was live). */
         fun watchCallState(scope: CoroutineScope) {
-            watcher = scope.launch {
-                CallEngine.state.collect { state ->
-                    if (state.phase == lastPhase || terminated) return@collect
-                    lastPhase = state.phase
-                    when (state.phase) {
-                        CallEngine.Phase.ACTIVE -> setActive()
-                        CallEngine.Phase.HELD -> setOnHold()
-                        CallEngine.Phase.ENDED -> terminate(
-                            when (state.endedBy) {
-                                CallEngine.EndedBy.LOCAL -> DisconnectCause.LOCAL
-                                CallEngine.EndedBy.FAILED -> DisconnectCause.ERROR
-                                else -> DisconnectCause.REMOTE
-                            },
-                        )
-                        else -> Unit
+            watcher =
+                scope.launch {
+                    CallEngine.state.collect { state ->
+                        if (state.phase == lastPhase || terminated) return@collect
+                        lastPhase = state.phase
+                        when (state.phase) {
+                            CallEngine.Phase.ACTIVE -> setActive()
+                            CallEngine.Phase.HELD -> setOnHold()
+                            CallEngine.Phase.ENDED ->
+                                terminate(
+                                    when (state.endedBy) {
+                                        CallEngine.EndedBy.LOCAL -> DisconnectCause.LOCAL
+                                        CallEngine.EndedBy.FAILED -> DisconnectCause.ERROR
+                                        else -> DisconnectCause.REMOTE
+                                    },
+                                )
+                            else -> Unit
+                        }
                     }
                 }
-            }
         }
 
         /** The ONE disconnect path (idempotent): every end-of-call route
@@ -126,13 +128,17 @@ class CallConnectionService : ConnectionService() {
     companion object {
         private const val TAG = "CallConnectionService"
         private var handle: PhoneAccountHandle? = null
+
         @Volatile private var activeConnection: SelfManagedConnection? = null
         private val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
         /** The outbound entry: the dialer's ONLY call path. API 34+
          *  rides the modern addCall session (BT/watches/audio routing
          *  see the call); older devices dial directly. */
-        fun placeOutgoingCall(context: Context, number: String) {
+        fun placeOutgoingCall(
+            context: Context,
+            number: String,
+        ) {
             val current = CallEngine.state.value
             if (current.phase != CallEngine.Phase.IDLE && current.phase != CallEngine.Phase.ENDED) {
                 return // The single-call policy; the dialer already guards.
@@ -157,13 +163,15 @@ class CallConnectionService : ConnectionService() {
 
         fun accountHandle(context: Context): PhoneAccountHandle {
             handle?.let { return it }
-            val resolved = PhoneAccountHandle(
-                ComponentName(context, CallConnectionService::class.java),
-                "webphone",
-            )
+            val resolved =
+                PhoneAccountHandle(
+                    ComponentName(context, CallConnectionService::class.java),
+                    "webphone",
+                )
             val telecom = context.getSystemService(TelecomManager::class.java)
             telecom.registerPhoneAccount(
-                PhoneAccount.builder(resolved, "WebPhone")
+                PhoneAccount
+                    .builder(resolved, "WebPhone")
                     .setCapabilities(PhoneAccount.CAPABILITY_SELF_MANAGED)
                     .build(),
             )

@@ -23,7 +23,6 @@ import software.larsartmann.webphone.App
  * rotate-on-login contract the island's authedFetch rides).
  */
 object SessionApi {
-
     private const val TAG = "SessionApi"
     private val json = "application/json".toMediaType()
 
@@ -31,26 +30,33 @@ object SessionApi {
      *  mints there; OkHttp reads and writes the same jar so the
      *  session is genuinely shared (no second, drift-prone store that
      *  never sees the login cookie — the v0.1 gap, closed). */
-    private val cookieJar = object : CookieJar {
-        override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-            val manager = CookieManager.getInstance()
-            for (cookie in cookies) {
-                runCatching { manager.setCookie(url.toString(), cookie.toString()) }
+    private val cookieJar =
+        object : CookieJar {
+            override fun saveFromResponse(
+                url: HttpUrl,
+                cookies: List<Cookie>,
+            ) {
+                val manager = CookieManager.getInstance()
+                for (cookie in cookies) {
+                    runCatching { manager.setCookie(url.toString(), cookie.toString()) }
+                }
+                runCatching { manager.flush() }
             }
-            runCatching { manager.flush() }
+
+            override fun loadForRequest(url: HttpUrl): List<Cookie> {
+                val raw =
+                    runCatching { CookieManager.getInstance().getCookie(url.toString()) }
+                        .getOrNull() ?: return emptyList()
+                return raw.split(";").mapNotNull { Cookie.parse(url, it.trim()) }
+            }
         }
 
-        override fun loadForRequest(url: HttpUrl): List<Cookie> {
-            val raw = runCatching { CookieManager.getInstance().getCookie(url.toString()) }
-                .getOrNull() ?: return emptyList()
-            return raw.split(";").mapNotNull { Cookie.parse(url, it.trim()) }
-        }
-    }
-
-    private val client = OkHttpClient.Builder()
-        .cookieJar(cookieJar)
-        .followRedirects(true)
-        .build()
+    private val client =
+        OkHttpClient
+            .Builder()
+            .cookieJar(cookieJar)
+            .followRedirects(true)
+            .build()
 
     data class SessionIdentity(
         val extension: String,
@@ -76,28 +82,36 @@ object SessionApi {
                 extension = root.optString("extension"),
                 sipDomain = root.optString("sip_domain").ifEmpty { root.optString("sipDomain") },
                 sipPassword = root.optString("sip_password").ifEmpty { root.optString("sipPassword") },
-                websocketUrl = root.optString("websocket_url").ifEmpty {
-                    App.origin.replaceFirst("http", "ws").trimEnd('/') + "/sip"
-                },
+                websocketUrl =
+                    root.optString("websocket_url").ifEmpty {
+                        App.origin.replaceFirst("http", "ws").trimEnd('/') + "/sip"
+                    },
             )
         }.getOrNull()?.takeIf { it.extension.isNotEmpty() }
     }
 
     /** Register this install's push wake address (upsert — token
      *  rotation replaces the row server-side). */
-    fun registerPushDevice(context: Context, transport: String, token: String): Boolean {
-        val payload = JSONObject()
-            .put("device_id", DeviceIdentity.deviceId(context))
-            .put("transport", transport)
-            .put("token", token)
-            .toString()
+    fun registerPushDevice(
+        context: Context,
+        transport: String,
+        token: String,
+    ): Boolean {
+        val payload =
+            JSONObject()
+                .put("device_id", DeviceIdentity.deviceId(context))
+                .put("transport", transport)
+                .put("token", token)
+                .toString()
         val csrf = fetchCsrf() ?: return false
-        val request = Request.Builder()
-            .url(App.origin.trimEnd('/') + "/api/push-devices")
-            .header("Cookie", sessionCookieHeader())
-            .header("X-CSRF-Token", csrf)
-            .post(payload.toRequestBody(json))
-            .build()
+        val request =
+            Request
+                .Builder()
+                .url(App.origin.trimEnd('/') + "/api/push-devices")
+                .header("Cookie", sessionCookieHeader())
+                .header("X-CSRF-Token", csrf)
+                .post(payload.toRequestBody(json))
+                .build()
         return runCatching {
             client.newCall(request).execute().use { response ->
                 if (response.code == 204) {
@@ -114,12 +128,14 @@ object SessionApi {
     /** Deregister on logout (the registry's device row goes away). */
     fun deregisterPushDevice(context: Context): Boolean {
         val csrf = fetchCsrf() ?: return false
-        val request = Request.Builder()
-            .url(App.origin.trimEnd('/') + "/api/push-devices?id=" + DeviceIdentity.deviceId(context))
-            .header("Cookie", sessionCookieHeader())
-            .header("X-CSRF-Token", csrf)
-            .delete()
-            .build()
+        val request =
+            Request
+                .Builder()
+                .url(App.origin.trimEnd('/') + "/api/push-devices?id=" + DeviceIdentity.deviceId(context))
+                .header("Cookie", sessionCookieHeader())
+                .header("X-CSRF-Token", csrf)
+                .delete()
+                .build()
         return runCatching {
             client.newCall(request).execute().use { it.code == 204 }
         }.getOrDefault(false)
@@ -130,12 +146,18 @@ object SessionApi {
         return runCatching { JSONObject(body).optString("token") }.getOrNull()?.takeIf { it.isNotEmpty() }
     }
 
-    private fun call(method: String, path: String, body: String?): String? {
-        val request = Request.Builder()
-            .url(App.origin.trimEnd('/') + path)
-            .header("Cookie", sessionCookieHeader())
-            .method(method, body?.toRequestBody(json))
-            .build()
+    private fun call(
+        method: String,
+        path: String,
+        body: String?,
+    ): String? {
+        val request =
+            Request
+                .Builder()
+                .url(App.origin.trimEnd('/') + path)
+                .header("Cookie", sessionCookieHeader())
+                .method(method, body?.toRequestBody(json))
+                .build()
         return runCatching {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {

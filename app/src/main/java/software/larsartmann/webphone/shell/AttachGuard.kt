@@ -13,7 +13,6 @@ package software.larsartmann.webphone.shell
  * coroutine soup around it.
  */
 internal class AttachGuard<T : Any> {
-
     @Volatile private var generation = 0L
     private val lock = Any()
     private var attached: T? = null
@@ -26,11 +25,15 @@ internal class AttachGuard<T : Any> {
 
     /** Attach only if nothing is attached AND the attempt's generation
      *  is still the live one (shutdown invalidates older ones). */
-    fun attach(candidate: T, attemptGeneration: Long): Boolean = synchronized(lock) {
-        if (attached != null || attemptGeneration != generation) return false
-        attached = candidate
-        true
-    }
+    fun attach(
+        candidate: T,
+        attemptGeneration: Long,
+    ): Boolean =
+        synchronized(lock) {
+            if (attached != null || attemptGeneration != generation) return false
+            attached = candidate
+            true
+        }
 
     /** Shutdown: invalidate every in-flight attempt, then forget the
      *  attached engine (detach is the caller's job — it may need the

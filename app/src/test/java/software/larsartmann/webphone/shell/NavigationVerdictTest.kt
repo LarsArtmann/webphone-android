@@ -18,7 +18,6 @@ import kotlin.test.assertIs
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class NavigationVerdictTest {
-
     private val origin = Uri.parse("https://pbx.artmann.tech")
 
     @Test
@@ -65,7 +64,10 @@ class NavigationVerdictTest {
     fun `webview-internal schemes stay`() {
         assertEquals(NavigationVerdict.LoadInShell, navigationVerdict(Uri.parse("about:blank"), origin))
         assertEquals(NavigationVerdict.LoadInShell, navigationVerdict(Uri.parse("data:,"), origin))
-        assertEquals(NavigationVerdict.LoadInShell, navigationVerdict(Uri.parse("blob:https://pbx.artmann.tech/uuid"), origin))
+        assertEquals(
+            NavigationVerdict.LoadInShell,
+            navigationVerdict(Uri.parse("blob:https://pbx.artmann.tech/uuid"), origin),
+        )
     }
 
     @Test

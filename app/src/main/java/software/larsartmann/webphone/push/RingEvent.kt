@@ -36,7 +36,12 @@ object RingEvent {
     const val EXTRA_FROM = "software.larsartmann.webphone.extra.FROM"
     const val EXTRA_CALL_ID = "software.larsartmann.webphone.extra.CALL_ID"
 
-    fun route(context: Context, event: String, from: String?, callId: String?) {
+    fun route(
+        context: Context,
+        event: String,
+        from: String?,
+        callId: String?,
+    ) {
         when (event) {
             "ring" -> ring(context, from ?: "Unknown", callId ?: "")
             "ring_end" -> standDown(context, from)
@@ -47,9 +52,14 @@ object RingEvent {
      *  (anything but IDLE and the last call's ENDED beat) owns the
      *  line. */
     private fun lineBusy(): Boolean =
-        CallEngine.state.value.phase.let { it != CallEngine.Phase.IDLE && it != CallEngine.Phase.ENDED }
+        CallEngine.state.value.phase
+            .let { it != CallEngine.Phase.IDLE && it != CallEngine.Phase.ENDED }
 
-    private fun ring(context: Context, from: String, callId: String) {
+    private fun ring(
+        context: Context,
+        from: String,
+        callId: String,
+    ) {
         if (lineBusy()) {
             // The SIP layer 486s the second INVITE by itself; the
             // HUMAN still deserves to know the line was busy — a
@@ -65,22 +75,25 @@ object RingEvent {
             // user cannot answer (W170). A plain heads-up naming the
             // cause takes the ring's place; the server's ring_end
             // clears it (same notification id).
-            val builder = NotificationCompat.Builder(context, App.CHANNEL_CALLS)
-                .setSmallIcon(android.R.drawable.sym_call_incoming)
-                .setContentTitle(from)
-                .setContentText(context.getString(R.string.registration_auth_rejected))
-                .setCategory(NotificationCompat.CATEGORY_CALL)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
+            val builder =
+                NotificationCompat
+                    .Builder(context, App.CHANNEL_CALLS)
+                    .setSmallIcon(android.R.drawable.sym_call_incoming)
+                    .setContentTitle(from)
+                    .setContentText(context.getString(R.string.registration_auth_rejected))
+                    .setCategory(NotificationCompat.CATEGORY_CALL)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setAutoCancel(true)
             post(context, NOTIFICATION_ID_INCOMING, builder.build())
             return
         }
 
         val telecom = context.getSystemService(TelecomManager::class.java) ?: return
-        val extras = Bundle().apply {
-            putString(EXTRA_FROM, from)
-            putString(EXTRA_CALL_ID, callId)
-        }
+        val extras =
+            Bundle().apply {
+                putString(EXTRA_FROM, from)
+                putString(EXTRA_CALL_ID, callId)
+            }
         // The classic self-managed incoming-call API: account handle +
         // extras bundle; the system builds the ConnectionRequest and
         // routes it to our ConnectionService.
@@ -90,22 +103,25 @@ object RingEvent {
         // land on (the push rings first; the bootstrap races it).
         CallLayer.ensureWired(context)
 
-        val fullScreen = PendingIntent.getActivity(
-            context,
-            0,
-            Intent(context, CallActivity::class.java)
-                .putExtra(EXTRA_FROM, from)
-                .putExtra(EXTRA_CALL_ID, callId)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val builder = NotificationCompat.Builder(context, App.CHANNEL_CALLS)
-            .setSmallIcon(android.R.drawable.sym_call_incoming)
-            .setContentTitle(context.getString(R.string.incoming_call))
-            .setContentText(from)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setOngoing(true)
+        val fullScreen =
+            PendingIntent.getActivity(
+                context,
+                0,
+                Intent(context, CallActivity::class.java)
+                    .putExtra(EXTRA_FROM, from)
+                    .putExtra(EXTRA_CALL_ID, callId)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        val builder =
+            NotificationCompat
+                .Builder(context, App.CHANNEL_CALLS)
+                .setSmallIcon(android.R.drawable.sym_call_incoming)
+                .setContentTitle(context.getString(R.string.incoming_call))
+                .setContentText(from)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setOngoing(true)
         // CallStyle: the platform-native incoming-call look with the
         // shade's Answer/Decline actions. Requires a ringing Telecom
         // call AT POST TIME — Telecom's registration of the ringing
@@ -115,7 +131,10 @@ object RingEvent {
         runCatching {
             builder.setStyle(
                 NotificationCompat.CallStyle.forIncomingCall(
-                    androidx.core.app.Person.Builder().setName(from).build(),
+                    androidx.core.app.Person
+                        .Builder()
+                        .setName(from)
+                        .build(),
                     notificationAction(context, CallNotificationReceiver.ACTION_DECLINE, requestCode = 2),
                     notificationAction(context, CallNotificationReceiver.ACTION_ANSWER, requestCode = 1),
                 ),
@@ -128,7 +147,10 @@ object RingEvent {
         post(context, NOTIFICATION_ID_INCOMING, builder.build())
     }
 
-    private fun standDown(context: Context, from: String?) {
+    private fun standDown(
+        context: Context,
+        from: String?,
+    ) {
         val unansweredHere = CallEngine.state.value.phase == CallEngine.Phase.RINGING_IN
         context.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID_INCOMING)
         CallConnectionService.standDownRinging()
@@ -140,26 +162,36 @@ object RingEvent {
         }
     }
 
-    private fun notifyMissedCall(context: Context, from: String) {
-        val contentIntent = PendingIntent.getActivity(
-            context,
-            4,
-            Intent(context, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val builder = NotificationCompat.Builder(context, App.CHANNEL_CALLS)
-            .setSmallIcon(android.R.drawable.sym_call_missed)
-            .setContentTitle(context.getString(R.string.missed_call))
-            .setContentText(from)
-            .setContentIntent(contentIntent)
-            .setCategory(Notification.CATEGORY_MISSED_CALL)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
+    private fun notifyMissedCall(
+        context: Context,
+        from: String,
+    ) {
+        val contentIntent =
+            PendingIntent.getActivity(
+                context,
+                4,
+                Intent(context, MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        val builder =
+            NotificationCompat
+                .Builder(context, App.CHANNEL_CALLS)
+                .setSmallIcon(android.R.drawable.sym_call_missed)
+                .setContentTitle(context.getString(R.string.missed_call))
+                .setContentText(from)
+                .setContentIntent(contentIntent)
+                .setCategory(Notification.CATEGORY_MISSED_CALL)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
         post(context, NOTIFICATION_ID_MISSED, builder.build())
     }
 
-    private fun notificationAction(context: Context, action: String, requestCode: Int): PendingIntent =
+    private fun notificationAction(
+        context: Context,
+        action: String,
+        requestCode: Int,
+    ): PendingIntent =
         PendingIntent.getBroadcast(
             context,
             requestCode,
@@ -167,7 +199,11 @@ object RingEvent {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-    private fun post(context: Context, id: Int, notification: Notification) {
+    private fun post(
+        context: Context,
+        id: Int,
+        notification: Notification,
+    ) {
         val compat = NotificationManagerCompat.from(context)
         if (!compat.areNotificationsEnabled()) return
         runCatching { compat.notify(id, notification) }

@@ -1,7 +1,5 @@
 package software.larsartmann.webphone.sip
 
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.test.runTest
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
@@ -10,6 +8,8 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -25,16 +25,16 @@ import kotlin.test.assertTrue
  * native offer — JVM-impossible by design).
  */
 class SipEngineOverTheWireTest {
-
     private class States {
         val seen = LinkedBlockingQueue<SipEngine.RegistrationState>()
 
         fun await(expected: SipEngine.RegistrationState) {
             while (true) {
-                val next = assertNotNull(
-                    seen.poll(10, TimeUnit.SECONDS),
-                    "timed out waiting for $expected",
-                )
+                val next =
+                    assertNotNull(
+                        seen.poll(10, TimeUnit.SECONDS),
+                        "timed out waiting for $expected",
+                    )
                 if (next == expected) return
             }
         }
@@ -48,25 +48,35 @@ class SipEngineOverTheWireTest {
 
     /** Echo helpers: SIP responses MUST reuse the request's Call-ID,
      *  CSeq and Via or the engine drops them as foreign transactions. */
-    private fun headerOf(frame: String, name: String): String =
-        frame.lineSequence()
+    private fun headerOf(
+        frame: String,
+        name: String,
+    ): String =
+        frame
+            .lineSequence()
             .firstOrNull { it.startsWith(name, ignoreCase = true) }
             ?.substringAfter(":")
             ?.trim()
             ?: throw AssertionError("no $name in frame:\n$frame")
 
-    private fun respond(status: Int, reason: String, request: String, auth: String? = null) {
+    private fun respond(
+        status: Int,
+        reason: String,
+        request: String,
+        auth: String? = null,
+    ) {
         val ws = assertNotNull(socket, "PBX websocket not open")
-        val headers = buildList {
-            add("Via: ${headerOf(request, "Via")}")
-            add("From: ${headerOf(request, "From")}")
-            add("To: ${headerOf(request, "To")}")
-            add("Call-ID: ${headerOf(request, "Call-ID")}")
-            add("CSeq: ${headerOf(request, "CSeq")}")
-            add("Contact: <sip:100@pbx.example;transport=wss>")
-            if (auth != null) add(auth)
-            add("Content-Length: 0")
-        }
+        val headers =
+            buildList {
+                add("Via: ${headerOf(request, "Via")}")
+                add("From: ${headerOf(request, "From")}")
+                add("To: ${headerOf(request, "To")}")
+                add("Call-ID: ${headerOf(request, "Call-ID")}")
+                add("CSeq: ${headerOf(request, "CSeq")}")
+                add("Contact: <sip:100@pbx.example;transport=wss>")
+                if (auth != null) add(auth)
+                add("Content-Length: 0")
+            }
         ws.send((listOf("SIP/2.0 $status $reason") + headers).joinToString("\r\n") + "\r\n\r\n")
     }
 
@@ -96,11 +106,17 @@ class SipEngineOverTheWireTest {
         server.enqueue(
             MockResponse().withWebSocketUpgrade(
                 object : WebSocketListener() {
-                    override fun onOpen(webSocket: WebSocket, response: okhttp3.Response) {
+                    override fun onOpen(
+                        webSocket: WebSocket,
+                        response: okhttp3.Response,
+                    ) {
                         socket = webSocket
                     }
 
-                    override fun onMessage(webSocket: WebSocket, text: String) {
+                    override fun onMessage(
+                        webSocket: WebSocket,
+                        text: String,
+                    ) {
                         frames.add(text)
                     }
                 },
@@ -118,89 +134,107 @@ class SipEngineOverTheWireTest {
     private fun engine(): SipEngine =
         SipEngine(
             scope = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO),
-            config = SipEngine.Config(
-                wsUrl = server.url("/sip").toString(),
-                sipDomain = "pbx.example",
-                extension = "100",
-                password = "secret",
-            ),
+            config =
+                SipEngine.Config(
+                    wsUrl = server.url("/sip").toString(),
+                    sipDomain = "pbx.example",
+                    extension = "100",
+                    password = "secret",
+                ),
         ).apply {
-            listener = object : SipEngine.Listener {
-                override fun onRegistrationState(state: SipEngine.RegistrationState) {
-                    states.seen.add(state)
-                }
+            listener =
+                object : SipEngine.Listener {
+                    override fun onRegistrationState(state: SipEngine.RegistrationState) {
+                        states.seen.add(state)
+                    }
 
-                override fun onIncomingCall(invite: SipEngine.IncomingInvite) = Unit
-                override fun onCallProgress(callId: String, ringing: Boolean) = Unit
-                override fun onCallEstablished(callId: String, remoteSdp: String) = Unit
-                override fun onCallEnded(callId: String) = Unit
-                override fun onTransferVerdict(callId: String, verdict: String) = Unit
+                    override fun onIncomingCall(invite: SipEngine.IncomingInvite) = Unit
+
+                    override fun onCallProgress(
+                        callId: String,
+                        ringing: Boolean,
+                    ) = Unit
+
+                    override fun onCallEstablished(
+                        callId: String,
+                        remoteSdp: String,
+                    ) = Unit
+
+                    override fun onCallEnded(callId: String) = Unit
+
+                    override fun onTransferVerdict(
+                        callId: String,
+                        verdict: String,
+                    ) = Unit
+                }
+        }
+
+    @Test
+    fun `the challenge ladder registers over a real socket`() =
+        runTest {
+            val engine = engine()
+            engine.connect()
+            try {
+                val first = awaitRegister()
+                assertTrue("Authorization" !in first, "the first REGISTER rides bare")
+                respond(401, "Unauthorized", first, challenge(stale = false))
+
+                val second = awaitRegister()
+                val authorization = headerOf(second, "Authorization")
+                assertTrue(authorization.contains("username=\"100\""), authorization)
+                assertTrue(authorization.contains("realm=\"pbx.example\""), authorization)
+                assertTrue("response=" in authorization, authorization)
+                respond(200, "OK", second)
+
+                states.await(SipEngine.RegistrationState.REGISTERED)
+            } finally {
+                engine.disconnect()
             }
         }
 
     @Test
-    fun `the challenge ladder registers over a real socket`() = runTest {
-        val engine = engine()
-        engine.connect()
-        try {
-            val first = awaitRegister()
-            assertTrue("Authorization" !in first, "the first REGISTER rides bare")
-            respond(401, "Unauthorized", first, challenge(stale = false))
+    fun `a wrong password ends the ladder instead of flooding the wire`() =
+        runTest {
+            val engine = engine()
+            engine.connect()
+            try {
+                val first = awaitRegister()
+                respond(401, "Unauthorized", first, challenge(stale = false))
 
-            val second = awaitRegister()
-            val authorization = headerOf(second, "Authorization")
-            assertTrue(authorization.contains("username=\"100\""), authorization)
-            assertTrue(authorization.contains("realm=\"pbx.example\""), authorization)
-            assertTrue("response=" in authorization, authorization)
-            respond(200, "OK", second)
+                val second = awaitRegister()
+                respond(401, "Unauthorized", second, challenge(stale = false))
 
-            states.await(SipEngine.RegistrationState.REGISTERED)
-        } finally {
-            engine.disconnect()
+                states.await(SipEngine.RegistrationState.AUTH_REJECTED)
+
+                assertEquals(
+                    2,
+                    registersSeen,
+                    "the ladder is bounded: ONE credentialed retry, then stop",
+                )
+            } finally {
+                engine.disconnect()
+            }
         }
-    }
 
     @Test
-    fun `a wrong password ends the ladder instead of flooding the wire`() = runTest {
-        val engine = engine()
-        engine.connect()
-        try {
-            val first = awaitRegister()
-            respond(401, "Unauthorized", first, challenge(stale = false))
+    fun `stale=true buys exactly one extra retry`() =
+        runTest {
+            val engine = engine()
+            engine.connect()
+            try {
+                respond(401, "Unauthorized", awaitRegister(), challenge(stale = true))
+                respond(401, "Unauthorized", awaitRegister(), challenge(stale = true))
+                respond(401, "Unauthorized", awaitRegister(), challenge(stale = true))
 
-            val second = awaitRegister()
-            respond(401, "Unauthorized", second, challenge(stale = false))
+                states.await(SipEngine.RegistrationState.AUTH_REJECTED)
 
-            states.await(SipEngine.RegistrationState.AUTH_REJECTED)
-
-            assertEquals(
-                2,
-                registersSeen,
-                "the ladder is bounded: ONE credentialed retry, then stop",
-            )
-        } finally {
-            engine.disconnect()
+                assertEquals(
+                    3,
+                    registersSeen,
+                    "stale=true grants two retries, the third challenge refuses",
+                )
+            } finally {
+                engine.disconnect()
+            }
         }
-    }
-
-    @Test
-    fun `stale=true buys exactly one extra retry`() = runTest {
-        val engine = engine()
-        engine.connect()
-        try {
-            respond(401, "Unauthorized", awaitRegister(), challenge(stale = true))
-            respond(401, "Unauthorized", awaitRegister(), challenge(stale = true))
-            respond(401, "Unauthorized", awaitRegister(), challenge(stale = true))
-
-            states.await(SipEngine.RegistrationState.AUTH_REJECTED)
-
-            assertEquals(
-                3,
-                registersSeen,
-                "stale=true grants two retries, the third challenge refuses",
-            )
-        } finally {
-            engine.disconnect()
-        }
-    }
 }

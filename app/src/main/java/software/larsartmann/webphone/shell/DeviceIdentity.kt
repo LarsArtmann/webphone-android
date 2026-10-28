@@ -11,7 +11,6 @@ import kotlin.random.asKotlinRandom
  * unguessable ntfy topic (the de-Googled lane's wake address).
  */
 object DeviceIdentity {
-
     private const val PREFS = "webphone-device"
     private const val KEY_DEVICE_ID = "device-id"
     private const val KEY_NTFY_TOPIC = "ntfy-topic"
@@ -23,19 +22,21 @@ object DeviceIdentity {
     fun generateTopic(random: kotlin.random.Random = kotlin.random.Random.Default): String =
         ByteArray(16).also(random::nextBytes).joinToString("") { "%02x".format(it) }
 
-    fun deviceId(context: Context): String = synchronized(this) {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        prefs.getString(KEY_DEVICE_ID, null) ?: UUID.randomUUID().toString().also {
-            prefs.edit().putString(KEY_DEVICE_ID, it).apply()
+    fun deviceId(context: Context): String =
+        synchronized(this) {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            prefs.getString(KEY_DEVICE_ID, null) ?: UUID.randomUUID().toString().also {
+                prefs.edit().putString(KEY_DEVICE_ID, it).apply()
+            }
         }
-    }
 
-    fun ntfyTopic(context: Context): String = synchronized(this) {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        prefs.getString(KEY_NTFY_TOPIC, null) ?: generateTopic(
-            SecureRandom().asKotlinRandom(),
-        ).also {
-            prefs.edit().putString(KEY_NTFY_TOPIC, it).apply()
+    fun ntfyTopic(context: Context): String =
+        synchronized(this) {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            prefs.getString(KEY_NTFY_TOPIC, null) ?: generateTopic(
+                SecureRandom().asKotlinRandom(),
+            ).also {
+                prefs.edit().putString(KEY_NTFY_TOPIC, it).apply()
+            }
         }
-    }
 }

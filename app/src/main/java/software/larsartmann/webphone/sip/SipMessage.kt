@@ -19,35 +19,36 @@ data class SipMessage(
     val headers: List<SipHeader>,
     val body: String,
 ) {
-    fun header(name: String): String? =
-        headers.firstOrNull { it.name.equals(name, ignoreCase = true) }?.value
+    fun header(name: String): String? = headers.firstOrNull { it.name.equals(name, ignoreCase = true) }?.value
 
     fun headersOf(name: String): List<String> =
         headers.filter { it.name.equals(name, ignoreCase = true) }.map { it.value }
 
-    fun cseq(): Pair<Long, String>? = header("CSeq")?.let { raw ->
-        val parts = raw.trim().split(" ", limit = 2)
-        if (parts.size == 2) {
-            parts[0].toLongOrNull()?.let { n -> n to parts[1].trim().uppercase() }
-        } else {
-            null
+    fun cseq(): Pair<Long, String>? =
+        header("CSeq")?.let { raw ->
+            val parts = raw.trim().split(" ", limit = 2)
+            if (parts.size == 2) {
+                parts[0].toLongOrNull()?.let { n -> n to parts[1].trim().uppercase() }
+            } else {
+                null
+            }
         }
-    }
 
     fun callId(): String = header("Call-ID").orEmpty()
 
-    fun render(): String = buildString {
-        if (isRequest) {
-            append("$method $uri SIP/2.0\r\n")
-        } else {
-            append("SIP/2.0 $statusCode $reason\r\n")
+    fun render(): String =
+        buildString {
+            if (isRequest) {
+                append("$method $uri SIP/2.0\r\n")
+            } else {
+                append("SIP/2.0 $statusCode $reason\r\n")
+            }
+            for (h in headers) {
+                append("${h.name}: ${h.value}\r\n")
+            }
+            append("\r\n")
+            append(body)
         }
-        for (h in headers) {
-            append("${h.name}: ${h.value}\r\n")
-        }
-        append("\r\n")
-        append(body)
-    }
 
     companion object {
         fun parse(raw: String): SipMessage? {
@@ -79,14 +80,18 @@ data class SipMessage(
                 reason = if (parts.size == 3) parts[2] else ""
             }
 
-            val headers = lines.drop(1).mapNotNull { line ->
-                val colon = line.indexOf(':')
-                if (colon <= 0) return@mapNotNull null
-                SipHeader(line.substring(0, colon).trim(), line.substring(colon + 1).trim())
-            }
+            val headers =
+                lines.drop(1).mapNotNull { line ->
+                    val colon = line.indexOf(':')
+                    if (colon <= 0) return@mapNotNull null
+                    SipHeader(line.substring(0, colon).trim(), line.substring(colon + 1).trim())
+                }
             return SipMessage(isRequest, method, uri, statusCode, reason, headers, body)
         }
     }
 }
 
-data class SipHeader(val name: String, val value: String)
+data class SipHeader(
+    val name: String,
+    val value: String,
+)

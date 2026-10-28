@@ -25,15 +25,16 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class SettingsActivityTest {
-
-    private fun views(root: View?): List<android.view.View> = when (root) {
-        null -> emptyList()
-        is ViewGroup -> buildList {
-            add(root)
-            for (i in 0 until root.childCount) addAll(views(root.getChildAt(i)))
+    private fun views(root: View?): List<android.view.View> =
+        when (root) {
+            null -> emptyList()
+            is ViewGroup ->
+                buildList {
+                    add(root)
+                    for (i in 0 until root.childCount) addAll(views(root.getChildAt(i)))
+                }
+            else -> listOf(root)
         }
-        else -> listOf(root)
-    }
 
     @Test
     fun `invalid origin is refused and keeps the old one`() {
@@ -41,8 +42,10 @@ class SettingsActivityTest {
         ActivityScenario.launch(SettingsActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 val input = views(activity.window.decorView).filterIsInstance<EditText>().single()
-                val save = views(activity.window.decorView).filterIsInstance<TextView>()
-                    .single { it.text == app.getString(R.string.settings_save) }
+                val save =
+                    views(activity.window.decorView)
+                        .filterIsInstance<TextView>()
+                        .single { it.text == app.getString(R.string.settings_save) }
                 input.setText("http://not-https.example.org")
                 save.performClick()
             }
@@ -57,8 +60,10 @@ class SettingsActivityTest {
             ActivityScenario.launch(SettingsActivity::class.java).use { scenario ->
                 scenario.onActivity { activity ->
                     val input = views(activity.window.decorView).filterIsInstance<EditText>().single()
-                    val save = views(activity.window.decorView).filterIsInstance<TextView>()
-                        .single { it.text == app.getString(R.string.settings_save) }
+                    val save =
+                        views(activity.window.decorView)
+                            .filterIsInstance<TextView>()
+                            .single { it.text == app.getString(R.string.settings_save) }
                     input.setText("https://stack.example.org")
                     save.performClick()
                     assertTrue(activity.isFinishing, "save completes the settings surface")

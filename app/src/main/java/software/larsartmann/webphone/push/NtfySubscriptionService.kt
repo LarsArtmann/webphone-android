@@ -29,9 +29,9 @@ import java.util.concurrent.TimeUnit
  * backs off exponentially, the web island's watchdog lesson applied.
  */
 class NtfySubscriptionService : Service() {
-
     private var socket: WebSocket? = null
     private var reconnectAttempts = 0
+
     @Volatile private var reconnecting = false
 
     /** Set by the explicit stop path AND onDestroy: the pending
@@ -42,9 +42,14 @@ class NtfySubscriptionService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         val notification: Notification =
-            Notification.Builder(this, App.CHANNEL_PUSH)
+            Notification
+                .Builder(this, App.CHANNEL_PUSH)
                 .setSmallIcon(android.R.drawable.stat_notify_sync_noanim)
                 .setContentTitle(getString(R.string.ntfy_subscription_active))
                 .setOngoing(true)
@@ -71,43 +76,72 @@ class NtfySubscriptionService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        prefs.edit().putString(KEY_SERVER, server).putString(KEY_TOPIC, topic).apply()
+        prefs
+            .edit()
+            .putString(KEY_SERVER, server)
+            .putString(KEY_TOPIC, topic)
+            .apply()
         subscribe(server, topic)
         return START_STICKY
     }
 
-    private fun subscribe(server: String, topic: String) {
+    private fun subscribe(
+        server: String,
+        topic: String,
+    ) {
         // Idempotent: start() is re-invoked on every MainActivity
         // resume; one socket per service instance is the contract.
         if (socket != null) return
-        val client = OkHttpClient.Builder()
-            .pingInterval(25, TimeUnit.SECONDS)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .build()
-        val request = Request.Builder()
-            .url(subscriptionUrl(server, topic))
-            .build()
-        socket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.i(TAG, "ntfy subscription open")
-                reconnectAttempts = 0
-            }
+        val client =
+            OkHttpClient
+                .Builder()
+                .pingInterval(25, TimeUnit.SECONDS)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .build()
+        val request =
+            Request
+                .Builder()
+                .url(subscriptionUrl(server, topic))
+                .build()
+        socket =
+            client.newWebSocket(
+                request,
+                object : WebSocketListener() {
+                    override fun onOpen(
+                        webSocket: WebSocket,
+                        response: Response,
+                    ) {
+                        Log.i(TAG, "ntfy subscription open")
+                        reconnectAttempts = 0
+                    }
 
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                routeMessage(text)
-            }
+                    override fun onMessage(
+                        webSocket: WebSocket,
+                        text: String,
+                    ) {
+                        routeMessage(text)
+                    }
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.w(TAG, "ntfy subscription failure: ${t.message}")
-                socket = null
-                scheduleReconnect(server, topic)
-            }
+                    override fun onFailure(
+                        webSocket: WebSocket,
+                        t: Throwable,
+                        response: Response?,
+                    ) {
+                        Log.w(TAG, "ntfy subscription failure: ${t.message}")
+                        socket = null
+                        scheduleReconnect(server, topic)
+                    }
 
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                socket = null
-                scheduleReconnect(server, topic)
-            }
-        })
+                    override fun onClosed(
+                        webSocket: WebSocket,
+                        code: Int,
+                        reason: String,
+                    ) {
+                        socket = null
+                        scheduleReconnect(server, topic)
+                    }
+                },
+            )
     }
 
     private fun routeMessage(text: String) {
@@ -127,7 +161,10 @@ class NtfySubscriptionService : Service() {
         }.onFailure { Log.w(TAG, "unroutable ntfy frame (${it.message}): $text") }
     }
 
-    private fun scheduleReconnect(server: String, topic: String) {
+    private fun scheduleReconnect(
+        server: String,
+        topic: String,
+    ) {
         if (reconnecting || stopped) return
         reconnecting = true
         reconnectAttempts += 1
@@ -158,10 +195,16 @@ class NtfySubscriptionService : Service() {
 
         /** Test seam: the websocket endpoint the lane subscribes to —
          *  ntfy's per-topic websocket is `<server>/<topic>/ws`. */
-        internal fun subscriptionUrl(server: String, topic: String): String =
-            "${server.trimEnd('/')}/$topic/ws"
+        internal fun subscriptionUrl(
+            server: String,
+            topic: String,
+        ): String = "${server.trimEnd('/')}/$topic/ws"
 
-        fun start(context: Context, server: String, topic: String) {
+        fun start(
+            context: Context,
+            server: String,
+            topic: String,
+        ) {
             context.startForegroundService(
                 Intent(context, NtfySubscriptionService::class.java)
                     .putExtra(EXTRA_SERVER, server)

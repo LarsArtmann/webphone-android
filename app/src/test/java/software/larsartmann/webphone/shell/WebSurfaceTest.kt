@@ -27,7 +27,6 @@ import kotlin.test.assertTrue
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
 class WebSurfaceTest {
-
     @Before
     fun keepTheShellUnwired() {
         CallLayer.wiringEnabled = false
