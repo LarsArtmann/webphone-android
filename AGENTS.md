@@ -581,3 +581,15 @@ tracked in TODO_LIST.
   file before `edit`/`multiedit` or exact matches fail. Run
   `nix run nixpkgs#dprint -- fmt` on touched `.md`/`.yml` files before
   finishing (CI runs `dprint check`).
+- **Daemon-blob remedy (2026-10-28)**: when the auto-commit daemon
+  sweeps a finished pre-push tree into a `chore: auto-commit` blob,
+  amend it in place — but ONLY after verifying (a) `git show --name-only
+  HEAD` holds solely this session's paths, (b) both remotes lag HEAD
+  (`git rev-parse origin/main github main HEAD`), (c) the fold-in diff
+  is understood. Never amend after a push; better, hand-commit finished
+  units immediately so the daemon never gets the chance.
+- **Coverage claims need a mechanical cross-check**: any plan/doc line
+  like "ALL todos covered / nothing dropped" must be verified by a
+  row-by-row TODO↔plan diff before delivery — the 02:56 SUPERB plan
+  shipped with 5 TODO rows missing despite the claim and needed a
+  post-hoc repair (`7574c79`). Row counts are not coverage proof.
