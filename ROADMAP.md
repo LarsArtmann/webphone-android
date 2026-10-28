@@ -38,15 +38,22 @@ Raw ideas:
 ### 3. Distribution
 
 Sideload is the lane (the favorable `USE_FULL_SCREEN_INTENT` default grant).
+Settled 2026-10-28: releases are signed (dedicated key) and published to
+Forgejo releases, which Obtainium on the phone turns into in-place
+updates — no USB, no wireless debugging.
 
 Raw ideas:
 
 - Play Store, later, if ever — Play would re-audit the full-screen-intent
   grant; the sideload lane keeps it by default
-- Update distribution for sideloaded installs (APK self-update? nothing?)
-- A release signing config (deliberate future step — today the only
-  installable artifact is the debug APK; `assembleRelease` emits an
-  unsigned APK)
+- A public update endpoint: Obtainium only reaches the forge on the home
+  LAN or the NetBird VPN (the forge's certificate comes from the internal
+  dnsblockd CA, which Android apps do not trust — the per-app insecure
+  toggle bridges it). A publicly-trusted vhost (or publishing the APK to
+  the public stack origin) would make updates work on mobile data
+- GitHub releases as a second mirror: `gh` is on the box but its token is
+  currently invalid, and the mirror PAT lacks `workflow` scope — one
+  Obtainium source is enough while the forge works
 
 ### 4. Auth surface
 

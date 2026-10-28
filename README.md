@@ -47,16 +47,19 @@ a real stack:
 ## Build and verify
 
 ```console
-nix develop                        # JDK 21 + Android SDK (platform 36, build-tools 34+35)
-nix develop -c ./gradlew assembleDebug      # debug APK (THE installable artifact)
-nix develop -c ./gradlew assembleRelease    # minified + resource-shrunk (R8); emits an UNSIGNED apk — not installable
+nix develop                        # JDK 21 + Android SDK (platform 37, build-tools 36.0.0)
+nix develop -c ./gradlew assembleDebug      # debug APK (debug-signed, installable)
+nix develop -c ./gradlew assembleRelease    # minified + resource-shrunk (R8); signed when a release key exists
 nix develop -c ./gradlew testDebugUnitTest  # protocol + Robolectric tests
+nix develop -c ./gradlew ktlintCheck        # Kotlin style gate
 nix develop .#emulator -c bash scripts/emulator-train.sh   # self-serve device smoke
 ```
 
-There is no release signing config yet — the debug APK is the only
-artifact you can sideload. Signing is a deliberate future step, not an
-accident to fix.
+Release signing reads `~/.config/webphone-android/release.properties`
+(written once by `scripts/release.sh --init-key`; the keystore lives next
+to it, never in the repo). Without that file `assembleRelease` still
+builds — it just emits `app-release-unsigned.apk`, which no device will
+install; that is what keeps CI and fresh checkouts green.
 
 The FCM lane activates when `app/google-services.json` exists (drop
 in + add the google-services plugin); the ntfy lane works with zero
@@ -65,23 +68,57 @@ Google dependencies.
 Set the stack origin in the app's Settings screen (persisted; first
 run prompts for it).
 
-## Distribution
+## Distribution and updates
 
 Sideload first (the `USE_FULL_SCREEN_INTENT` default grant stays
 enabled for sideloaded calling apps — the favorable lane; Play would
 re-audit it). Play later, if ever.
 
-Install on a phone (Android 12+) in six steps:
+Releases are published to the Forgejo forge and pulled by
+[Obtainium](https://obtainium.imranr.dev/), so a phone update needs
+neither USB nor wireless debugging.
 
-1. Rebuild fresh — `nix develop -c ./gradlew assembleDebug` — never
-   trust a stale APK.
-2. `adb install -r app/build/outputs/apk/debug/app-debug.apk` over USB
-   (or copy the APK over and open it).
-3. Grant mic + notification permissions; the real stack origin is the
-   shipped default — change it in the app's Settings if needed.
-4. Log in on the island inside the WebView; that session cookie drives
-   everything.
-5. Verify the badge turns REGISTERED, then dial via the FAB → dialpad.
+### Install once, update forever (Obtainium)
+
+1. In Forgejo create an access token (Settings → Applications,
+   `read:repository`), then add the app in Obtainium with the URL
+   `https://forgejo.home.lan/lars/webphone-android`, source
+   **Forgejo (Codeberg)**, and paste the token — the repo is private.
+2. Enable the per-app option **"Allow insecure HTTP requests"**. The
+   forge serves a certificate from the internal `dnsblockd` CA, which is
+   not in Android's system trust store; without the toggle every check
+   fails on TLS.
+3. Reachability: `forgejo.home.lan` resolves on the home LAN and, via
+   NetBird, as `forgejo.larsartmann.cloud`. Off the VPN there is no
+   route — Obtainium retries on its next check.
+4. Install from Obtainium. The first install since signing changed needs
+   the old debug-signed build **uninstalled** first (Android refuses an
+   APK whose signing key differs from the installed one).
+5. Grant mic + notification permissions; set the stack origin if needed;
+   log in on the island inside the WebView; verify the badge turns
+   REGISTERED.
 6. Kill the app and take an inbound call to prove the ntfy
    ring-while-closed lane — with the app set to battery "Unrestricted"
    (OEM battery killers are the #1 missed-ring cause).
+
+### Cut a release
+
+```console
+scripts/release.sh --init-key     # once: signing key + properties in ~/.config/webphone-android/
+scripts/release.sh bump patch     # version.txt arithmetic + the changelog reminder
+#   ... cut CHANGELOG.md: move [Unreleased] under '## [X.Y.Z] - DATE', commit, push
+scripts/release.sh                # gate → sign → tag vX.Y.Z → push → publish
+```
+
+`version.txt` is the single source of the version: versionName is its
+content, versionCode is `major*10000 + minor*100 + patch` (so 0.2.0 is
+200). The gate the script enforces is `assembleRelease` +
+`testDebugUnitTest` + `ktlintCheck`, the 16 KB `zipalign -c -P 16 4`
+check on the **signed** APK, `apksigner verify`, and the WCAG contrast
+guard. The artifact lands on the release as
+`webphone-android-<version>.apk`; `scripts/forgejo-release.py` owns the
+forge API and is idempotent (a retry reuses the release and replaces the
+asset).
+
+Manual install still works without any updater: `adb install -r` the
+debug APK over USB, or copy an APK to the phone and open it.

@@ -20,7 +20,12 @@ emulator smoke (install + launch) passed 2026-10-24. Deep links
 (tel/callto/sip/stack-https) and the in-shell OIDC auth detour SHIPPED
 2026-10-27 and are emulator-proven (the 404-echo probe + the live
 `begin`→Pocket-ID redirect); the live Pocket ID login itself still
-awaits credentials (R17).
+awaits credentials (R17). **Update lane (2026-10-28):** release APKs are
+signed with a dedicated key and published to Forgejo releases
+(`scripts/release.sh`), which Obtainium on the phone reads — implemented
+and locally verified (signed APK, versionCode 200, forge API probed), but
+no release has been published yet and no phone has updated through it, so
+treat the device half as UNPROVEN until the first real cycle.
 
 ## Repository & mirrors
 
@@ -71,6 +76,22 @@ The verification gate after every code change: `assembleDebug` green +
 `zipalign -c -P 16 4` on the debug APK + `testDebugUnitTest` green +
 `ktlintCheck` green (CI runs all four; `ktlintFormat` fixes
 mechanically).
+
+Release lane (the update path Obtainium consumes):
+
+```console
+nix develop -c bash scripts/release.sh --init-key   # once: key + props in ~/.config/webphone-android/
+nix develop -c bash scripts/release.sh bump patch   # version.txt arithmetic
+nix develop -c bash scripts/release.sh --doctor     # preflight + forge/token probe
+nix develop -c bash scripts/release.sh              # gate, sign, tag, push, publish
+```
+
+`scripts/release.sh` owns the whole gate (`assembleRelease`,
+`testDebugUnitTest`, `ktlintCheck`, `zipalign -c -P 16 4` on the SIGNED
+APK, `apksigner verify`, `scripts/contrast-check.py`) and
+`scripts/forgejo-release.py` owns the forge API (stdlib python3; the
+devShell has no `curl`/`tea`). The version lives in `version.txt` —
+never retyped in Gradle.
 
 The self-serve device train (headless API 36 emulator, requires
 `/dev/kvm`; the AVD lives in `.avd/`):
@@ -284,6 +305,59 @@ tracked in TODO_LIST.
   `testDebugUnitTest assembleDebug` on this repo — NEVER run a
   concurrent build), and stream long builds to a log file instead of
   piping through `tail` (which buffers until exit).
+- **An update IS a release tag plus an APK asset**: Obtainium's Forgejo
+  source reads `GET /api/v1/repos/{owner}/{repo}/releases`
+  (`per_page=100`), takes `tag_name` as the available version (falling
+  back to the release name) and installs the `.apk` attachment. Nothing
+  in this repo can make an update appear without both; a tag with no
+  asset is invisible, and an APK with no release is unreachable. The
+  file name is otherwise free — one universal APK (45 MB, all ABIs)
+  means no ABI filter is needed, and `webphone-android-<version>.apk`
+  keeps the version visible in the asset list.
+- **version.txt is the version; versionCode is derived**: versionName is
+  the file's content, versionCode is `major*10000 + minor*100 + patch`
+  (0.2.0 → 200). Android only accepts an APK whose versionCode is
+  strictly higher than the installed one, and Obtainium compares the
+  release tag against the installed versionName — the two must move
+  together, which is why both come from one line. Never reintroduce a
+  literal `versionCode`/`versionName` in `app/build.gradle.kts`.
+- **Release key lives in `~/.config/webphone-android/`** (`release.keystore`
+  + `release.properties`, chmod 600, written by
+  `scripts/release.sh --init-key`). Losing it is not a build problem: every
+  installed device must UNINSTALL before it can take the next update
+  (Android refuses a signing-key change). Back both files up. No key →
+  `assembleRelease` still emits `app-release-unsigned.apk` and CI stays
+  green, so the absence is silent until someone tries to install.
+- **The debug build and the release build are different packages to
+  Android**: the currently sideloaded APK is debug-signed (per-machine
+  key), so switching to the release key needs one manual uninstall. That
+  is a one-time cost, not a bug to "fix" by signing releases with the
+  debug key (a debug key is guessable, so anyone could then ship a
+  same-package update; the App-Link `assetlinks.json` fingerprint is also
+  per-machine and would break).
+- **Obtainium cannot validate the forge's certificate**: Forgejo is
+  fronted by Caddy with a leaf minted from the internal `dnsblockd` CA
+  (`CN=home.lan`, SANs `home.lan`/`larsartmann.cloud`), and Android 7+
+  apps do not trust user-installed CAs. The working configuration is the
+  per-app option **"Allow insecure HTTP requests"** ON (Obtainium maps it
+  to `badCertificateCallback => true`), so the token and the APK travel
+  over an unverified TLS session — acceptable for a LAN/VPN forge, NOT a
+  pattern to copy for the public stack origin.
+- **The forge is LAN/VPN-only**: `forgejo.home.lan` resolves on the home
+  network, `forgejo.larsartmann.cloud` via NetBird (never public DNS).
+  Obtainium checks therefore only succeed while the phone is home or on
+  the VPN; there is no public update path until the forge gets a
+  publicly-trusted endpoint (the internal CA exists precisely because
+  the zone is private).
+- **Forgejo facts that bite the upload** (probed 2026-10-28, Forgejo
+  15.0.10): `GET /api/v1/settings/attachment` reports `max_size` 2048 MiB
+  and `max_files` 5 — a 45 MB APK is fine, and the `attachment.MAX_SIZE`
+  setting in the SystemNix forgejo module is the knob if that ever
+  shrinks. The same endpoint's `allowed_types` list has no `.apk`; release
+  assets are uploaded through `POST /releases/{id}/assets?name=…`
+  (multipart field `attachment`) and have not been rejected on type, but
+  if a future Forgejo starts enforcing the list, add `.apk` there. Tokens
+  need `write:repository` to publish and `read:repository` for the phone.
 
 ## Conventions
 
