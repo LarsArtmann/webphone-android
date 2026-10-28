@@ -79,7 +79,7 @@ the existing screens stay views. Not adopting now.
    ~~therefore UNPROVEN — the 91-test suite has no green run from this session.~~
 2. ~~**Target-version decision set**: Gradle 9.8.2 + AGP 9.4.1 + built-in Kotlin~~ done — the atomic jump landed + verified (01-33 §Landed 2; commit af0084f)
    ~~- KGP 2.4.21 classpath pin + compileSdk 37 + build-tools 36.0.0 + ktlint~~
-     ~~14.2.0. Decided, designed, not applied — zero repo files changed.~~
+   ~~14.2.0. Decided, designed, not applied — zero repo files changed.~~
 3. ~~**ktlint adoption designed** (plugin + root `.editorconfig` + CI step +~~ done — ktlint adopted end-to-end (01-33 §Landed 4)
    ~~format pass) but not implemented.~~
 
