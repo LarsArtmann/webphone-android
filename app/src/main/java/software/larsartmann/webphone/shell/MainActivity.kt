@@ -355,8 +355,11 @@ class MainActivity : AppCompatActivity() {
 
     // API 31/32 back path (33+ rides the OnBackInvokedCallback): the
     // WebView back stack, not the activity's — tab nav inside the
-    // island is the product's own navigation.
+    // island is the product's own navigation. The DEPRECATION suppress
+    // covers the super.onBackPressed() call — the deliberate API 31/32
+    // tail (predictive back owns 33+; the keep-decision is in AGENTS).
     @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
     override fun onBackPressed() {
         if (::webSurface.isInitialized && webSurface.canGoBack()) {
             webSurface.goBack()

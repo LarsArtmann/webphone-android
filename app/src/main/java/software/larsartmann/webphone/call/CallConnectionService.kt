@@ -161,6 +161,15 @@ class CallConnectionService : ConnectionService() {
             }
         }
 
+        // CAPABILITY_SELF_MANAGED is deprecated as a CONSTANT on the
+        // compileSdk 37 stubs, but self-managed remains THE integration
+        // this app ships (inbound Telecom on every API — the manifest
+        // and CallConnectionService are built around it) and nothing in
+        // 37 replaces it. The keep-decision is recorded in AGENTS
+        // ("Telecom outbound on API 36" gotcha family); suppress here
+        // so the one deliberate warning is not drowned by accident
+        // warnings.
+        @Suppress("DEPRECATION")
         fun accountHandle(context: Context): PhoneAccountHandle {
             handle?.let { return it }
             val resolved =

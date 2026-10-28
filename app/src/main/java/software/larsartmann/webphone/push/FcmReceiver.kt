@@ -25,6 +25,16 @@ class FcmReceiver : FirebaseMessagingService() {
         )
     }
 
+    // onNewToken(String) is deprecated in firebase-messaging 26 (the
+    // v1-registration world replaced the fetch path with register()),
+    // but 26.0.1 ships NO replacement callback — this override is the
+    // contract FCM itself calls. Keeping it is deliberate; the
+    // annotation satisfies OVERRIDE_DEPRECATION and documents WHY no
+    // successor is adopted (the FCM lane is dormant by default — the
+    // AGENTS gotcha — and the v1 migration gates on it going live).
+    @Deprecated(
+        "Still the rotation entry FCM calls; no replacement callback in 26.0.1.",
+    )
     override fun onNewToken(token: String) {
         // Rotation: the registry upserts by stable device id, so the
         // new token replaces the old row (SessionApi.registerPushDevice

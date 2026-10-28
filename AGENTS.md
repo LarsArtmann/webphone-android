@@ -233,6 +233,16 @@ tracked in TODO_LIST.
   `CallAttributes`/`CallControl`); API 31-33 dials directly (no OS
   surface). NEVER reintroduce `placeCall` — it does not compile against
   platform 36. Inbound stays classic (`addNewIncomingCall`, all APIs).
+- **`CAPABILITY_SELF_MANAGED` keep-decision (compileSdk 37, 2026-10-28)**:
+  the CONSTANT is deprecated on the 37 stubs, but self-managed remains
+  THE integration (inbound Telecom on every API) and 37 ships no
+  replacement. `CallConnectionService.accountHandle` suppresses the
+  one warning on purpose — do not "fix" it by dropping self-managed.
+- **`onBackPressed` super-call keep-decision (2026-10-28)**: the API
+  31/32 tail in `MainActivity` calls the deprecated
+  `super.onBackPressed()` on purpose (predictive back owns 33+); the
+  override carries `@Suppress("DEPRECATION")` — that warning stays
+  suppressed, not fixed, until minSdk 34.
 - **No release signing config**: `assembleRelease` emits
   `app-release-unsigned.apk` — NOT installable on any device. The only
   sideload/MVP artifact is the debug APK (auto debug-signed). Adding a
@@ -261,7 +271,12 @@ tracked in TODO_LIST.
   dependency with no `google-services` plugin and no
   `app/google-services.json`. The ntfy lane (`NtfySubscriptionService`)
   is the zero-Google default; a GMS build drops in the JSON and enables
-  the plugin.
+  the plugin. firebase-messaging 26 deprecates `getToken()` AND
+  `onNewToken` (the v1-registration world: `register()` + callback) —
+  both stay suppressed-on-purpose (`CallLayer.registerPushLanes`,
+  `FcmReceiver`) until the lane goes live; 26.0.1 ships no replacement
+  callback, and a blind API flip on a lane that cannot fire is
+  unverifiable (decision 2026-10-28).
 - **`hostToken()` in `SipEngine`** deliberately generates
   `<uuid12>.invalid` for Via/Contact. It looks like a bug; it is not —
   it is the WSS NAT convention. Don't "fix" it to a real hostname.

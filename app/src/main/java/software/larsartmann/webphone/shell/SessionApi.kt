@@ -164,7 +164,7 @@ object SessionApi {
                     Log.i(TAG, "$method $path answered ${response.code}")
                     null
                 } else {
-                    response.body?.string()
+                    response.body.string()
                 }
             }
         }.getOrNull()

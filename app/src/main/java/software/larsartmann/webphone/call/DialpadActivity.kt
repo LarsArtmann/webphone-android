@@ -66,8 +66,11 @@ class DialpadActivity : AppCompatActivity() {
                 textSize = 34f
                 typeface = mediumTypeface
                 gravity = Gravity.CENTER
-                hint = "100"
-                setHintTextColor(themeColor(R.attr.wpOnSurfaceMuted))
+                // Deliberately BLANK (M046): the old "100" hint implied
+                // the PBX's default extension is the thing to call — it
+                // is nobody's number (worst case it is the device's
+                // OWN). Deep links pre-fill real targets; a cold dialpad
+                // shows the honest empty state.
                 setTextColor(themeColor(R.attr.wpOnSurface))
                 letterSpacing = 0.03f
                 background = null

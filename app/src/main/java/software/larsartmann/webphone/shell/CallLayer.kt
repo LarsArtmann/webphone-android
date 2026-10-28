@@ -111,7 +111,14 @@ object CallLayer {
     /** Register this install's wake addresses with the stack: the ntfy
      *  topic always, the FCM token when Play services AND a
      *  google-services.json build exist (best effort — the ntfy lane
-     *  is the zero-Google default, its absence must never throw). */
+     *  is the zero-Google default, its absence must never throw).
+     *
+     *  getToken() is deprecated in firebase-messaging 26 (the v1
+     *  registration world: register() + the onNewToken callback) and
+     *  even throws under a v1-enabled app — but this lane is DORMANT
+     *  until a google-services.json exists, so the migration gates on
+     *  that owner step, not on a blind API flip (recorded in AGENTS). */
+    @Suppress("DEPRECATION")
     private suspend fun registerPushLanes(context: Context) {
         SessionApi.registerPushDevice(context, "ntfy", DeviceIdentity.ntfyTopic(context))
         runCatching { Tasks.await(FirebaseMessaging.getInstance().token) }
