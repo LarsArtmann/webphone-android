@@ -412,13 +412,20 @@ tracked in TODO_LIST.
   FGS. Channels `calls` (high, bypass-DND) and `push` (min) are created
   in `App.onCreate`.
 - UI is programmatic in v0.1 (`CallActivity` builds views in code);
-  viewBinding is enabled. `minSdk = 31`, `targetSdk/compileSdk = 36`.
+  viewBinding is enabled. `minSdk = 31`, `targetSdk = 36`,
+  `compileSdk = 37` (the 2026-10-28 toolchain jump moved compileSdk;
+  targetSdk deliberately stays 36 until a device train validates
+  Android 17 behavior changes).
 - Intents carry the ring fact under `RingEvent.EXTRA_FROM` /
   `EXTRA_CALL_ID` action-namespaced extras.
 - Dialer honesty: the Call button is disabled unless
   `CallEngine.registration` is `REGISTERED` (the dialer shows the
   same state the shell badge does); dialing unregistered would no-op
   silently.
+- Cross-repo filings (issues/PRs to OTHER repos) are drafted in
+  `docs/drafts/` inside THIS repo (never /tmp), filed from the real
+  file (`gh ... --body-file`), and the draft is kept after filing —
+  the draft is the in-repo record of what was filed and why.
 - **Two adb trees, one server**: the default devShell and the
   `.#emulator` devShell ship different `adb` versions sharing port
   5037 — an adb server started by one is killed by the other, and a

@@ -179,6 +179,22 @@ Unresolved questions route here until an answer turns them into bounded work
 - **Concurrent-agent policy:** serialize sessions on this repo at the
   dispatcher, or keep parallel work with the merge-around protocol
   (freshness checks + hand-committed format passes)?
+- **Auto-commit daemon policy (§g, asked 2026-10-28 twice):** the daemon
+  blobbed agent work five times in one day; is the verified
+  squash-into-one-hand-commit remedy + a faster hand-commit cadence the
+  accepted steady state, or should the daemon be disabled/paced for this
+  repo (a SystemNix knob) while agent sessions run?
+- **Release-first for v0.2.0 (§g):** `version.txt` claims 0.2.0 while the
+  release lane is unpublished — cut v0.2.0 NOW via `scripts/release.sh`
+  (needs the Forgejo token, M032/M033) so Obtainium's first update cycle
+  starts from a real baseline, or let more work pile onto 0.2.0 first?
+  Also gates the honest rewrite of the "v0.1 scaffold" status line.
+- **M050's Android end-state (§g):** when the consent Cancel fires and
+  the IdP errors back to the origin, the shell currently commits the
+  origin, clears the detour, and renders the IdP's error page in-shell.
+  Keep that, or auto-retry / return to the island home instead? Decides
+  whether M050 is a verification pass or a design change. (Server-side
+  twin: the IdP cancel/error redirect-target question above.)
 
 ## Non-goals
 
@@ -191,3 +207,8 @@ Unresolved questions route here until an answer turns them into bounded work
   shell never grows its own login form.
 - **Hard Google dependency:** the ntfy lane must keep working with zero
   Google dependencies; FCM is an additive lane, never a requirement.
+- **Version-catalog update plugin: evaluated, NOT adopted (M042,
+  2026-10-28).** Dependabot already owns the bump cadence and the audit
+  confirmed all 14 `libs.*` aliases map cleanly (J12, `fec6741`); a
+  third-party update plugin would duplicate that for one catalog file.
+  Revisit only if Dependabot's PRs start missing catalog entries.

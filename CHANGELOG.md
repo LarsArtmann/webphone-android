@@ -10,6 +10,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Wedge-proof JVM suite (J05): every test task carries a 20-minute
+  timeout and `forkEvery=1` (fresh JVM per class); the SIP wire test
+  rides an injected fence client (30 s read timeout) under a 90 s
+  per-test JUnit rule with engine-scope teardown
+- `scripts/verify-gate.sh` (J06): the whole verification gate —
+  busy-build pre-flight, assemble, tests, ktlint + KGP parity, 16 KB
+  zipalign, contrast, dprint — as one time-bounded command
+- KGP-pin parity gate (J07): the build fails when the root
+  `kotlin-gradle-plugin` pin and the version catalog's `kotlin` drift
+- CI release leg (J08): every push builds `assembleRelease` (R8
+  exercised), re-runs the 16 KB gate against the release APK, and
+  uploads `mapping.txt` for crash retrace
+- Test pins (J16): the ntfy stop-leak regression (meta-proven to fail
+  when the fix is broken), a `CallLayer.wiringEnabled` gate canary,
+  and one Robolectric SDK policy
+  (`app/src/test/resources/robolectric.properties`, sdk=34) replacing
+  eleven scattered `@Config` annotations
+- Cross-repo contract note filed as webphone#21 (J15/M049): the OIDC
+  `begin`→IdP hop must stay a server-side 302 — the Android auth
+  detour depends on it; draft kept at `docs/drafts/`
+
+### Changed
+
+- Gradle warnings driven to zero (J12-J15): two real fixes (an
+  unnecessary safe-call in `SessionApi`; the dialpad no longer seeds a
+  phantom "100" hint), four platform deprecations suppressed with
+  recorded keep-decisions (CAPABILITY_SELF_MANAGED on the API 37
+  stubs, `super.onBackPressed()` on the API 31/32 tail,
+  firebase-messaging 26's token APIs pending the FCM lane going live)
+- `.editorconfig` pinned to the valid `ktlint_official` style — the
+  previous invalid `official` value silently fell back and emitted
+  ~300 warning lines per run
+- Gradle build cache adopted (`org.gradle.caching=true`, J13/M043)
+- Test suite at 97 JVM tests (from 94), all green under the fence;
+  the whole gate ran green end-to-end on the final tree (2026-10-28)
+
 ## [0.2.0] - 2026-10-28
 
 ### Added

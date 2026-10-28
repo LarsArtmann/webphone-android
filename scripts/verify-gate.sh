@@ -41,7 +41,7 @@ apk="app/build/outputs/apk/debug/app-debug.apk"
 step "1/6 assembleDebug"
 timeout 900 nix develop -c ./gradlew assembleDebug --console=plain
 
-step "2/6 testDebugUnitTest (94 tests, wedge-fenced)"
+step "2/6 testDebugUnitTest (wedge-fenced)"
 timeout 1500 nix develop -c ./gradlew testDebugUnitTest --console=plain
 
 step "3/6 ktlintCheck + KGP parity"
