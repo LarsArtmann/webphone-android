@@ -93,9 +93,10 @@ neither USB nor wireless debugging.
 3. Reachability: `forgejo.home.lan` resolves on the home LAN and, via
    NetBird, as `forgejo.larsartmann.cloud`. Off the VPN there is no
    route — Obtainium retries on its next check.
-4. Install from Obtainium. The first install since signing changed needs
-   the old debug-signed build **uninstalled** first (Android refuses an
-   APK whose signing key differs from the installed one).
+4. Install from Obtainium (it needs the "Install unknown apps" permission
+   for itself). The first install since signing changed needs the old
+   debug-signed build **uninstalled** first (Android refuses an APK whose
+   signing key differs from the installed one).
 5. Grant mic + notification permissions; set the stack origin if needed;
    log in on the island inside the WebView; verify the badge turns
    REGISTERED.
