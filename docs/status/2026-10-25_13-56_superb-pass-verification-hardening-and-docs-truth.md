@@ -53,11 +53,11 @@ next action (§f1).
 
 | Item                                           | State                                                                                                                                                                            | Remainder                                                                                                 |
 | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| W102 in-page theme toggle override             | Darkening seam proven (F024/W101); the island's own "Theme" pill sits under the status-bar cutout (top inset 128 px) and is UNTAPPABLE in-shell — my two taps hit the status bar | Cross-repo fix: island `env(safe-area-inset-top)` or shell pads the WebView container; recorded in AGENTS |
-| W193 annotate the 06:38 plan                   | `emit-keys` generated for 51 rows (dry-run-first discipline loaded from the docs-health skill); spec NOT yet applied, NOT committed                                              | Apply `status-items` with `v`-kind verdicts, then `check-rows`, then commit                               |
-| P02 push (recurring)                           | 5 commits ahead of both remotes; the plan pre-authorizes the push                                                                                                                | Push both remotes, re-verify tips, run `scripts/mirror-lag.sh`                                            |
-| P11 tag `v0.1.0`                               | CHANGELOG entries all in; `[0.1.0] - 2026-10-23` section exists but NO git tag exists yet                                                                                        | Operator timing call (F074b) — deliberately not taken                                                     |
-| W104/W105 attach flow + external-link hand-off | Everything else in W01 verified; these two need a LOGGED-IN island session (Pocket ID passkey)                                                                                   | Q1-adjacent operator credential; row added to TODO_LIST                                                   |
+| W102 in-page theme toggle override **→ TODO_LIST (cross-repo: island safe-area-inset-top)**     | Darkening seam proven (F024/W101); the island's own "Theme" pill sits under the status-bar cutout (top inset 128 px) and is UNTAPPABLE in-shell — my two taps hit the status bar | Cross-repo fix: island `env(safe-area-inset-top)` or shell pads the WebView container; recorded in AGENTS |
+| ~~W193 annotate the 06:38 plan~~ done — docs/status/2026-10-25_14-33 §a (fa7f144: rows struck, check-rows complete)   | ~~`emit-keys` generated for 51 rows (dry-run-first discipline loaded from the docs-health skill); spec NOT yet applied, NOT committed~~                                              | ~~Apply `status-items` with `v`-kind verdicts, then `check-rows`, then commit~~                           |
+| ~~P02 push (recurring)~~ done — 14-33 §a (pushed twice, tips equal f585c6d; mirror-lag green)                           | ~~5 commits ahead of both remotes; the plan pre-authorizes the push~~                                                                                                                | ~~Push both remotes, re-verify tips, run `scripts/mirror-lag.sh`~~                                        |
+| P11 tag `v0.1.0` **→ TODO_LIST (R24/N062 — operator timing)**                                                          | CHANGELOG entries all in; `[0.1.0] - 2026-10-23` section exists but NO git tag exists yet                                                                                            | Operator timing call (F074b) — deliberately not taken                                                     |
+| W104/W105 attach flow + external-link hand-off **→ TODO_LIST (R19/N049-N050)**                                         | Everything else in W01 verified; these two need a LOGGED-IN island session (Pocket ID passkey)                                                                                       | Q1-adjacent operator credential; row added to TODO_LIST                                                   |
 
 ## c) NOT STARTED (all owner/live-stack gated)
 
@@ -68,8 +68,10 @@ next action (§f1).
 - P22 TalkBack on device + battery allow/deny (device + REGISTERED)
 - P24 island-standdown seam (owner nod, cross-repo)
 - P26 remainder: Forgejo description (token), icon parity (owner both-or-neither)
-- P27 post-train docs sweep (honesty-marker retirement after the trains)
-- F041 first green CI run (billing fix first)
+- P27 post-train docs sweep (honesty-marker retirement after the trains) **→ TODO_LIST (R26/N066)**
+- F041 first green CI run (billing fix first) **→ TODO_LIST (R13/N029)**
+
+**→ all routed:** P03 → R14; P04/P05 → R15/R16; P12 → R21; P18/P20/P22 → R23 + trains; P24 → R22; P26 remainder → R25.
 
 ## d) TOTALLY FUCKED UP (honest)
 
@@ -127,86 +129,86 @@ next action (§f1).
 5. **The 06:38-plan annotation should have been generated from
    emit-keys BEFORE the docs commit**, so the marker hashes and the
    work commits land together (next session: §b row 2).
-6. **A tiny `scripts/verify-gate.sh`** wrapping build+tests+zipalign+
+6. **A tiny `scripts/verify-gate.sh`** wrapping build+tests+zipalign+ **→ TODO_LIST (verify-gate wrapper — one-command gate; harvested 2026-10-28)**
    contrast+dprint would make the gate one command (and one background
    job) instead of five.
 
 ## f) NEXT 50 (ranked; owner items marked)
 
-1. Push `main` to origin + github (5 commits waiting); verify tips equal.
-2. Run `scripts/mirror-lag.sh` after the push (expect zero lag until the
-   mirror attaches).
-3. Apply the W193 annotation spec to the 06:38 plan (dry-run → apply →
-   `check-rows` → commit) — keys already generated.
-4. **Owner**: fix GitHub Actions billing → the next push produces the
+1. ~~Push `main` to origin + github (5 commits waiting); verify tips equal.~~ done — docs/status/2026-10-25_14-33 §a (pushed twice, tips equal f585c6d)
+2. ~~Run `scripts/mirror-lag.sh` after the push (expect zero lag until the~~ done — 14-33 §a (mirror-lag probe green after each push)
+   ~~mirror attaches).~~
+3. ~~Apply the W193 annotation spec to the 06:38 plan (dry-run → apply →~~ done — docs/status/2026-10-25_14-33 §a W193 (fa7f144: 51 rows struck, ledger exemption, check-rows complete)
+   ~~`check-rows` → commit) — keys already generated.~~
+4. **Owner**: fix GitHub Actions billing → the next push produces the **→ TODO_LIST (GitHub billing fix, R12c/N027)**
    FIRST green CI run (F041) — then watch it.
-5. **Owner**: SystemNix deploy (attaches the Forgejo→GitHub push mirror).
-6. **Owner**: regenerate the sync PAT with `repo`+`workflow` scope.
-7. **Owner/Q1**: name the test extension + account for `pbx.artmann.tech`.
-8. **Operator**: cut the `v0.1.0` annotated tag (CHANGELOG is ready).
-9. Cross-repo: island `safe-area-inset-top` fix for the status-bar
+5. **Owner**: SystemNix deploy (attaches the Forgejo→GitHub push mirror). **→ TODO_LIST (Owner: SystemNix deploy, R12a/N025)**
+6. **Owner**: regenerate the sync PAT with `repo`+`workflow` scope. **→ TODO_LIST (Owner: PAT repo+workflow, R12b/N026)**
+7. **Owner/Q1**: name the test extension + account for `pbx.artmann.tech`. **→ TODO_LIST (Q1 test extension + account — the standing blocker)**
+8. **Operator**: cut the `v0.1.0` annotated tag (CHANGELOG is ready). **→ TODO_LIST (v0.1.0 annotated tag, R24/N062)**
+9. Cross-repo: island `safe-area-inset-top` fix for the status-bar **→ TODO_LIST (Cross-repo: island safe-area-inset-top — status-bar overlap in-shell)**
    overlap (finding of this pass).
-10. Emulator: W104 attach flow with a logged-in session.
-11. Emulator: W105 external-link hand-off with a logged-in session.
-12. Emulator: W106 tab-nav back-stack WITH history (beyond the boundary test).
-13. Re-run `emulator-photos.sh` after the status-bar fix (before/after pair).
-14. Device train T04: outbound E2E (F008-F014).
-15. Device train T05: ring-while-closed + race measurement (F015-F021).
-16. T03: physical install + first-run walk.
-17. F063 CallStyle device verification (both trains).
-18. F081 AEC/NS on hardware.
-19. F082 webrtc R8 keeps vs a REAL release call.
-20. F084 FreeSWITCH CANCEL-vs-BYE confirmation.
-21. F052 battery-prompt allow/deny on device (REGISTERED needed).
-22. F053 TalkBack walkthrough (dialpad, in-call, settings, shell, overlay).
-23. F045/F046/F047 logout deregistration (KEEP-vs-PURGE → implement → verify).
-24. P24 island-standdown seam design note (owner nod) in the webphone repo.
-25. F077 Forgejo repo description (needs a token).
-26. F079 icon parity both-or-neither with the PWA.
-27. P27 honesty-marker retirement in README/FEATURES after the trains.
-28. P27 CHANGELOG cut for the version AFTER v0.1.0.
-29. F088 ROADMAP revisit: multi-line, provisioning, post-train themes.
-30. F089 next-version section + tag (post-train).
-31. Auth-ladder INVITE soak over MockWebServer IF a JVM WebRTC offer
-    seam ever exists (else stays seam-covered — documented).
-32. Consider `scripts/verify-gate.sh` (§e6).
-33. Consider a daemon-pause convention for message-critical commits.
-34. Dependabot PR: firebase-messaging 24.1.0→26.0.1 sits unmerged (CI was
-    billing-dead when it ran) — review + merge once CI is green.
-35. Watch the ubuntu-latest → Ubuntu 26 runner migration annotation
+10. Emulator: W104 attach flow with a logged-in session. **→ TODO_LIST (logged-in emulator: W104 attach, R19/N049)**
+11. Emulator: W105 external-link hand-off with a logged-in session. **→ TODO_LIST (logged-in emulator: W105 hand-off vs the redirect seam, R19/N050)**
+12. Emulator: W106 tab-nav back-stack WITH history (beyond the boundary test). **→ TODO_LIST (logged-in emulator: W106 back stack with history, R19/N051)**
+13. Re-run `emulator-photos.sh` after the status-bar fix (before/after pair). **→ TODO_LIST (re-run photos after the island safe-area fix)**
+14. Device train T04: outbound E2E (F008-F014). **→ TODO_LIST (outbound device train, R15/N033-N038)**
+15. Device train T05: ring-while-closed + race measurement (F015-F021). **→ TODO_LIST (ring train + race, R16/N039-N044)**
+16. T03: physical install + first-run walk. **→ TODO_LIST (First physical install, R14/N030-N032)**
+17. F063 CallStyle device verification (both trains). **→ TODO_LIST (CallStyle device verification, R23/N059)**
+18. F081 AEC/NS on hardware. **→ TODO_LIST (AEC/NS on hardware, R15/N037)**
+19. F082 webrtc R8 keeps vs a REAL release call. **→ TODO_LIST (first device train — R8 keeps vs a real release call, R15/R16)**
+20. F084 FreeSWITCH CANCEL-vs-BYE confirmation. **→ TODO_LIST (FreeSWITCH CANCEL-vs-BYE, R16/N038)**
+21. F052 battery-prompt allow/deny on device (REGISTERED needed). **→ TODO_LIST (battery-prompt allow/deny, R23/N061)**
+22. F053 TalkBack walkthrough (dialpad, in-call, settings, shell, overlay). **→ TODO_LIST (TalkBack walkthrough, R23/N060)**
+23. F045/F046/F047 logout deregistration (KEEP-vs-PURGE → implement → verify). **→ TODO_LIST (Logout deregistration, R21/N054-N056)**
+24. P24 island-standdown seam design note (owner nod) in the webphone repo. **→ TODO_LIST (island-standdown seam design note, R22/N057-N058)**
+25. F077 Forgejo repo description (needs a token). **→ TODO_LIST (Forgejo repo description, R25/N064)**
+26. F079 icon parity both-or-neither with the PWA. **→ TODO_LIST (icon parity both-or-neither, R25/N065)**
+27. P27 honesty-marker retirement in README/FEATURES after the trains. **→ TODO_LIST (post-train honesty-marker retirement, R26/N066)**
+28. P27 CHANGELOG cut for the version AFTER v0.1.0. **→ TODO_LIST (CHANGELOG cut for the version after v0.1.0, R26/N068)**
+29. F088 ROADMAP revisit: multi-line, provisioning, post-train themes. **→ TODO_LIST (ROADMAP revisit multi-line/provisioning, R26/N067)**
+30. F089 next-version section + tag (post-train). **→ TODO_LIST (next-version section + tag, R24/N063)**
+31. ~~Auth-ladder INVITE soak over MockWebServer IF a JVM WebRTC offer~~ done — honestly scoped out (W121 — needs WebRTC native; seam-covered by SipEngineAuthTest, documented)
+    ~~seam ever exists (else stays seam-covered — documented).~~
+32. Consider `scripts/verify-gate.sh` (§e6). **→ TODO_LIST (verify-gate wrapper — one-command gate)**
+33. ~~Consider a daemon-pause convention for message-critical commits.~~ **NOT-DO — the commit-immediately convention stands; no daemon-pause hook was built or needed since.**
+34. ~~Dependabot PR: firebase-messaging 24.1.0→26.0.1 sits unmerged (CI was~~ done — firebase-messaging 26.0.1 landed in the 2026-10-28 dependency refresh (CHANGELOG)
+    ~~billing-dead when it ran) — review + merge once CI is green.~~
+35. Watch the ubuntu-latest → Ubuntu 26 runner migration annotation **→ TODO_LIST (watch runner migration at the first green CI run, R13)**
     (appeared in the CI run log).
-36. Investigate the `webphone-release-smoke.png` + `photos/` history
-    entries (now untracked; consider `git gc` hygiene someday — low).
-37. `work/` directory ownership: the concurrent session left
-    `w00-baseline.*` committed — ask whether `work/` should be
-    gitignored wholesale.
-38. Add `emulator-verify.sh` (concurrent session's script) to AGENTS
-    build/verify docs if it is meant to stay.
-39. Decide whether `webphone-train.png` class artifacts should move into
-    `photos/` (one ignore rule instead of two).
-40. RingEvent: consider surfacing `RegistrationFailure.OFFLINE` in the
+36. ~~Investigate the `webphone-release-smoke.png` + `photos/` history~~ **NOT-DO — private repo, small blobs, documented (13-43 d5) — history rewrite not worth the risk.**
+    ~~entries (now untracked; consider `git gc` hygiene someday — low).~~
+37. ~~`work/` directory ownership: the concurrent session left~~ done — work/ gitignored (13-43 d5) + screenshots untracked (W210)
+    ~~`w00-baseline.*` committed — ask whether `work/` should be~~
+    ~~gitignored wholesale.~~
+38. ~~Add `emulator-verify.sh` (concurrent session's script) to AGENTS~~ **NOT-DO — train/smoke scripts remain the canonical documented kit; emulator-verify is discoverable in scripts/.**
+    ~~build/verify docs if it is meant to stay.~~
+39. ~~Decide whether `webphone-train.png` class artifacts should move into~~ done — both artifact paths gitignored (13-56 §a W210)
+    ~~`photos/` (one ignore rule instead of two).~~
+40. RingEvent: consider surfacing `RegistrationFailure.OFFLINE` in the **→ TODO_LIST (re-validate OFFLINE surfacing after the trains, R16/N043)**
     incoming path too (W170 covers AUTH_REJECTED only — deliberate, but
     re-validate after the trains).
-41. CallActivity duration clock and the shade clock could share one
-    formatter util (duplicate m:ss math).
-42. `TelecomOutgoing.control` field is written but never read after
-    assignment — confirm it can be dropped or is needed for API edges.
-43. `CallConnectionService.placeOutgoingCall` + `TelecomOutgoing.place`
-    both gate the single-call policy — one guard could live in the engine.
-44. Wire the W01 findings (renderer-kill rebuild, offline overlay) into
-    the next status report's verification-evidence table.
-45. After the billing fix: confirm the contrast gate runs green IN CI
+41. ~~CallActivity duration clock and the shade clock could share one~~ **NOT-DO — two small m:ss sites — a shared util would out-couple more than it saves.**
+    ~~formatter util (duplicate m:ss math).~~
+42. ~~`TelecomOutgoing.control` field is written but never read after~~ done — superseded — W161 generation guard shipped; `control` remains write-only bookkeeping (verified in code, 2026-10-28)
+    ~~assignment — confirm it can be dropped or is needed for API edges.~~
+43. ~~`CallConnectionService.placeOutgoingCall` + `TelecomOutgoing.place`~~ **NOT-DO — two deliberate guard sites — an engine-level dedup would blur Telecom ownership.**
+    ~~both gate the single-call policy — one guard could live in the engine.~~
+44. ~~Wire the W01 findings (renderer-kill rebuild, offline overlay) into~~ done — later reports (00-20 and on) carry the W01 findings in their evidence tables
+    ~~the next status report's verification-evidence table.~~
+45. After the billing fix: confirm the contrast gate runs green IN CI **→ TODO_LIST (confirm contrast green IN CI at the first green run, R13)**
     (python3 availability on the runner is assumed, not yet proven).
-46. After the mirror attaches: unfreeze `domains` (114 behind — other repo).
-47. Consider tagging the report-evidence screenshots per pass
-    (`photos/2026-10-25-w01/…`) so pairs stay attributable.
-48. Battery ask: add the settings deep-link result logging (currently
-    silent fallback) — trivial, next code touch.
-49. `NtfySubscriptionServiceTest`: add the ACTION_STOP → stopped-flag
+46. After the mirror attaches: unfreeze `domains` (114 behind — other repo). **→ TODO_LIST (domains unfreeze rides the PAT re-scope, R12b/N026 — other repo)**
+47. ~~Consider tagging the report-evidence screenshots per pass~~ **NOT-DO — photos/ is flat and small; per-pass subdirs would be ceremony.**
+    ~~(`photos/2026-10-25-w01/…`) so pairs stay attributable.~~
+48. ~~Battery ask: add the settings deep-link result logging (currently~~ **NOT-DO — silent settings deep-link fallback is fail-safe; extra logging adds noise.**
+    ~~silent fallback) — trivial, next code touch.~~
+49. `NtfySubscriptionServiceTest`: add the ACTION_STOP → stopped-flag **→ TODO_LIST (pin the ntfy ACTION_STOP stopped-flag case in NtfySubscriptionServiceTest)**
     case (the stop-leak regression pin) — small gap I left.
-50. Sweep FEATURES.md for the two rows still claiming "rotation preserved
-    via configChanges" (dialer row) — uiMode left that list; rotation
-    itself is intact, wording should be exact.
+50. ~~Sweep FEATURES.md for the two rows still claiming "rotation preserved~~ done — verified — configChanges retains rotation; only uiMode was removed (FEATURES wording is correct)
+    ~~via configChanges" (dialer row) — uiMode left that list; rotation~~
+    ~~itself is intact, wording should be exact.~~
 
 ## g) QUESTIONS FOR THE OPERATOR
 
