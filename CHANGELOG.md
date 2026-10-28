@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Obtainium update lane: the app now ships signed release APKs through
+  Forgejo releases so a sideloaded phone updates itself — `version.txt`
+  is the single source of versionCode/versionName, release signing is
+  wired from `~/.config/webphone-android/release.properties` (never the
+  repo), `scripts/release.sh` gates, signs, tags and publishes, and
+  `scripts/forgejo-release.py` owns the forge API (idempotent release +
+  APK asset upload)
+
+## [0.2.0] - 2026-10-28
+
+### Added
+
 - Deep links: `MainActivity` is the single exported VIEW intake —
   `tel:`/`callto:`/`sip:` links open the dialer PRE-FILLED (the Call
   button still gates on registration), and stack App Links
