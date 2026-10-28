@@ -12,10 +12,12 @@ silently replaces.
 **Status: v0.1 scaffold, first runtime smoke done.** Load-bearing code is
 implemented but untested against LIVE infrastructure (the README
 "honesty contract" section lists the markers). There IS now: a JVM test
-source set (94 tests: protocol unit tests + Robolectric smoke + the
+source set (97 tests: protocol unit tests + Robolectric smoke + the
 deep-link/auth-detour surface, ktlint-gated) and a CI workflow
-(mirrored to GitHub 2026-10-25, but its triggers are
-`pull_request`/`workflow_dispatch` only — it has never run). First
+(mirrored to GitHub 2026-10-25; the `push`/`pull_request`/
+`workflow_dispatch` triggers DO create runs, but no job has ever
+executed — the account's Actions billing needs an owner fix, see
+FEATURES). First
 emulator smoke (install + launch) passed 2026-10-24. Deep links
 (tel/callto/sip/stack-https) and the in-shell OIDC auth detour SHIPPED
 2026-10-27 and are emulator-proven (the 404-echo probe + the live
@@ -608,8 +610,24 @@ tracked in TODO_LIST.
   amend it in place — but ONLY after verifying (a) `git show --name-only
   HEAD` holds solely this session's paths, (b) both remotes lag HEAD
   (`git rev-parse origin/main github main HEAD`), (c) the fold-in diff
-  is understood. Never amend after a push; better, hand-commit finished
-  units immediately so the daemon never gets the chance.
+  is understood. Before ANY reset (soft included), print
+  `git rev-list --count origin/main..HEAD` — resetting to a LAGGING
+  origin folds every unpushed commit into the squash (the 2026-10-28
+  over-broad-squash incident: five real commits folded, repaired via
+  `git commit-tree` with zero loss because nothing had been pushed).
+  Never amend after a push; better, hand-commit finished units
+  immediately so the daemon never gets the chance.
+- **A new test that pins a fix is VACUOUS until meta-proven (2026-10-28,
+  the ntfy stop-leak pin)**: break the fix, watch the pin FAIL, restore,
+  watch it pass — the pin's first design (relying on websocket
+  close-handshake latency under Robolectric) passed with both stopped
+  belts deliberately broken, because close-handshake latency is
+  seconds-scale and non-deterministic under the looper. Drive test seams
+  directly; never wait on network events under Robolectric.
+- **Root build-script tasks under the configuration cache**: capture
+  `Files` BY VALUE inside a `run { }` scope — `Project` capture and
+  top-level script properties both fail the cache (`kgpParityCheck`'s
+  two hard-won lessons, 2026-10-28).
 - **Coverage claims need a mechanical cross-check**: any plan/doc line
   like "ALL todos covered / nothing dropped" must be verified by a
   row-by-row TODO↔plan diff before delivery — the 02:56 SUPERB plan
