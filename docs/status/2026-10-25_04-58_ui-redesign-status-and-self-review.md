@@ -122,65 +122,65 @@ emulator snapshots. None were promised this session.
 
 ## f) Up to 50 next things (ranked: unblock-live first)
 
-1. Reinstall the redesigned APK on your phone (built, gate-green)
+1. Reinstall the redesigned APK on your phone (built, gate-green) **→ TODO_LIST (First physical install, R14/N030-N032)**
 2. ~~Fix/inspect the **502 Bad Gateway** on `pbx.artmann.tech` — it~~ done — resolved 2026-10-25 — the stack serves the island again (fetched live during the docs-health audit)
    ~~blocked every live check this session~~
-3. Real device trains (outbound E2E, ring-while-closed E2E) — needs a
+3. Real device trains (outbound E2E, ring-while-closed E2E) — needs a **→ TODO_LIST (first device trains, R15/R16 — Q1)**
    test extension/account once the stack is up
-4. Visually verify the redesigned call screen on a live call
+4. Visually verify the redesigned call screen on a live call **→ TODO_LIST (ring train call-screen visuals, R16/N044)**
    (ringing, active, ended)
-5. Measure the answer-path race on the live stack (F013); file the
+5. Measure the answer-path race on the live stack (F013); file the **→ TODO_LIST (Verify the answer-path race, R16/N041)**
    webphone re-INVITE issue if needed
-6. Promote `/tmp/wp-photos.sh` → `scripts/emulator-photos.sh`
-   (serial-pinned, rooted, waits baked in)
-7. Thread-confinement audit of `CallEngine` (F093)
-8. Decide + fix `shutdown` vs in-flight `ensureWired` race (F094)
-9. INVITE 401 re-auth ladder + unit tests (F101, F103)
-10. Silence watchdog re-register + unit tests (F102, F103)
-11. Logout deregistration: cookie-poll vs JS bridge (F063/F064)
-12. Execute F055: `am kill` sticky-restart test for the ntfy lane
+6. ~~Promote `/tmp/wp-photos.sh` → `scripts/emulator-photos.sh`~~ done — docs/status/2026-10-25_10-00 §a F057 (script shipped)
+   ~~(serial-pinned, rooted, waits baked in)~~
+7. ~~Thread-confinement audit of `CallEngine` (F093)~~ done — docs/status/2026-10-25_10-00 §a T07 (single-lock confinement)
+8. ~~Decide + fix `shutdown` vs in-flight `ensureWired` race (F094)~~ done — docs/status/2026-10-25_10-00 §a T08 (AttachGuard)
+9. ~~INVITE 401 re-auth ladder + unit tests (F101, F103)~~ done — docs/status/2026-10-25_10-00 §a T09 (SipEngineAuthTest)
+10. ~~Silence watchdog re-register + unit tests (F102, F103)~~ done — docs/status/2026-10-25_10-00 §a T13 (silence watchdog)
+11. Logout deregistration: cookie-poll vs JS bridge (F063/F064) **→ TODO_LIST (Logout deregistration, R21/N054-N056)**
+12. ~~Execute F055: `am kill` sticky-restart test for the ntfy lane~~ done — docs/status/2026-10-25_13-56 §a F035 (kill-cycle proven)
 13. PWA icon parity decision (handset vs link glyph — both or neither) **→ routed to ROADMAP Open questions (icon parity)**
-14. CallStyle incoming notification (F088)
-15. CallStyle ongoing notification (F089)
-16. Live contract checks: `/api/session` field names (F073)
-17. Live contract checks: push payload shapes (F074)
-18. Live contract checks: CSRF dance (F075)
-19. Busy heads-up + FSI suppression for a second call (F095-F096)
-20. Git remote → CI first green run (F040) → keep it green
-21. TLS-pinning memo (F107)
-22. LICENSE decision + file (F098)
-23. Fix `scripts/emulator-smoke.sh` adb robustness (or fold into the
-    photos script and retire it)
-24. Debug-signed release smoke mode in the train script
-25. Recents chips go stale after an in-place call (pre-existing flaw)
-26. TalkBack pass over every programmatic surface (F079 remainder)
-27. Contrast audit including the new token palette (F080 remainder)
-28. Show WHY registration failed (network vs 401) on badge/dialer
-29. Missed-call notification when `ring_end` lands unanswered
-30. In-call duration timer on the call screen
-31. Haptic feedback on dialpad keys
+14. ~~CallStyle incoming notification (F088)~~ done — docs/status/2026-10-25_10-00 §a T21 (incoming CallStyle)
+15. ~~CallStyle ongoing notification (F089)~~ done — docs/status/2026-10-25_10-00 §a T21 (ongoing CallStyle)
+16. Live contract checks: `/api/session` field names (F073) **→ TODO_LIST (Live contract checks, R20/N052)**
+17. Live contract checks: push payload shapes (F074) **→ TODO_LIST (Live contract checks, R20/N052)**
+18. Live contract checks: CSRF dance (F075) **→ TODO_LIST (Live contract checks, R20/N053)**
+19. ~~Busy heads-up + FSI suppression for a second call (F095-F096)~~ done — docs/status/2026-10-25_10-00 §a T20/T22 (missed-call policy)
+20. Git remote → CI first green run (F040) → keep it green **→ TODO_LIST (GitHub billing → first green run, R13/N029)**
+21. ~~TLS-pinning memo (F107)~~ done — ROADMAP Decisions (TLS NOT pinned; rationale recorded)
+22. ~~LICENSE decision + file (F098)~~ done — docs/status/2026-10-25_10-00 §a F075 (MIT LICENSE)
+23. ~~Fix `scripts/emulator-smoke.sh` adb robustness (or fold into the~~ done — docs/status/2026-10-25_10-00 §a T11 (serial pinning + fail-fast)
+    ~~photos script and retire it)~~
+24. ~~Debug-signed release smoke mode in the train script~~ done — docs/status/2026-10-25_10-00 §a F085 (--release mode; first green run 13-56 W180)
+25. ~~Recents chips go stale after an in-place call (pre-existing flaw)~~ done — docs/status/2026-10-25_10-00 §a T23 (recents re-read on resume)
+26. TalkBack pass over every programmatic surface (F079 remainder) **→ TODO_LIST (TalkBack walkthrough, R23/N060)**
+27. ~~Contrast audit including the new token palette (F080 remainder)~~ done — docs/status/2026-10-25_10-00 §a T18 + contrast gate (P10, CI)
+28. ~~Show WHY registration failed (network vs 401) on badge/dialer~~ done — docs/status/2026-10-25_10-00 §a T22 (badge + dialer cause)
+29. ~~Missed-call notification when `ring_end` lands unanswered~~ done — docs/status/2026-10-25_10-00 §a T20/T22 (missed-call notes)
+30. ~~In-call duration timer on the call screen~~ done — docs/status/2026-10-25_10-00 §a T23 (Active · m:ss clock)
+31. ~~Haptic feedback on dialpad keys~~ done — docs/status/2026-10-25_10-00 §a T23 (haptics)
 32. WebView dark-mode decision for the island's pages (algorithmic **→ routed to ROADMAP Open questions (WebView dark-mode)**
     darkening or leave-as-is)
 33. ~~Stale theme colors after a day/night switch (`configChanges`~~ done — now a TODO_LIST row (added 2026-10-25, docs-health audit)
     ~~includes `uiMode`, so activities skip recreation — colors resolve~~
     ~~once). Re-resolve on `onConfigurationChanged` or drop uiMode.~~
-34. Robolectric test for the SettingsActivity save flow
-35. Engine-level unit test for `CallEngine.hangUp` phase dispatch
-36. Suppress or fix the AGP-vs-compileSdk-36 warning
-37. Clean up the stale `local.properties` sdk.dir
-38. Battery-optimization exemption prompt for the ntfy lane (Doze)
+34. ~~Robolectric test for the SettingsActivity save flow~~ done — docs/status/2026-10-25_10-00 §a F070 (SettingsActivityTest)
+35. ~~Engine-level unit test for `CallEngine.hangUp` phase dispatch~~ done — docs/status/2026-10-25_10-00 §a F071 (CallEngineTest)
+36. ~~Suppress or fix the AGP-vs-compileSdk-36 warning~~ done — property added 10-00; MOOT — removed by the AGP 9 jump (2026-10-28)
+37. ~~Clean up the stale `local.properties` sdk.dir~~ done — docs/status/2026-10-25_10-00 §a F073 (trashed, build green)
+38. ~~Battery-optimization exemption prompt for the ntfy lane (Doze)~~ done — docs/status/2026-10-25_10-00 §a T16 (ask shipped; allow/deny verify → TODO R23)
 39. WorkManager as a fallback ntfy reconnect path **→ routed to ROADMAP theme 1 (WorkManager fallback reconnect)**
-40. Verify webrtc consumer R8 rules against a REAL release call
-41. FCM lane enablement once `google-services.json` exists (operator)
-42. Cookie-expiry mid-call behavior check (F106)
-43. Retire honesty markers post-train (F104) + ROADMAP revisit (F105)
-44. Emulator snapshot reuse for faster boots
-45. API 31-33 outbound Telecom: reflection or document the fallback
+40. Verify webrtc consumer R8 rules against a REAL release call **→ TODO_LIST (first device train, R15/R16 — R8 keeps vs a real call)**
+41. FCM lane enablement once `google-services.json` exists (operator) **→ FEATURES (FCM lane DISABLED — awaits google-services.json)**
+42. Cookie-expiry mid-call behavior check (F106) **→ TODO_LIST (Live contract checks, R20)**
+43. Retire honesty markers post-train (F104) + ROADMAP revisit (F105) **→ TODO_LIST (Post-train docs sweep, R26/N066)**
+44. ~~Emulator snapshot reuse for faster boots~~ done — ROADMAP Decisions (emulator snapshots OFF — determinism)
+45. ~~API 31-33 outbound Telecom: reflection or document the fallback~~ done — ROADMAP Decisions (API 31-33 direct-dial permanent until minSdk 34)
 46. Crash reporting decision (self-hosted ACRA — or none by policy) **→ routed to ROADMAP theme 1 (crash reporting decision)**
-47. Call audio: verify AEC/NS engages on device (audio-quality train)
+47. Call audio: verify AEC/NS engages on device (audio-quality train) **→ TODO_LIST (first device train, R15/N037 — AEC/NS check)**
 48. `CallEndpoint`-based speaker routing on API 34+ (align addCall) **→ routed to ROADMAP theme 1 (CallEndpoint speaker routing)**
 49. Baseline profiles (startup + call path) **→ routed to ROADMAP theme 1 (baseline profiles)**
-50. FreeSWITCH second-call behavior: CANCEL vs BYE when caller gives up
+50. FreeSWITCH second-call behavior: CANCEL vs BYE when caller gives up **→ TODO_LIST (ring train, R16/N038 — FreeSWITCH CANCEL-vs-BYE)**
 
 ## g) Questions only you can answer
 
