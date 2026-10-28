@@ -17,6 +17,13 @@ import kotlin.test.assertEquals
  * (Settings save → CallLayer teardown → next resume re-wires) — the
  * fresh start must win the prefs and aim the websocket at the NEW
  * topic.
+ *
+ * The controllers are DESTROYED in finally: a leaked service leaves
+ * its reconnect thread armed (`stopped` never set), which keeps
+ * resubscribing — new OkHttp clients, new websocket attempts — on a
+ * doubling backoff for the rest of the suite's JVM and wedges later
+ * classes' ActivityScenario teardowns (found by jstack on the wedged
+ * Gradle worker, 2026-10-28).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -42,32 +49,38 @@ class NtfySubscriptionServiceTest {
 
     @Test
     fun `a start persists its topic and a restart aims at the NEW one`() {
-        val first = Robolectric.buildService(NtfySubscriptionService::class.java, startIntent("https://push.example.org", "old-topic"))
+        val firstController = Robolectric.buildService(NtfySubscriptionService::class.java, startIntent("https://push.example.org", "old-topic"))
             .create()
             .startCommand(0, 0)
-            .get()
+        try {
+            val prefs = firstController.get()
+                .getSharedPreferences(NtfySubscriptionService.PREFS, android.content.Context.MODE_PRIVATE)
+            assertEquals(
+                "old-topic",
+                prefs.getString(NtfySubscriptionService.KEY_TOPIC, null),
+                "the running lane persists what it subscribed to",
+            )
 
-        val prefs = first.getSharedPreferences(NtfySubscriptionService.PREFS, android.content.Context.MODE_PRIVATE)
-        assertEquals(
-            "old-topic",
-            prefs.getString(NtfySubscriptionService.KEY_TOPIC, null),
-            "the running lane persists what it subscribed to",
-        )
-
-        val second = Robolectric.buildService(NtfySubscriptionService::class.java, startIntent("https://push.example.org", "new-topic"))
-            .create()
-            .startCommand(0, 0)
-            .get()
-
-        assertEquals(
-            "new-topic",
-            second.getSharedPreferences(NtfySubscriptionService.PREFS, android.content.Context.MODE_PRIVATE)
-                .getString(NtfySubscriptionService.KEY_TOPIC, null),
-            "the rotation's restart must aim at the NEW topic",
-        )
-        assertEquals(
-            "https://push.example.org/new-topic/ws",
-            NtfySubscriptionService.subscriptionUrl("https://push.example.org", "new-topic"),
-        )
+            val secondController = Robolectric.buildService(NtfySubscriptionService::class.java, startIntent("https://push.example.org", "new-topic"))
+                .create()
+                .startCommand(0, 0)
+            try {
+                assertEquals(
+                    "new-topic",
+                    secondController.get()
+                        .getSharedPreferences(NtfySubscriptionService.PREFS, android.content.Context.MODE_PRIVATE)
+                        .getString(NtfySubscriptionService.KEY_TOPIC, null),
+                    "the rotation's restart must aim at the NEW topic",
+                )
+                assertEquals(
+                    "https://push.example.org/new-topic/ws",
+                    NtfySubscriptionService.subscriptionUrl("https://push.example.org", "new-topic"),
+                )
+            } finally {
+                secondController.destroy()
+            }
+        } finally {
+            firstController.destroy()
+        }
     }
 }

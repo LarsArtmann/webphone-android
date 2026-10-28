@@ -7,6 +7,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.android.controller.ServiceController
 import org.robolectric.annotation.Config
 import software.larsartmann.webphone.sip.SipEngine
 import kotlin.test.Test
@@ -43,8 +44,9 @@ class CallServiceTest {
     @Test
     fun `an ongoing call posts the styled ongoing notification with the call clock`() {
         answeredCall()
+        var controller: ServiceController<CallService>? = null
         try {
-            val controller = Robolectric.buildService(CallService::class.java).create()
+            controller = Robolectric.buildService(CallService::class.java).create()
             controller.startCommand(0, 0)
 
             val notification = shadowOf(controller.get()).lastForegroundNotification
@@ -61,6 +63,7 @@ class CallServiceTest {
                 "the shade's call clock rides the engine's establishment timestamp",
             )
         } finally {
+            controller?.destroy()
             CallEngine.hangUp()
         }
     }
@@ -68,17 +71,22 @@ class CallServiceTest {
     @Test
     fun `a service start without a named party still posts the plain ongoing pill`() {
         val controller = Robolectric.buildService(CallService::class.java).create()
-        controller.startCommand(0, 0)
+        try {
+            controller.startCommand(0, 0)
 
-        val notification = shadowOf(controller.get()).lastForegroundNotification
-        assertNotNull(notification, "the plain fallback must still foreground a notification")
+            val notification = shadowOf(controller.get()).lastForegroundNotification
+            assertNotNull(notification, "the plain fallback must still foreground a notification")
+        } finally {
+            controller.destroy()
+        }
     }
 
     @Test
     fun `the shade hang-up action drives the engine hang-up`() {
         answeredCall()
+        var controller: ServiceController<CallService>? = null
         try {
-            val controller = Robolectric.buildService(
+            controller = Robolectric.buildService(
                 CallService::class.java,
                 Intent(ApplicationProvider.getApplicationContext(), CallService::class.java)
                     .setAction("software.larsartmann.webphone.call.STOP"),
@@ -96,6 +104,7 @@ class CallServiceTest {
                 "the shade hang-up must end the engine's call",
             )
         } finally {
+            controller?.destroy()
             CallEngine.hangUp()
         }
     }
