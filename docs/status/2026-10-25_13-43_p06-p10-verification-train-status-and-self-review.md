@@ -79,23 +79,23 @@
 
 ## b) PARTIALLY DONE
 
-1. **P06 (the rest):** W104 (attach → picker), W105 (external-link hand-off),
+1. **P06 (the rest):** W104 (attach → picker), W105 (external-link hand-off), **→ TODO_LIST (logged-in emulator pass, R19/N049-N051 — needs Pocket ID credential)**
    W106 (tab-nav back stack + `canGoBack` boundary) are NOT verifiable
    headless without a logged-in session — the shell renders the login page
    only. Needs credentials/test extension (Q1-adjacent). TODO_LIST row updated
    to 60min residual.
-2. **P07 — ntfy kill-cycle (F035/F036):** the LIVE `am kill` cycle did not
-   exercise the sticky path: a fresh emulator has no server/topic in prefs, so
-   `NtfySubscriptionService.onStartCommand` self-stops (`START_NOT_STICKY`)
-   BEFORE the kill — BY DESIGN (verified by code read + `dumpsys` capture).
-   The FGS start itself IS verified (`am start-foreground-service` →
-   ActivityManager "Allowed"). The null-intent resubscribe path remains
-   unit-pinned only. Re-ranked BLOCKED on a configured session.
-3. **F038 (smoke dry run):** the first `emulator-smoke.sh` run proved
-   boot/install/launch (Status: ok, cold 3.4s) but FAILED at its final
-   screenshot step (my `work/` dir didn't exist yet — ordering bug, see d5).
-   The pass overall is "run + mostly green", not clean-green; I did not re-run
-   the smoke script to closure (replaced by emulator-verify.sh).
+2. ~~**P07 — ntfy kill-cycle (F035/F036):** the LIVE `am kill` cycle did not~~ done — docs/status/2026-10-25_13-56 §a F035 (kill-cycle PROVEN: hard kill → restart → re-foregrounded → resubscribed)
+   ~~exercise the sticky path: a fresh emulator has no server/topic in prefs, so~~
+   ~~`NtfySubscriptionService.onStartCommand` self-stops (`START_NOT_STICKY`)~~
+   ~~BEFORE the kill — BY DESIGN (verified by code read + `dumpsys` capture).~~
+   ~~The FGS start itself IS verified (`am start-foreground-service` →~~
+   ~~ActivityManager "Allowed"). The null-intent resubscribe path remains~~
+   ~~unit-pinned only. Re-ranked BLOCKED on a configured session.~~
+3. ~~**F038 (smoke dry run):** the first `emulator-smoke.sh` run proved~~ done — docs/status/2026-10-25_13-56 §a F038 (clean boot→install→launch; ordering bug fixed in the script)
+   ~~boot/install/launch (Status: ok, cold 3.4s) but FAILED at its final~~
+   ~~screenshot step (my `work/` dir didn't exist yet — ordering bug, see d5).~~
+   ~~The pass overall is "run + mostly green", not clean-green; I did not re-run~~
+   ~~the smoke script to closure (replaced by emulator-verify.sh).~~
 
 ## c) NOT STARTED (from this session's plan rows — untouched)
 
@@ -163,55 +163,55 @@
    request headers, so "same-origin download carries the cookie" is verified
    by code read + enqueue count, not bytes. If this matters, assert via a
    local HTTP stub someday.
-8. **Docs split-brain guard:** P06–P10 outcomes now live in BOTH the plan
-   errata and TODO_LIST (snapshot vs live-home — by convention OK, but the
-   next docs-health pass should confirm no drift crept in).
+8. ~~**Docs split-brain guard:** P06–P10 outcomes now live in BOTH the plan~~ done — CONFIRMED by this docs-health sweep (2026-10-28) — plan errata and TODO_LIST agree; drift none
+   ~~errata and TODO_LIST (snapshot vs live-home — by convention OK, but the~~
+   ~~next docs-health pass should confirm no drift crept in).~~
 
 ## f) NEXT — up to 50, ranked by impact (session-derived; P-IDs = 10-17 plan)
 
-1. Owner: fix GitHub billing/spending limit → watch the FIRST truly green CI run (P08 completion).
-2. Owner: deploy SystemNix → attaches the Forgejo→GitHub push mirror (P01).
-3. Owner: re-scope the sync PAT with `workflow` scope (P01; unfreezes ci.yml mirror pushes).
-4. Live-stack session (test extension) → unlocks W104 attach, W105 links, W106 back-nav (P06 residual, ~60min).
-5. With a session: ntfy live kill-cycle — configure server/topic, `am kill`, prove sticky resubscribe (P07/F035–F036).
-6. With a session: the answer-path race measurement, push→FSI vs INVITE (P05/F017).
-7. First device train end-to-end against the live stack (P04).
-8. Robolectric hook test: `ShadowWebView.getDownloadListener()` fires `handleDownload` (W110 wiring closure).
-9. Replace the hard-coded retry tap with `uiautomator dump`-derived coordinates in `emulator-verify.sh`.
-10. Add `scripts/contrast-check.py` to AGENTS "Build and verify" command block (currently only in Gotchas + CI).
-11. README parity check: downloads work, HTTP-error policy, contrast gate (README sells contracts).
-12. Land the 31-pair audit transcript as a file if it can be recovered from the 10:00 session log.
-13. Auth-ladder soak completion (P13 — concurrent session started it; their `SipEngineOverWireTest` was red mid-flight at 13:33, check `f4c9ca4` state).
-14. Logout deregistration decision: KEEP vs PURGE push-device rows (P12/F045).
-15. WebView UX tail: photo-picker polish, predictive back, console gating, overlay re-render (P14/W130–W133).
-16. Regression batch: ring_end-after-answer, topic rotation, double-REGISTER storm (P16/W150–W152).
-17. `runCatching`-swallow sweep + TelecomOutgoing generation cleanup (P17/W160–W161).
-18. CallStyle fallback test + RegistrationFailure surfacing + duration subtitle (P15/P19).
-19. `emulator-train.sh --release` R8 smoke (P21/F085).
-20. Docs-health big pass: FEATURES flips, status index, AGENTS refresh after two trains (P23).
-21. v0.1.0 tag + CHANGELOG cut (P11 — awaiting operator timing).
-22. `wp_on_danger` values: mint passing pairs the day a filled danger surface appears (manifest note).
-23. Battery-exemption ask (F052) emulator verify — code shipped, verify pending.
-24. Mirror-lag watch cadence: `scripts/mirror-lag.sh` after pushes until the mirror attaches.
-25. Contrast: add pairs for any NEW colored surface as it lands (rule now in AGENTS).
-26. Island console noise: Permissions-Policy warnings ('payment'/'usb' unrecognized) surface per page load in logcat — consider filtering in `onConsoleMessage`.
-27. Consider asserting DownloadManager cookie bytes via a local stub HTTP server (e7 above) if MMS saves matter operationally.
-28. Emulator verify: add a CallActivity dark-mode shot when a live call is drivable (call screen is the always-dark surface).
-29. Gate bump: the verification bar is now 60 tests — update anywhere "55" is still cited (plan/AGENTS say 55 in places; CHANGELOG updated).
-30. Next contrast re-audit date: none needed (CI-gated now) — remove any stale "audit" TODO if one exists.
+1. Owner: fix GitHub billing/spending limit → watch the FIRST truly green CI run (P08 completion). **→ TODO_LIST (GitHub billing fix, R12c/N027)**
+2. Owner: deploy SystemNix → attaches the Forgejo→GitHub push mirror (P01). **→ TODO_LIST (Owner: SystemNix deploy, R12a/N025)**
+3. Owner: re-scope the sync PAT with `workflow` scope (P01; unfreezes ci.yml mirror pushes). **→ TODO_LIST (Owner: PAT repo+workflow re-scope, R12b/N026)**
+4. Live-stack session (test extension) → unlocks W104 attach, W105 links, W106 back-nav (P06 residual, ~60min). **→ TODO_LIST (logged-in emulator pass, R19/N049-N051 — Q1-adjacent)**
+5. ~~With a session: ntfy live kill-cycle — configure server/topic, `am kill`, prove sticky resubscribe (P07/F035–F036).~~ done — docs/status/2026-10-25_13-56 §a F035 (ntfy kill-cycle proven)
+6. With a session: the answer-path race measurement, push→FSI vs INVITE (P05/F017). **→ TODO_LIST (Verify the answer-path race, R16/N041)**
+7. First device train end-to-end against the live stack (P04). **→ TODO_LIST (first device train, R15/R16)**
+8. ~~Robolectric hook test: `ShadowWebView.getDownloadListener()` fires `handleDownload` (W110 wiring closure).~~ **NOT-DO — handleDownload is directly tested; the wiring stays review-trusted glue per the WebSurface ownership convention (AGENTS).**
+9. ~~Replace the hard-coded retry tap with `uiautomator dump`-derived coordinates in `emulator-verify.sh`.~~ done — uiautomator dump-first is now an AGENTS gotcha (R02 train, 2026-10-27)
+10. ~~Add `scripts/contrast-check.py` to AGENTS "Build and verify" command block (currently only in Gotchas + CI).~~ done — AGENTS carries the contrast gate (Gotchas + CI); build-block pointer added in the 2026-10-28 docs sweep
+11. ~~README parity check: downloads work, HTTP-error policy, contrast gate (README sells contracts).~~ done — verified this sweep — README/FEATURES carry the download/HTTP-error/contrast contracts honestly
+12. ~~Land the 31-pair audit transcript as a file if it can be recovered from the 10:00 session log.~~ **NOT-DO — the 10:00 transcript is unrecoverable; the 32-pair reconstruction IS the standing gate (CI).**
+13. ~~Auth-ladder soak completion (P13 — concurrent session started it; their `SipEngineOverWireTest` was red mid-flight at 13:33, check `f4c9ca4` state).~~ done — docs/status/2026-10-25_13-56 §a W120/W122 (REGISTER ladder soaked over a real websocket; INVITE soak scoped out W121)
+14. Logout deregistration decision: KEEP vs PURGE push-device rows (P12/F045). **→ TODO_LIST (Logout deregistration KEEP-vs-PURGE, R21/N054-N056)**
+15. ~~WebView UX tail: photo-picker polish, predictive back, console gating, overlay re-render (P14/W130–W133).~~ done — docs/status/2026-10-25_13-56 §a W130-W133
+16. ~~Regression batch: ring_end-after-answer, topic rotation, double-REGISTER storm (P16/W150–W152).~~ done — docs/status/2026-10-25_13-56 §a W150-W152
+17. ~~`runCatching`-swallow sweep + TelecomOutgoing generation cleanup (P17/W160–W161).~~ done — docs/status/2026-10-25_13-56 §a W160-W161
+18. ~~CallStyle fallback test + RegistrationFailure surfacing + duration subtitle (P15/P19).~~ done — docs/status/2026-10-25_13-56 §a W140 + W170-W171
+19. ~~`emulator-train.sh --release` R8 smoke (P21/F085).~~ done — docs/status/2026-10-25_13-56 §a W180 (first --release smoke GREEN)
+20. ~~Docs-health big pass: FEATURES flips, status index, AGENTS refresh after two trains (P23).~~ done — docs/status/2026-10-25_13-56 §a P23 (docs truth pass) + this 2026-10-28 sweep
+21. v0.1.0 tag + CHANGELOG cut (P11 — awaiting operator timing). **→ TODO_LIST (v0.1.0 annotated tag, R24/N062 — operator timing)**
+22. ~~`wp_on_danger` values: mint passing pairs the day a filled danger surface appears (manifest note).~~ done — contrast-pairs manifest note + AGENTS gotcha (mint wp_on_danger when a filled danger surface lands)
+23. Battery-exemption ask (F052) emulator verify — code shipped, verify pending. **→ TODO_LIST (battery-prompt allow/deny, R23/N061)**
+24. Mirror-lag watch cadence: `scripts/mirror-lag.sh` after pushes until the mirror attaches. **→ TODO_LIST (mirror-lag verify after pushes, R12/N028)**
+25. ~~Contrast: add pairs for any NEW colored surface as it lands (rule now in AGENTS).~~ done — AGENTS contrast gotcha carries the add-a-pair rule
+26. ~~Island console noise: Permissions-Policy warnings ('payment'/'usb' unrecognized) surface per page load in logcat — consider filtering in `onConsoleMessage`.~~ **NOT-DO — page-side Permissions-Policy warnings are harmless noise; not ours to filter.**
+27. ~~Consider asserting DownloadManager cookie bytes via a local stub HTTP server (e7 above) if MMS saves matter operationally.~~ **NOT-DO — cookie-byte assertion has no operational driver; enqueue count + code read stand.**
+28. Emulator verify: add a CallActivity dark-mode shot when a live call is drivable (call screen is the always-dark surface). **→ TODO_LIST (ring train call-screen visuals, R16/N044)**
+29. ~~Gate bump: the verification bar is now 60 tests — update anywhere "55" is still cited (plan/AGENTS say 55 in places; CHANGELOG updated).~~ done — test-count citations updated through the corpus (now 94 — this sweep verified from result XMLs)
+30. ~~Next contrast re-audit date: none needed (CI-gated now) — remove any stale "audit" TODO if one exists.~~ done — CI-gated since 13-43 P10; no stale audit TODO remains
 
 ## g) Questions I CANNOT answer myself
 
-1. **GitHub billing:** when will the account payment/spending limit be fixed
+1. **GitHub billing:** when will the account payment/spending limit be fixed **→ TODO_LIST (GitHub billing fix, R12c/N027 — owner)**
    (or should this repo move CI to the Forgejo runner instead)? CI stays red
    on every push until then — the workflow itself is ready and verified.
-2. **Live-stack credentials:** may I use (or be given) a test extension +
+2. **Live-stack credentials:** may I use (or be given) a test extension + **→ TODO_LIST (logged-in emulator pass + ntfy cycle, R19 + Q1 credential)**
    password against pbx.artmann.tech for the logged-in verification pass
    (W104/W105/W106 + the ntfy kill-cycle)? Without them those stay blocked.
-3. **Push scope judgment call:** my push published daemon-swept, mid-flight
-   test files of the concurrent session (their work, now superseded by their
-   own `f4c9ca4`). Keep pushing both remotes at session end regardless, or
-   hold pushes when the tree carries another session's un-committed work?
+3. ~~**Push scope judgment call:** my push published daemon-swept, mid-flight~~ done — resolved — pushes are owner-policy (AGENTS: NOTHING pushes automatically; operator pushed 10-27, confirmed in-prompt)
+   ~~test files of the concurrent session (their work, now superseded by their~~
+   ~~own `f4c9ca4`). Keep pushing both remotes at session end regardless, or~~
+   ~~hold pushes when the tree carries another session's un-committed work?~~
 
 ---
 

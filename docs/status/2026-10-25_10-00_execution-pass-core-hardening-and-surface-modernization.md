@@ -59,26 +59,26 @@ warning below.
 
 | Item                                                                                                                                                                                                                                                                                                                                          | State                                                                                                                                                                  | What remains                                                                                                                                                                                                                                                                                   |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| T10 ntfy persistence (F055 kill-cycle)                                                                                                                                                                                                                                                                                                        | The stop/destroy resurrection leak IS fixed in code (`stopped` flag guards the pending reconnect thread); the service, prefs, and resubscribe paths re-read cleanly    | The actual `am kill` cycle on the emulator (F035/F036). BLOCKED-ish: without Q1 the ntfy service never starts naturally (CallLayer starts it only after a live session resume); it CAN be driven directly via `am start-foreground-service` with adb root — emulator was up, cycle not yet run |
-| T06/F024, T16/F052, T11/F038, T19/F058 emulator verifications                                                                                                                                                                                                                                                                                 | Emulator booted (emulator-5554, KVM available); scripts and app built                                                                                                  | The actual runs: theme-switch screenshots, battery prompt paths (needs REGISTERED state → needs Q1 for the real path), smoke-script dry run, photos run                                                                                                                                        |
-| T12/F041 CI first green run                                                                                                                                                                                                                                                                                                                   | Trigger added to the workflow                                                                                                                                          | The run itself — fires only when the branch is pushed to GitHub (currently 13 commits behind local)                                                                                                                                                                                            |
-| T02 push                                                                                                                                                                                                                                                                                                                                      | Local/origin/github all compared at 10:00: HEAD `fee923f`, origin `e7b6d1d` (4 behind — the concurrent session pushed origin mid-pass), github `8bcdfd9` (13 behind)   | Push both by hand; NOTE: 6 of the unpushed commits touch `.github/workflows/` — the sync PAT cannot push those, GitHub pushes must stay hand-over-SSH until the PAT is re-scoped (T01)                                                                                                         |
-| T25/F076 TLS-pinning memo, F080 API 31-33 doc                                                                                                                                                                                                                                                                                                 | Decision made in-head (NOT pinning: Let's Encrypt rotation on a Caddy-fronted personal stack would brick calls; API 31-33 direct-dial stays permanent until minSdk 34) | Written into AGENTS/ROADMAP                                                                                                                                                                                                                                                                    |
-| T26 agent subset — F083 CallEndpoint decision (keep `setCommunicationDevice` for v0.1, revisit at minSdk 34), F086 WorkManager evaluation (reject for v0.1: 15-min minimum latency defeats a push socket; sticky FGS + battery exemption is the fix)                                                                                          | Decisions made in-head                                                                                                                                                 | Written into ROADMAP/AGENTS                                                                                                                                                                                                                                                                    |
-| T27 agent subset — F091 crash reporting (none by policy for v0.1: personal stack, logcat + bugreport flow; revisit ACRA if daily-driver failures become untraceable), F092 sweep (WebView dark-mode = island owns it; chrome always visible = the product affordance; `-no-snapshot` = determinism over boot time; baseline profiles = defer) | Decisions made in-head                                                                                                                                                 | Written into ROADMAP                                                                                                                                                                                                                                                                           |
-| T24/F074 CHANGELOG + v0.1.0 tag                                                                                                                                                                                                                                                                                                               | `.kotlin/` note and tag NOT yet done                                                                                                                                   | CHANGELOG entry + annotated tag decision/execution                                                                                                                                                                                                                                             |
-| Status report (this file) + index                                                                                                                                                                                                                                                                                                             | Being written right now                                                                                                                                                | dprint format + README.md index row                                                                                                                                                                                                                                                            |
+| ~~T10 ntfy persistence (F055 kill-cycle)~~ done — kill-cycle PROVEN (docs/status/2026-10-25_13-56 §a F035: am kill → restart → re-foregrounded → resubscribed)                                                           | ~~The stop/destroy resurrection leak IS fixed in code (`stopped` flag guards the pending reconnect thread); the service, prefs, and resubscribe paths re-read cleanly~~    | ~~The actual `am kill` cycle on the emulator (F035/F036). BLOCKED-ish: without Q1 the ntfy service never starts naturally (CallLayer starts it only after a live session resume); it CAN be driven directly via `am start-foreground-service` with adb root — emulator was up, cycle not yet run~~ |
+| ~~T06/F024, T16/F052, T11/F038, T19/F058 emulator verifications~~ done — F024/F038/F058 verified (13-43 §a4); F052 battery allow/deny → TODO R23/N061                                                                    | ~~Emulator booted (emulator-5554, KVM available); scripts and app built~~                                                                                                  | ~~The actual runs: theme-switch screenshots, battery prompt paths (needs REGISTERED state → needs Q1 for the real path), smoke-script dry run, photos run~~                                                                                                                                        |
+| T12/F041 CI first green run **→ TODO_LIST (R13/N029 — billing fix first)**                                                                                                                                               | Trigger added to the workflow                                                                                                                                              | The run itself — fires only when the branch is pushed to GitHub (currently 13 commits behind local)                                                                                                                                                                                            |
+| ~~T02 push~~ done — both remotes pushed 14:33 over SSH, tips equal f585c6d (14-33 §a)                                                                                                                                     | ~~Local/origin/github all compared at 10:00: HEAD `fee923f`, origin `e7b6d1d` (4 behind — the concurrent session pushed origin mid-pass), github `8bcdfd9` (13 behind)~~   | ~~Push both by hand; NOTE: 6 of the unpushed commits touch `.github/workflows/` — the sync PAT cannot push those, GitHub pushes must stay hand-over-SSH until the PAT is re-scoped (T01)~~                                                                                                         |
+| ~~T25/F076 TLS-pinning memo, F080 API 31-33 doc~~ done — ROADMAP Decisions + AGENTS gotchas (3b3d723)                                                                                                                     | ~~Decision made in-head (NOT pinning: Let's Encrypt rotation on a Caddy-fronted personal stack would brick calls; API 31-33 direct-dial stays permanent until minSdk 34)~~ | ~~Written into AGENTS/ROADMAP~~                                                                                                                                                                                                                                                                    |
+| ~~T26 agent subset — F083 CallEndpoint decision (keep `setCommunicationDevice` for v0.1, revisit at minSdk 34), F086 WorkManager evaluation (reject for v0.1: 15-min minimum latency defeats a push socket; sticky FGS + battery exemption is the fix)~~ done — ROADMAP Decisions (3b3d723) | ~~Decisions made in-head~~                                                                                                                                                 | ~~Written into ROADMAP/AGENTS~~                                                                                                                                                                                                                                                                    |
+| ~~T27 agent subset — F091 crash reporting (none by policy for v0.1: personal stack, logcat + bugreport flow; revisit ACRA if daily-driver failures become untraceable), F092 sweep (WebView dark-mode = island owns it; chrome always visible = the product affordance; `-no-snapshot` = determinism over boot time; baseline profiles = defer)~~ done — ROADMAP Decisions (3b3d723; dark-mode shipped 09-59) | ~~Decisions made in-head~~                                                                                                                                                 | ~~Written into ROADMAP~~                                                                                                                                                                                                                                                                           |
+| ~~T24/F074 CHANGELOG + v0.1.0 tag~~ done — CHANGELOG .kotlin/ note + entries landed (13-56 §a); the TAG itself → TODO R24/N062 (operator timing)                                                                          | ~~`.kotlin/` note and tag NOT yet done~~                                                                                                                                   | ~~CHANGELOG entry + annotated tag decision/execution~~                                                                                                                                                                                                                                             |
+| ~~Status report (this file) + index~~ done — dprint-formatted + indexed (f585c6d carried it; 13-56 verified the row)                                                                                                       | ~~Being written right now~~                                                                                                                                                | ~~dprint format + README.md index row~~                                                                                                                                                                                                                                                            |
 
 ## c) NOT STARTED (blocked, by design)
 
-- **T01** owner deploy (attach mirror) + PAT `repo`+`workflow` re-scope — operator only.
-- **T03/T04/T05** physical install + the two device trains — need the operator's phone and Q1 (test extension + account for `pbx.artmann.tech`).
-- **T14** logout deregistration (KEEP vs PURGE) — operator pick still outstanding.
-- **T15** live contract checks (session fields, payload shapes, CSRF) — needs the live stack session.
-- **T21/F063** CallStyle device verification, **T26** device-verification batch (AEC/NS, R8 real call, FreeSWITCH CANCEL-vs-BYE) — need trains.
-- **T27** post-train docs sweep (honesty-marker retirement etc.) — needs trains.
-- **F077** Forgejo repo description (needs Forgejo API token), **F079** icon parity (both-or-neither with the webphone repo — operator coordination).
-- **F039** was answered by decision (GitHub Actions push trigger); the alternative (Forgejo native runner) is recorded as a future option.
+- **T01** owner deploy (attach mirror) + PAT `repo`+`workflow` re-scope — operator only. **→ TODO_LIST (R12/N025-N026)**
+- **T03/T04/T05** physical install + the two device trains — need the operator's phone and Q1 (test extension + account for `pbx.artmann.tech`). **→ TODO_LIST (R14, R15, R16)**
+- **T14** logout deregistration (KEEP vs PURGE) — operator pick still outstanding. **→ TODO_LIST (R21/N054-N056)**
+- **T15** live contract checks (session fields, payload shapes, CSRF) — needs the live stack session. **→ TODO_LIST (R20/N052-N053)**
+- **T21/F063** CallStyle device verification, **T26** device-verification batch (AEC/NS, R8 real call, FreeSWITCH CANCEL-vs-BYE) — need trains. **→ TODO_LIST (R23/N059 + trains R15/R16)**
+- **T27** post-train docs sweep (honesty-marker retirement etc.) — needs trains. **→ TODO_LIST (R26/N066)**
+- **F077** Forgejo repo description (needs Forgejo API token), **F079** icon parity (both-or-neither with the webphone repo — operator coordination). **→ TODO_LIST (R25/N064-N065)**
+- **F039** was answered by decision (GitHub Actions push trigger); the alternative (Forgejo native runner) is recorded as a future option. **→ done (10-00 §a F040)**
 
 ## d) TOTALLY FUCKED UP (honest failures this pass)
 
@@ -128,9 +128,9 @@ warning below.
 4. **Emulator-session observability:** boot scripts should echo serial
    - boot stage to a log file the session can tail, not rely on the
      interactive shell's output.
-5. **The contrast audit should be a script** (`scripts/contrast-check.py`
-   over a token-pair manifest), not a session transcript — it will be
-   re-run after every palette change (F055 fixed pairs can drift back).
+5. ~~**The contrast audit should be a script** (`scripts/contrast-check.py`~~ done — docs/status/2026-10-25_13-43 §a2 (contrast-check.py + pairs.json + CI step shipped)
+   ~~over a token-pair manifest), not a session transcript — it will be~~
+   ~~re-run after every palette change (F055 fixed pairs can drift back).~~
 6. **Auth-bound semantics deserve one more look on a real PBX:** the
    bounded ladder (one credentialed retry, two when stale) is unit-
    pinned but UNTESTED against live FreeSWITCH INVITE challenges.
@@ -145,126 +145,126 @@ warning below.
 
 ## f) NEXT TASKS (up to 50, ordered)
 
-1. Commit the dprint table reformats + index this report (daemon will
-   otherwise mix them into unrelated sweeps).
-2. Resolve the concurrent-session question (g, Q1) before touching
-   `shell/` again.
-3. Push HEAD to origin + github by hand over SSH (T02) — 6 commits
-   touch `.github/workflows/`, GitHub needs the hand-push.
-4. Verify the FIRST green CI run on GitHub after the push (T12/F041),
+1. ~~Commit the dprint table reformats + index this report (daemon will~~ done — dprint reformats committed + report indexed (13-56 carried it forward)
+   ~~otherwise mix them into unrelated sweeps).~~
+2. ~~Resolve the concurrent-session question (g, Q1) before touching~~ done — resolved — the concurrent session completed and pushed; no shell/ contention remained
+   ~~`shell/` again.~~
+3. ~~Push HEAD to origin + github by hand over SSH (T02) — 6 commits~~ done — both remotes pushed 14:33, tips equal f585c6d (14-33 §a)
+   ~~touch `.github/workflows/`, GitHub needs the hand-push.~~
+4. Verify the FIRST green CI run on GitHub after the push (T12/F041), **→ TODO_LIST (GitHub billing → first green run, R13/N029)**
    fix runner assumptions it exposes.
-5. Write F076 TLS-pinning decision into AGENTS Gotchas.
-6. Write F080 (API 31-33 permanent fallback) into AGENTS Gotchas.
-7. Record F083 (CallEndpoint vs setCommunicationDevice) in ROADMAP.
-8. Record F086 (WorkManager rejected for v0.1 + revisit trigger) in
-   ROADMAP.
-9. Record F091 (no crash reporting by policy) in ROADMAP.
-10. Answer/retire the four F092 decisions (WebView dark-mode, chrome
-    visibility, emulator snapshots, baseline profiles) in ROADMAP's
-    Open questions.
-11. CHANGELOG: `.kotlin/` note + this pass's entry (F074).
-12. Decide + execute the v0.1.0 annotated tag (F074) — ask operator
+5. ~~Write F076 TLS-pinning decision into AGENTS Gotchas.~~ done — ROADMAP Decisions + AGENTS gotcha (TLS NOT pinned; 3b3d723)
+6. ~~Write F080 (API 31-33 permanent fallback) into AGENTS Gotchas.~~ done — AGENTS gotcha (API 31-33 direct-dial permanent until minSdk 34)
+7. ~~Record F083 (CallEndpoint vs setCommunicationDevice) in ROADMAP.~~ done — ROADMAP Decisions (CallEndpoint keep for v0.1)
+8. ~~Record F086 (WorkManager rejected for v0.1 + revisit trigger) in~~ done — ROADMAP Decisions (WorkManager REJECTED + revisit trigger)
+   ~~ROADMAP.~~
+9. ~~Record F091 (no crash reporting by policy) in ROADMAP.~~ done — ROADMAP Decisions (crash reporting none by policy)
+10. ~~Answer/retire the four F092 decisions (WebView dark-mode, chrome~~ done — ROADMAP Decisions + Open questions (dark-mode shipped 09-59; chrome visibility, snapshots, profiles recorded)
+    ~~visibility, emulator snapshots, baseline profiles) in ROADMAP's~~
+    ~~Open questions.~~
+11. ~~CHANGELOG: `.kotlin/` note + this pass's entry (F074).~~ done — CHANGELOG .kotlin/ note landed (13-56 §a)
+12. Decide + execute the v0.1.0 annotated tag (F074) — ask operator **→ TODO_LIST (v0.1.0 annotated tag — operator timing, R24/N062)**
     (g, Q3).
-13. TODO_LIST: strike the rows this pass completed (uiMode, thread
-    audit F093, shutdown race F094, INVITE 401, F055 code part, smoke
-    script, battery prompt, TalkBack pass, contrast, photos script,
-    second-call UX F095/F096, CallStyle F088/F089, failure-cause,
-    missed-call, tests batch, LICENSE, TLS memo, mirror-lag).
-14. FEATURES.md: flip the rows this pass made true (CallStyle,
-    missed-call, battery ask, release smoke mode, photos script,
-    CI push trigger).
-15. AGENTS.md: new gotchas learned this pass (CallStyle post-time
-    validation + fallback, `lastActivity`-in-receive invariant,
-    AttachGuard generation semantics, contrast-audit script pointer).
-16. Strike the executed rows in the pareto plan file (docs-health
-    ANNOTATE, inline `done at` markers).
-17. Run the emulator verification batch: F024 theme-switch light/dark
-    screenshots.
-18. Same batch: F038 smoke-script dry run (boot→install→launch).
-19. Same batch: F058 photos-script run (light+dark in one run).
-20. Same batch: F035 ntfy kill-cycle via direct
-    `am start-foreground-service` + `am kill` + logcat resubscribe
-    check (F036 fix whatever it breaks).
-21. Operator unblocks (T01): SystemNix deploy + PAT re-scope — then
+13. ~~TODO_LIST: strike the rows this pass completed (uiMode, thread~~ done — docs/status/2026-10-25_13-56 §a P23 (TODO_LIST rebuilt, rows struck)
+    ~~audit F093, shutdown race F094, INVITE 401, F055 code part, smoke~~
+    ~~script, battery prompt, TalkBack pass, contrast, photos script,~~
+    ~~second-call UX F095/F096, CallStyle F088/F089, failure-cause,~~
+    ~~missed-call, tests batch, LICENSE, TLS memo, mirror-lag).~~
+14. ~~FEATURES.md: flip the rows this pass made true (CallStyle,~~ done — docs/status/2026-10-25_13-56 §a P23 (FEATURES flipped)
+    ~~missed-call, battery ask, release smoke mode, photos script,~~
+    ~~CI push trigger).~~
+15. ~~AGENTS.md: new gotchas learned this pass (CallStyle post-time~~ done — docs/status/2026-10-25_13-56 §a P23 (AGENTS gotchas landed)
+    ~~validation + fallback, `lastActivity`-in-receive invariant,~~
+    ~~AttachGuard generation semantics, contrast-audit script pointer).~~
+16. ~~Strike the executed rows in the pareto plan file (docs-health~~ done — docs/status/2026-10-25_14-33 §a (W193: 06-38 plan annotated, fa7f144)
+    ~~ANNOTATE, inline `done at` markers).~~
+17. ~~Run the emulator verification batch: F024 theme-switch light/dark~~ done — docs/status/2026-10-25_13-43 §a4 F024 (dialpad DayNight verified)
+    ~~screenshots.~~
+18. ~~Same batch: F038 smoke-script dry run (boot→install→launch).~~ done — docs/status/2026-10-25_13-43 §a4 F038 (boot→install→launch clean)
+19. ~~Same batch: F058 photos-script run (light+dark in one run).~~ done — docs/status/2026-10-25_13-43 §a4 F058 + 13-56 §a (light+dark in one pass)
+20. ~~Same batch: F035 ntfy kill-cycle via direct~~ done — docs/status/2026-10-25_13-56 §a F035/F036 (kill-cycle PROVEN, nothing to fix)
+    ~~`am start-foreground-service` + `am kill` + logcat resubscribe~~
+    ~~check (F036 fix whatever it breaks).~~
+21. Operator unblocks (T01): SystemNix deploy + PAT re-scope — then **→ TODO_LIST (Owner deploy + PAT re-scope, R12/N025-N026)**
     re-run `scripts/mirror-lag.sh` until "mirror OK" (F003).
-22. Q1 lands (test extension) → T04 outbound train (F008-F014).
-23. T05 ring train + race measurement + call-screen visuals
+22. Q1 lands (test extension) → T04 outbound train (F008-F014). **→ TODO_LIST (outbound device train, R15/N033-N038)**
+23. T05 ring train + race measurement + call-screen visuals **→ TODO_LIST (ring train + race + call-screen visuals, R16/N039-N044)**
     (F015-F021).
-24. Physical install + first-run walk (T03, F005-F007) — needs the
+24. Physical install + first-run walk (T03, F005-F007) — needs the **→ TODO_LIST (First physical install, R14/N030-N032)**
     operator's phone.
-25. T13's watchdog needs a live soak (24 h registered, then pull the
+25. T13's watchdog needs a live soak (24 h registered, then pull the **→ TODO_LIST (first device train — 24 h watchdog soak, R15/R16)**
     network) — train-time verification.
-26. T14 logout semantics — operator answers KEEP vs PURGE (F045), then
+26. T14 logout semantics — operator answers KEEP vs PURGE (F045), then **→ TODO_LIST (Logout deregistration KEEP-vs-PURGE, R21/N054-N056)**
     implement (F046/F047).
-27. T15 live contract checks once a session exists (F048-F050).
-28. F052 battery prompt verification (allow/deny paths) — needs
+27. T15 live contract checks once a session exists (F048-F050). **→ TODO_LIST (Live contract checks, R20/N052-N053)**
+28. F052 battery prompt verification (allow/deny paths) — needs **→ TODO_LIST (battery-prompt allow/deny, R23/N061)**
     REGISTERED state (Q1) or a debug override.
-29. F063 CallStyle device verification on both trains.
-30. T17 TalkBack walkthrough on device (F053) — the code pass only
+29. F063 CallStyle device verification on both trains. **→ TODO_LIST (CallStyle device verification, R23/N059)**
+30. T17 TalkBack walkthrough on device (F053) — the code pass only **→ TODO_LIST (TalkBack walkthrough, R23/N060)**
     pins the programmatically knowable parts; TalkBack itself lies in
     wait.
-31. Contrast script (e, item 5): `scripts/contrast-check.py` + token
-    manifest + CI step.
-32. Add the auth-ladder soak test: engine against a scripted challenge
-    server (MockWebServer) for the REGISTER+INVITE ladders end-to-end.
-33. Wire `scripts/mirror-lag.sh` into CI (fails the build when the
+31. ~~Contrast script (e, item 5): `scripts/contrast-check.py` + token~~ done — docs/status/2026-10-25_13-43 §a2 (contrast-check.py + 50 checks + CI step)
+    ~~manifest + CI step.~~
+32. ~~Add the auth-ladder soak test: engine against a scripted challenge~~ done — REGISTER ladder soaked over a real websocket (13-56 §a W120/W122); the INVITE soak honestly scoped out (W121 — needs WebRTC native; seam-covered by SipEngineAuthTest)
+    ~~server (MockWebServer) for the REGISTER+INVITE ladders end-to-end.~~
+33. Wire `scripts/mirror-lag.sh` into CI (fails the build when the **→ TODO_LIST (rides the R12 mirror attach — CI mirror-lag gate after)**
     mirror lags) once T01 attaches the mirror.
-34. Debug-signed release smoke on the emulator (`--release` mode) —
-    script exists, run it (catches R8 issues early, feeds F082).
-35. Propagate the duration-timer hold semantics decision (wall-clock
-    today) into the CallStyle ongoing notification subtitle when the
-    trains land.
-36. Consider a `RegistrationFailure` surfacing in the CallStyle
-    incoming path (auth-rejected devices should not ring-then-fail
-    silently).
-37. Sweep for remaining `runCatching`-swallows that log nothing
-    (F019-old's `onAnswer` catch) — add log-or-handle per the 17:44
-    finding.
-38. Robolectric test for the CallStyle fallback (assert plain
-    notification posts when style is rejected) — shadow permitting.
-39. Add `AttachGuard`-style generation to `TelecomOutgoing.scope`
-    cleanup (same orphan shape, lower stakes).
-40. Re-check `scheduleRefresh` vs `startSilenceWatchdog` interplay
-    after a watchdog rebuild (both restart — confirm no double-REGISTER
-    storm on a flapping link).
-41. Localize nothing yet, but audit strings for interpolations that
-    translators would need (status_active_duration is positional) —
-    cheap now, expensive later.
-42. Add the ntfy-topic rotation case to a test: topic changes in
-    Settings → service restart re-subscribes (the ACTION_STOP +
-    start cycle).
-43. Consider `ring_end` arriving AFTER the user answered here
-    (phase ACTIVE) — today it correctly no-ops; add a regression test
-    pinning that.
-44. Write the WebSurface integration notes into AGENTS once the
-    concurrent session lands (shell/ ownership, offline overlay
-    behavior) — do not duplicate its docs.
-45. Re-run dprint on ALL touched files before the final commit (CI
-    runs `dprint check`).
-46. Update docs/status/README.md index with this report.
-47. After trains: retire honesty markers (T27/F087) — README build
+34. ~~Debug-signed release smoke on the emulator (`--release` mode) —~~ done — docs/status/2026-10-25_13-56 §a W180 (first --release smoke GREEN)
+    ~~script exists, run it (catches R8 issues early, feeds F082).~~
+35. ~~Propagate the duration-timer hold semantics decision (wall-clock~~ done — docs/status/2026-10-25_13-56 §a W171 (shade call clock shipped — setWhen)
+    ~~today) into the CallStyle ongoing notification subtitle when the~~
+    ~~trains land.~~
+36. ~~Consider a `RegistrationFailure` surfacing in the CallStyle~~ done — docs/status/2026-10-25_13-56 §a W170 (auth-rejected suppression)
+    ~~incoming path (auth-rejected devices should not ring-then-fail~~
+    ~~silently).~~
+37. ~~Sweep for remaining `runCatching`-swallows that log nothing~~ done — docs/status/2026-10-25_13-56 §a W160 (swallow sweep: FGS start, CallStyle post, ntfy frame now log)
+    ~~(F019-old's `onAnswer` catch) — add log-or-handle per the 17:44~~
+    ~~finding.~~
+38. ~~Robolectric test for the CallStyle fallback (assert plain~~ done — docs/status/2026-10-25_13-56 §a W140 (CallServiceTest pins both branches)
+    ~~notification posts when style is rejected) — shadow permitting.~~
+39. ~~Add `AttachGuard`-style generation to `TelecomOutgoing.scope`~~ done — docs/status/2026-10-25_13-56 §a W161 (TelecomOutgoing generation guard)
+    ~~cleanup (same orphan shape, lower stakes).~~
+40. ~~Re-check `scheduleRefresh` vs `startSilenceWatchdog` interplay~~ done — docs/status/2026-10-25_13-56 §a W152 (review verdict: every relaunch cancels its predecessor — AGENTS gotcha)
+    ~~after a watchdog rebuild (both restart — confirm no double-REGISTER~~
+    ~~storm on a flapping link).~~
+41. ~~Localize nothing yet, but audit strings for interpolations that~~ done — docs/status/2026-10-25_13-56 §a W204 (both interpolated strings positional — PASS)
+    ~~translators would need (status_active_duration is positional) —~~
+    ~~cheap now, expensive later.~~
+42. ~~Add the ntfy-topic rotation case to a test: topic changes in~~ done — docs/status/2026-10-25_13-56 §a W151 (rotation restart pinned)
+    ~~Settings → service restart re-subscribes (the ACTION_STOP +~~
+    ~~start cycle).~~
+43. ~~Consider `ring_end` arriving AFTER the user answered here~~ done — docs/status/2026-10-25_13-56 §a W150 (answered-call-spared pin)
+    ~~(phase ACTIVE) — today it correctly no-ops; add a regression test~~
+    ~~pinning that.~~
+44. ~~Write the WebSurface integration notes into AGENTS once the~~ done — AGENTS "WebView hardening home" gotcha (09-59 §a7) — no duplication
+    ~~concurrent session lands (shell/ ownership, offline overlay~~
+    ~~behavior) — do not duplicate its docs.~~
+45. ~~Re-run dprint on ALL touched files before the final commit (CI~~ done — dprint clean through later sessions; CI gate
+    ~~runs `dprint check`).~~
+46. ~~Update docs/status/README.md index with this report.~~ done — indexed (docs/status/README.md; 13-56 verified the row)
+47. After trains: retire honesty markers (T27/F087) — README build **→ TODO_LIST (post-train docs sweep, R26/N066)**
     block already honest about unsigned releases.
-48. After trains: F081/F082/F084 device verifications.
-49. Keep the emulator/AVD hygiene: `.avd/` is gitignored — confirm the
-    new photos/shots dir (`photos/`) is gitignored too.
-50. Book the operator questions (g) — T01/T02/Q1/tag — as the next
-    session's opening move.
+48. After trains: F081/F082/F084 device verifications. **→ TODO_LIST (device verifications, R23 + ring train R16/N038)**
+49. ~~Keep the emulator/AVD hygiene: `.avd/` is gitignored — confirm the~~ done — photos/ + screenshots gitignored (13-56 §a W210)
+    ~~new photos/shots dir (`photos/`) is gitignored too.~~
+50. ~~Book the operator questions (g) — T01/T02/Q1/tag — as the next~~ done — booked — the operator items live in TODO_LIST R12-R14; tag in R24
+    ~~session's opening move.~~
 
 ## g) QUESTIONS (cannot figure out myself)
 
-1. **Is a second agent session still active on WebSurface right now?**
-   `shell/WebSurface.kt`, its test, themes and CHANGELOG edits landed
-   mid-pass (daemon-swept at 09:42), and its dprint reformats are
-   UNCOMMITTED in the tree. If it is active: which files are claimed,
-   so this session stays clear? If it is done: should I fold its
-   uncommitted reformats into my final commit?
-2. **Push now?** The user ordered the whole list, and T02 (push origin
-   - github) is on it — but 6 unpushed commits touch
-     `.github/workflows/`, which the sync PAT cannot carry; GitHub must
-     be pushed by hand over SSH (same as the seed push). Confirm the
-     hand-push of everything to BOTH remotes now, or wait for T01's PAT
-     fix and push once?
-3. **Tag `v0.1.0` now (F074)?** The CHANGELOG cut and annotated tag are
+1. ~~**Is a second agent session still active on WebSurface right now?**~~ done — resolved — the concurrent session landed + pushed (28ba2be/f4c9ca4); reformats were folded forward
+   ~~`shell/WebSurface.kt`, its test, themes and CHANGELOG edits landed~~
+   ~~mid-pass (daemon-swept at 09:42), and its dprint reformats are~~
+   ~~UNCOMMITTED in the tree. If it is active: which files are claimed,~~
+   ~~so this session stays clear? If it is done: should I fold its~~
+   ~~uncommitted reformats into my final commit?~~
+2. ~~**Push now?** The user ordered the whole list, and T02 (push origin~~ done — pushed 14:33 over SSH, tips equal (14-33 §a); pushes since are owner-policy
+   ~~- github) is on it — but 6 unpushed commits touch~~
+     ~~`.github/workflows/`, which the sync PAT cannot carry; GitHub must~~
+     ~~be pushed by hand over SSH (same as the seed push). Confirm the~~
+     ~~hand-push of everything to BOTH remotes now, or wait for T01's PAT~~
+     ~~fix and push once?~~
+3. **Tag `v0.1.0` now (F074)?** The CHANGELOG cut and annotated tag are **→ TODO_LIST (v0.1.0 annotated tag — operator timing, R24/N062)**
    the last T24 items. Tag before the device trains (the trains may
    invalidate "v0.1 honesty markers") or tag after the trains as the
    first verified version?
