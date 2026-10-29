@@ -47,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Gradle build cache adopted (`org.gradle.caching=true`, J13/M043)
 - Test suite at 97 JVM tests (from 94), all green under the fence;
   the whole gate ran green end-to-end on the final tree (2026-10-28)
+- CI/toolchain maintenance (the 2026-10-28 sweep, folded as `523a566`):
+  `actions/upload-artifact` v4.6.2 → v7.0.2 (SHA-pinned; the v4→v7
+  breaking changes — Node 24 default, ESM, opt-in `archive:false` —
+  do not touch this workflow's usage) and the nixpkgs flake input
+  refreshed; both validated empirically by the gate running green on
+  the bumped toolchain
 
 ## [0.2.0] - 2026-10-28
 
