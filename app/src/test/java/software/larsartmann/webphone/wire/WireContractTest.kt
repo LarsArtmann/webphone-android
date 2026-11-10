@@ -194,8 +194,16 @@ class WireContractTest {
                     token = "fixture-topic",
                 ),
             )
-        assertEquals(expected.keySet(), actual.keySet(), "the registration body's keys are the server contract — extra keys drift silently")
-        for (key in expected.keySet()) assertEquals(expected.get(key), actual.get(key), "value drift on $key")
+        assertEquals(expected.sortedKeys(), actual.sortedKeys(), "the registration body's keys are the server contract — extra keys drift silently")
+        for (key in expected.sortedKeys()) assertEquals(expected.get(key), actual.get(key), "value drift on $key")
+    }
+
+    /** Android's org.json has no keySet(); sortedKeys() gives the
+     *  order-stable key list the equality above needs. */
+    private fun JSONObject.sortedKeys(): List<String> {
+        val keys = mutableListOf<String>()
+        keys().forEachRemaining { keys.add(it) }
+        return keys.sorted()
     }
 
     private fun JSONObject.stringMap(): Map<String, String> {
