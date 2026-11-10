@@ -16,12 +16,14 @@ import software.larsartmann.webphone.shell.SessionApi
  */
 class FcmReceiver : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
-        val data = message.data
+        // The ONE parse home decodes both transports; a frame without
+        // an event is not a fact (the fixture-pinned wire contract).
+        val fact = WireFacts.fromFcmData(message.data) ?: return
         RingEvent.route(
             this,
-            event = data["event"] ?: return,
-            from = data["from"],
-            callId = data["call_id"],
+            event = fact.event,
+            from = fact.from,
+            callId = fact.callId,
         )
     }
 

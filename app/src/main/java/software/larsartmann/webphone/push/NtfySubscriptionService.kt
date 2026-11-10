@@ -12,7 +12,6 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
-import org.json.JSONObject
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
 import java.util.concurrent.TimeUnit
@@ -150,18 +149,20 @@ class NtfySubscriptionService : Service() {
     private fun routeMessage(text: String) {
         // ntfy's websocket frames are the same JSON the HTTP stream
         // carries: {"id":…,"topic":…,"message":"{\"event\":…}"}. The
-        // ring fact rides the message field as compact JSON (the
-        // server seam's wire contract).
-        runCatching {
-            val envelope = JSONObject(text)
-            val inner = JSONObject(envelope.optString("message"))
-            RingEvent.route(
-                this,
-                event = inner.optString("event"),
-                from = inner.optString("from").ifEmpty { null },
-                callId = inner.optString("call_id").ifEmpty { null },
-            )
-        }.onFailure { Log.w(TAG, "unroutable ntfy frame (${it.message}): $text") }
+        // ring fact rides the message field as compact JSON — decoded
+        // by the ONE parse home (WireFacts, fixture-pinned); the raw
+        // frame is the only evidence when it will not parse.
+        val fact =
+            WireFacts.fromNtfyFrame(text) ?: run {
+                Log.w(TAG, "unroutable ntfy frame: $text")
+                return
+            }
+        RingEvent.route(
+            this,
+            event = fact.event,
+            from = fact.from,
+            callId = fact.callId,
+        )
     }
 
     /** Test seam (J16/M051): the stop-leak pin invokes the resurrect

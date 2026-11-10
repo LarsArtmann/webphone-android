@@ -17,10 +17,13 @@ import software.larsartmann.webphone.App
  * The origin's session seam, from the island's contract: the WebView
  * login mints the session cookie (the ONE login surface — the shell
  * never grows a second login form), then this client resumes the
- * session (GET /api/session carries the SIP credentials back,
- * no-store) and registers the device's push address
- * (POST /api/push-devices, CSRF via the /api/csrf dance — the same
- * rotate-on-login contract the island's authedFetch rides).
+ * session (GET /api/session carries the identity and the SIP
+ * credential — exactly one arm, `sip_credential` brokered or
+ * `password` legacy — no-store; the SIP connection FACTS live in
+ * /config.js, the island's own config source) and registers the
+ * device's push address (POST /api/push-devices, CSRF via the
+ * /api/csrf dance — the same rotate-on-login contract the island's
+ * authedFetch rides).
  */
 object SessionApi {
     private const val TAG = "SessionApi"
@@ -63,6 +66,14 @@ object SessionApi {
         val sipDomain: String,
         val sipPassword: String,
         val websocketUrl: String,
+    )
+
+    /** The island's connection facts from /config.js (window.
+     *  PBX_CONFIG): where the SIP domain and the websocket path live —
+     *  the session answer deliberately carries neither. */
+    data class IslandConfig(
+        val sipDomain: String,
+        val websocketPath: String,
     )
 
     /** The session probe's verdict: a logout is DEFINITIVE (the HTTP
@@ -109,21 +120,64 @@ object SessionApi {
      *  the login first). */
     fun resumeSession(): SessionIdentity? {
         val body = call("GET", "/api/session", null) ?: return null
-        return runCatching {
+        return parseSessionIdentity(body, fetchIslandConfig(), App.origin)
+    }
+
+    /** Decode the sessionIdentity wire shape (the server owns the
+     *  field names — pinned by the vendored fixtures in the JVM suite):
+     *  `extension` + exactly ONE credential arm, `sip_credential`
+     *  (brokered) or `password` (legacy). The SIP connection facts are
+     *  NOT in this answer — sipDomain and websocketPath come from
+     *  /config.js ([IslandConfig]), wsOrigin is this install's stack
+     *  origin. An answer without a credential, without the config
+     *  facts, or without an extension is NOT a registerable identity:
+     *  null, loudly — never the empty-credential REGISTER that
+     *  silently never rang. */
+    internal fun parseSessionIdentity(
+        body: String,
+        config: IslandConfig?,
+        wsOrigin: String,
+    ): SessionIdentity? =
+        runCatching {
             val root = JSONObject(body)
-            // The typed sessionIdentity shape: extension + SIP
-            // connection facts (the server owns the field names).
             SessionIdentity(
                 extension = root.optString("extension"),
-                sipDomain = root.optString("sip_domain").ifEmpty { root.optString("sipDomain") },
-                sipPassword = root.optString("sip_password").ifEmpty { root.optString("sipPassword") },
+                sipDomain = config?.sipDomain.orEmpty(),
+                sipPassword = root.optString("sip_credential").ifEmpty { root.optString("password") },
                 websocketUrl =
-                    root.optString("websocket_url").ifEmpty {
-                        App.origin.replaceFirst("http", "ws").trimEnd('/') + "/sip"
-                    },
+                    wsOrigin.replaceFirst("http", "ws").trimEnd('/') +
+                        (config?.websocketPath?.takeIf { it.isNotEmpty() } ?: "/sip"),
             )
-        }.getOrNull()?.takeIf { it.extension.isNotEmpty() }
+        }.getOrNull()?.takeIf {
+            it.extension.isNotEmpty() && it.sipDomain.isNotEmpty() && it.sipPassword.isNotEmpty()
+        }
+
+    /** Fetch the island's own config source (window.PBX_CONFIG) and
+     *  read the SIP connection facts by key — the same keys the island
+     *  boot reads. A regex over the JS literal (a full JS parse for two
+     *  string keys is ceremony); an absent path falls back to the
+     *  island's default. Unreachable or unparsable answers null (the
+     *  caller fails the resume honestly instead of registering
+     *  nowhere). */
+    private fun fetchIslandConfig(): IslandConfig? {
+        val body = call("GET", "/config.js", null) ?: return null
+        val domain = Regex("\"sipDomain\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1) ?: return null
+        val path = Regex("\"websocketPath\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1) ?: "/sip"
+        return IslandConfig(sipDomain = domain, websocketPath = path)
     }
+
+    /** The registration upsert body (pure — the JVM suite pins its
+     *  keys against the vendored server fixture). */
+    internal fun registerPayload(
+        deviceId: String,
+        transport: String,
+        token: String,
+    ): String =
+        JSONObject()
+            .put("device_id", deviceId)
+            .put("transport", transport)
+            .put("token", token)
+            .toString()
 
     /** Register this install's push wake address (upsert — token
      *  rotation replaces the row server-side). */
@@ -132,12 +186,7 @@ object SessionApi {
         transport: String,
         token: String,
     ): Boolean {
-        val payload =
-            JSONObject()
-                .put("device_id", DeviceIdentity.deviceId(context))
-                .put("transport", transport)
-                .put("token", token)
-                .toString()
+        val payload = registerPayload(DeviceIdentity.deviceId(context), transport, token)
         val csrf = fetchCsrf() ?: return false
         val request =
             Request
