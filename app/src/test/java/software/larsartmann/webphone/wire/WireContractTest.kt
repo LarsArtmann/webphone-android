@@ -8,10 +8,10 @@ import software.larsartmann.webphone.push.WireFacts
 import software.larsartmann.webphone.shell.SessionApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.fail
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.test.fail
 
 /**
  * THE cross-repo wire contract, driven by the byte-pinned fixtures the
@@ -194,7 +194,11 @@ class WireContractTest {
                     token = "fixture-topic",
                 ),
             )
-        assertEquals(expected.sortedKeys(), actual.sortedKeys(), "the registration body's keys are the server contract — extra keys drift silently")
+        assertEquals(
+            expected.sortedKeys(),
+            actual.sortedKeys(),
+            "the registration body's keys are the server contract — extra keys drift silently",
+        )
         for (key in expected.sortedKeys()) assertEquals(expected.get(key), actual.get(key), "value drift on $key")
     }
 

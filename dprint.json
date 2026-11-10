@@ -11,6 +11,7 @@
   "markdown": {},
   "dockerfile": {},
   "excludes": [
+    "app/src/test/resources/wire/**",
     "vendor/**",
     ".git/**",
     "node_modules/**",
