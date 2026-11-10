@@ -39,6 +39,19 @@ class NtfySubscriptionService : Service() {
      *  rang forever with no owner). */
     @Volatile private var stopped = false
 
+    /** The DISCONNECTED flicker grace: a socket flap that heals
+     *  within this window never surfaces as "wake off" — the pill
+     *  would strobe on every reconnect otherwise (the flap ends in
+     *  ARMED again; the verdict the user never needed to see). The
+     *  grace thread re-checks the socket at wake time, so a healed
+     *  link suppresses the report entirely. Internal: the pin drives
+     *  the window with a much shorter value. */
+    internal var disconnectGraceMs = 2_500L
+
+    /** Set while a grace thread is pending — a second failure inside
+     *  the window must not stack a second thread. */
+    @Volatile private var disconnectGracePending = false
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(
@@ -91,6 +104,13 @@ class NtfySubscriptionService : Service() {
         // Idempotent: start() is re-invoked on every MainActivity
         // resume; one socket per service instance is the contract.
         if (socket != null) return
+        // The verdict journey is visible from the first millisecond:
+        // an open-then-armed socket shows STARTING in between instead
+        // of the UNKNOWN void (register-204-but-socket-dead showed NO
+        // verdict at all before). The reconnect path re-enters here
+        // too, so DISCONNECTED flips back to STARTING while the
+        // retry is in flight.
+        WakeLane.report(WakeLaneState.STARTING)
         val client =
             OkHttpClient
                 .Builder()
@@ -112,6 +132,7 @@ class NtfySubscriptionService : Service() {
                     ) {
                         Log.i(TAG, "ntfy subscription open")
                         reconnectAttempts = 0
+                        disconnectGracePending = false
                         WakeLane.report(WakeLaneState.ARMED)
                     }
 
@@ -127,9 +148,15 @@ class NtfySubscriptionService : Service() {
                         t: Throwable,
                         response: Response?,
                     ) {
-                        Log.w(TAG, "ntfy subscription failure: ${t.message}")
-                        socket = null
-                        if (!stopped) WakeLane.report(WakeLaneState.DISCONNECTED)
+                        // The HTTP status names the refusal class when the
+                        // failure HAS one (404 = the topic route is absent,
+                        // 403 = read auth) — without it the log line cannot
+                        // tell "link down" from "server said no".
+                        Log.w(
+                            TAG,
+                            "ntfy subscription failure: ${t.message} (http ${response?.code ?: "-"})",
+                        )
+                        onTransportDown()
                         scheduleReconnect(server, topic)
                     }
 
@@ -138,8 +165,7 @@ class NtfySubscriptionService : Service() {
                         code: Int,
                         reason: String,
                     ) {
-                        socket = null
-                        if (!stopped) WakeLane.report(WakeLaneState.DISCONNECTED)
+                        onTransportDown()
                         scheduleReconnect(server, topic)
                     }
                 },
@@ -163,6 +189,23 @@ class NtfySubscriptionService : Service() {
             from = fact.from,
             callId = fact.callId,
         )
+    }
+
+    /** The transport died (failure or clean close): drop the socket
+     *  and report DISCONNECTED — but only after the flicker grace, so
+     *  a flap that heals before the window closes never surfaces as
+     *  wake off. Internal: the pins drive it directly (the meta-proof
+     *  lesson: drive seams, never wait on network events). */
+    internal fun onTransportDown() {
+        socket = null
+        if (stopped) return
+        if (disconnectGracePending) return
+        disconnectGracePending = true
+        Thread {
+            Thread.sleep(disconnectGraceMs)
+            disconnectGracePending = false
+            if (!stopped && socket == null) WakeLane.report(WakeLaneState.DISCONNECTED)
+        }.start()
     }
 
     /** Test seam (J16/M051): the stop-leak pin invokes the resurrect
@@ -190,6 +233,7 @@ class NtfySubscriptionService : Service() {
         socket = null
         super.onDestroy()
     }
+
 
     companion object {
         private const val TAG = "NtfySubscription"

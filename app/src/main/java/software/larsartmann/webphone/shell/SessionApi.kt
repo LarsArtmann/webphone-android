@@ -82,6 +82,29 @@ object SessionApi {
      *  flap would have silenced the phone forever). */
     enum class SessionProbe { ALIVE, DEAD, UNREACHABLE }
 
+    /** The wake-address registration's verdict, the server's own
+     *  contract (webphone internal/server): 204 accepted; 404 the
+     *  push seam is OFF server-side; 403 the session/CSRF gate
+     *  rejected; 422 the address was invalid OR the account's device
+     *  list is full (the server merges both); anything else is
+     *  unexpected. A null code (and a failed CSRF fetch, which needs
+     *  no session and can only fail on the link) is a TRANSPORT
+     *  failure, not a refusal — the pill says the link is down, never
+     *  that the server said no. */
+    enum class PushRegisterVerdict { REGISTERED, SEAM_OFF, INVALID, AUTH, NETWORK, OTHER }
+
+    /** Classify one register answer. Pure (the classifier the unit
+     *  test pins); [registerPushDevice] supplies the code. */
+    internal fun registerVerdictFromCode(code: Int?): PushRegisterVerdict =
+        when {
+            code == null -> PushRegisterVerdict.NETWORK
+            code == 204 -> PushRegisterVerdict.REGISTERED
+            code == 404 -> PushRegisterVerdict.SEAM_OFF
+            code == 403 -> PushRegisterVerdict.AUTH
+            code == 422 -> PushRegisterVerdict.INVALID
+            else -> PushRegisterVerdict.OTHER
+        }
+
     /** Classify one /api/session answer. Pure (the classifier the
      *  unit test pins); [probeSession] supplies the code. A null code
      *  is a transport failure (IOException) — never a logout. */
@@ -98,13 +121,7 @@ object SessionApi {
      *  out / the server expired the cookie), UNREACHABLE keeps it and
      *  waits for the next tick. */
     fun probeSession(): SessionProbe {
-        val request =
-            Request
-                .Builder()
-                .url(App.origin.trimEnd('/') + "/api/session")
-                .header("Cookie", sessionCookieHeader())
-                .get()
-                .build()
+        val request = authedBuilder("/api/session").get().build()
         val code: Int? =
             runCatching {
                 client.newCall(request).execute().use { response -> response.code }
@@ -180,43 +197,41 @@ object SessionApi {
             .toString()
 
     /** Register this install's push wake address (upsert — token
-     *  rotation replaces the row server-side). */
+     *  rotation replaces the row server-side). Returns the server's
+     *  refusal class — a Boolean collapsed three distinct failures
+     *  (seam off, rejected, link down) into one indistinguishable
+     *  `false`, which is exactly the silence this verdict exists to
+     *  end. */
     fun registerPushDevice(
         context: Context,
         transport: String,
         token: String,
-    ): Boolean {
+    ): PushRegisterVerdict {
         val payload = registerPayload(DeviceIdentity.deviceId(context), transport, token)
-        val csrf = fetchCsrf() ?: return false
+        val csrf = fetchCsrf() ?: return PushRegisterVerdict.NETWORK
         val request =
-            Request
-                .Builder()
-                .url(App.origin.trimEnd('/') + "/api/push-devices")
-                .header("Cookie", sessionCookieHeader())
+            authedBuilder("/api/push-devices")
                 .header("X-CSRF-Token", csrf)
                 .post(payload.toRequestBody(json))
                 .build()
         return runCatching {
             client.newCall(request).execute().use { response ->
-                if (response.code == 204) {
+                val verdict = registerVerdictFromCode(response.code)
+                if (verdict == PushRegisterVerdict.REGISTERED) {
                     Log.i(TAG, "push device registered ($transport)")
-                    true
                 } else {
-                    Log.w(TAG, "push device register answered ${response.code}")
-                    false
+                    Log.w(TAG, "push device register answered ${response.code} -> $verdict")
                 }
+                verdict
             }
-        }.getOrDefault(false)
+        }.getOrDefault(PushRegisterVerdict.NETWORK)
     }
 
     /** Deregister on logout (the registry's device row goes away). */
     fun deregisterPushDevice(context: Context): Boolean {
         val csrf = fetchCsrf() ?: return false
         val request =
-            Request
-                .Builder()
-                .url(App.origin.trimEnd('/') + "/api/push-devices?id=" + DeviceIdentity.deviceId(context))
-                .header("Cookie", sessionCookieHeader())
+            authedBuilder("/api/push-devices?id=" + DeviceIdentity.deviceId(context))
                 .header("X-CSRF-Token", csrf)
                 .delete()
                 .build()
@@ -230,18 +245,22 @@ object SessionApi {
         return runCatching { JSONObject(body).optString("token") }.getOrNull()?.takeIf { it.isNotEmpty() }
     }
 
+    /** The one origin-aimed, cookie-carrying request head — the
+     *  session probe, the register/deregister calls and the generic
+     *  `call` all share it (the request-building duplication was
+     *  three copies of the same two lines drifting apart). */
+    private fun authedBuilder(path: String): Request.Builder =
+        Request
+            .Builder()
+            .url(App.origin.trimEnd('/') + path)
+            .header("Cookie", sessionCookieHeader())
+
     private fun call(
         method: String,
         path: String,
         body: String?,
     ): String? {
-        val request =
-            Request
-                .Builder()
-                .url(App.origin.trimEnd('/') + path)
-                .header("Cookie", sessionCookieHeader())
-                .method(method, body?.toRequestBody(json))
-                .build()
+        val request = authedBuilder(path).method(method, body?.toRequestBody(json)).build()
         return runCatching {
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
