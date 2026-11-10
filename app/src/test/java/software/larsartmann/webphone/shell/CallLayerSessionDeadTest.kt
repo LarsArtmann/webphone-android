@@ -14,7 +14,6 @@ import software.larsartmann.webphone.push.WakeLaneState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
 
 /**
  * The dead-session teardown's contract, driven directly through the

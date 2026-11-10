@@ -257,7 +257,6 @@ class NtfySubscriptionService : Service() {
         super.onDestroy()
     }
 
-
     companion object {
         private const val TAG = "NtfySubscription"
         private const val NOTIFICATION_ID = 1003
