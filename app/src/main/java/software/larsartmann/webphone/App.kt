@@ -35,6 +35,13 @@ class App : Application() {
                 NotificationManager.IMPORTANCE_MIN,
             ),
         )
+        notifications.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ACCOUNT,
+                getString(R.string.channel_account),
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ),
+        )
         WebRtcEngine.initialize(this)
         // chrome://inspect for the shell's WebView — DEBUGGABLE installs
         // only (the manifest flag, not BuildConfig: this build doesn't
@@ -49,6 +56,13 @@ class App : Application() {
     companion object {
         const val CHANNEL_CALLS = "calls"
         const val CHANNEL_PUSH = "push"
+
+        /** Account-level notices the user must actually see — the
+         *  dead-session "ringing paused" heads-up (the min-importance
+         *  push channel would swallow the one notice that must not be
+         *  missed, and the ring channel's bypass-DND is for live
+         *  rings only). */
+        const val CHANNEL_ACCOUNT = "account"
 
         internal const val PREFS_SETTINGS = "webphone-settings"
         private const val KEY_ORIGIN = "origin"

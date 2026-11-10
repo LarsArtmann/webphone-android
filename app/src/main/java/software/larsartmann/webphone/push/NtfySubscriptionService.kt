@@ -108,9 +108,9 @@ class NtfySubscriptionService : Service() {
         // an open-then-armed socket shows STARTING in between instead
         // of the UNKNOWN void (register-204-but-socket-dead showed NO
         // verdict at all before). The reconnect path re-enters here
-        // too, so DISCONNECTED flips back to STARTING while the
-        // retry is in flight.
-        WakeLane.report(WakeLaneState.STARTING)
+        // too — via the refusal-respecting helper, since a reconnect
+        // must not clear a standing register refusal.
+        reportSocketState(WakeLaneState.STARTING)
         val client =
             OkHttpClient
                 .Builder()
@@ -133,7 +133,7 @@ class NtfySubscriptionService : Service() {
                         Log.i(TAG, "ntfy subscription open")
                         reconnectAttempts = 0
                         disconnectGracePending = false
-                        WakeLane.report(WakeLaneState.ARMED)
+                        reportSocketState(WakeLaneState.ARMED)
                     }
 
                     override fun onMessage(
@@ -191,6 +191,25 @@ class NtfySubscriptionService : Service() {
         )
     }
 
+    /** The socket's transport facts (starting/arm/disconnected) —
+     *  but a REFUSED verdict stands until the next wire re-decides
+     *  the lane: an open socket on a seam-off server would otherwise
+     *  overwrite the refusal with ARMED, and ARMED would be a lie
+     *  (the register answer said this install cannot be rung). The
+     *  fresh wire clears the refusal by reporting STARTING
+     *  unconditionally BEFORE the socket ever opens. */
+    private fun reportSocketState(state: WakeLaneState) {
+        when (WakeLane.state.value) {
+            WakeLaneState.REFUSED_SEAM_OFF,
+            WakeLaneState.REFUSED_INVALID,
+            WakeLaneState.REFUSED_AUTH,
+            WakeLaneState.REFUSED_OTHER,
+            -> Unit
+
+            else -> WakeLane.report(state)
+        }
+    }
+
     /** The transport died (failure or clean close): drop the socket
      *  and report DISCONNECTED — but only after the flicker grace, so
      *  a flap that heals before the window closes never surfaces as
@@ -204,7 +223,7 @@ class NtfySubscriptionService : Service() {
         Thread {
             Thread.sleep(disconnectGraceMs)
             disconnectGracePending = false
-            if (!stopped && socket == null) WakeLane.report(WakeLaneState.DISCONNECTED)
+            if (!stopped && socket == null) reportSocketState(WakeLaneState.DISCONNECTED)
         }.start()
     }
 

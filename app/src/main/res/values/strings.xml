@@ -10,6 +10,7 @@
     <string name="mute">Mute</string>
     <string name="speaker">Speaker</string>
     <string name="hold">Hold</string>
+    <string name="channel_account">Account notices</string>
     <string name="ntfy_subscription_active">Push connection active</string>
     <string name="call_active">Call in progress</string>
     <string name="dial">Dial</string>
@@ -45,8 +46,12 @@
     <string name="web_offline_retry">Retry</string>
     <string name="line_and_wake">%1$s · %2$s</string>
     <string name="wake_on">wake on</string>
+    <string name="wake_starting">wake starting</string>
     <string name="wake_off">wake off</string>
-    <string name="wake_reason_refused">Calls may not ring while the app is closed: the server did not accept this phone\'s wake address (push disabled or refused there).</string>
+    <string name="wake_reason_refused_seam_off">Calls may not ring while the app is closed: the server has no push service at this address — the seam looks disabled there (operator side).</string>
+    <string name="wake_reason_refused_invalid">Calls may not ring while the app is closed: the server rejected this phone\'s wake address as invalid, or its device list is full.</string>
+    <string name="wake_reason_refused_auth">Calls may not ring while the app is closed: the server rejected the request — open the app and sign in again.</string>
+    <string name="wake_reason_refused_other">Calls may not ring while the app is closed: the server did not accept this phone\'s wake address.</string>
     <string name="wake_reason_session_dead">Ringing while closed is paused: the sign-in expired. Open WebPhone and sign in again to re-arm it.</string>
     <string name="wake_reason_disconnected">Calls may not ring while the app is closed: the push connection is down right now.</string>
     <string name="session_expired_title">Ringing paused</string>

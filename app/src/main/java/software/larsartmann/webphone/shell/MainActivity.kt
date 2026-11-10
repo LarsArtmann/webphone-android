@@ -69,11 +69,22 @@ internal fun linePillText(
         )
     return when (wake) {
         WakeLaneState.UNKNOWN -> registration to null
+        WakeLaneState.STARTING ->
+            context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_starting)) to null
         WakeLaneState.ARMED ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_on)) to null
-        WakeLaneState.REFUSED ->
+        WakeLaneState.REFUSED_SEAM_OFF ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
-                context.getString(R.string.wake_reason_refused)
+                context.getString(R.string.wake_reason_refused_seam_off)
+        WakeLaneState.REFUSED_INVALID ->
+            context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
+                context.getString(R.string.wake_reason_refused_invalid)
+        WakeLaneState.REFUSED_AUTH ->
+            context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
+                context.getString(R.string.wake_reason_refused_auth)
+        WakeLaneState.REFUSED_OTHER ->
+            context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
+                context.getString(R.string.wake_reason_refused_other)
         WakeLaneState.SESSION_DEAD ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
                 context.getString(R.string.wake_reason_session_dead)

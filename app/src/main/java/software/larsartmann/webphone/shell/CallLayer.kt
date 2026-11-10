@@ -1,7 +1,9 @@
 package software.larsartmann.webphone.shell
 
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.messaging.FirebaseMessaging
@@ -9,6 +11,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -37,6 +40,14 @@ object CallLayer {
     private var sessionWatch: Job? = null
 
     private const val SESSION_WATCH_INTERVAL_MS = 10 * 60 * 1000L
+
+    /** Test seam: the watcher's tick (the loop pin drives it with a
+     *  small value; production keeps the 10-minute cadence). */
+    internal var sessionWatchIntervalMs = SESSION_WATCH_INTERVAL_MS
+
+    /** Test seam: the session probe itself (the loop pin substitutes
+     *  a fake — a unit test must not phone the live stack). */
+    internal var sessionProbe: () -> SessionApi.SessionProbe = { SessionApi.probeSession() }
 
     /** Notification id 1001-1003 are the ring/FGS/ntfy lane's own
      *  surfaces (App conventions); the dead-session notice is 1004. */
@@ -84,63 +95,100 @@ object CallLayer {
             if (!guard.attach(created, attempt)) return@launch
             CallEngine.attach(created)
             created.connect()
-            val ntfyRegistered = registerPushLanes(appContext)
-            if (!ntfyRegistered) {
-                // The stack refused the wake address (seam off, 404/422,
-                // CSRF failure): closed-app rings are impossible — say
-                // so on the pill instead of failing in logcat only.
-                WakeLane.report(WakeLaneState.REFUSED)
-            }
+            // The lane's verdict journey is visible from the first
+            // millisecond — the register + socket-open window shows
+            // STARTING instead of the UNKNOWN void.
+            WakeLane.report(WakeLaneState.STARTING)
             NtfySubscriptionService.start(
                 appContext,
                 App.origin,
                 DeviceIdentity.ntfyTopic(appContext),
             )
+            val verdict = registerPushLanes(appContext)
+            wakeStateFor(verdict)?.let { refused ->
+                // The stack would not take the wake address: closed-app
+                // rings are impossible — say WHICH refusal on the pill
+                // instead of failing in logcat only. A REGISTERED
+                // verdict reports nothing: STARTING stands until the
+                // socket names the lane ARMED.
+                WakeLane.report(refused)
+            }
             startSessionWatch(appContext)
         }
     }
 
-    /** The session watcher: while wired, poll the session seam. A
-     *  DEAD probe (the island logged out, the server expired the
-     *  cookie) means: stop ringing for an account we can no longer
-     *  resume — drop the ntfy lane, tear the engine down, and TELL
-     *  the user (a silent lane death was the undiagnosable no-ring
-     *  failure). An UNREACHABLE probe is a link problem, not a
-     *  logout: keep watching (the next tick re-probes; a tunnel flap
-     *  must never permanently silence the phone). The server-side
-     *  device row deregistration is BEST EFFORT here (the logout
-     *  usually already killed the cookie, so the DELETE runs
-     *  unauthorized — the JS-bridge alternative in the plan needs the
-     *  operator's pick; until then the shell at least stops
-     *  listening). */
+    /** The verdict-to-ledger mapping (pure, pinned): the register
+     *  answer decides which wake-off reason the pill carries. */
+    internal fun wakeStateFor(verdict: SessionApi.PushRegisterVerdict): WakeLaneState? =
+        when (verdict) {
+            SessionApi.PushRegisterVerdict.REGISTERED -> null
+            SessionApi.PushRegisterVerdict.SEAM_OFF -> WakeLaneState.REFUSED_SEAM_OFF
+            SessionApi.PushRegisterVerdict.INVALID -> WakeLaneState.REFUSED_INVALID
+            SessionApi.PushRegisterVerdict.AUTH -> WakeLaneState.REFUSED_AUTH
+            SessionApi.PushRegisterVerdict.OTHER -> WakeLaneState.REFUSED_OTHER
+            SessionApi.PushRegisterVerdict.NETWORK -> WakeLaneState.DISCONNECTED
+        }
+
+    /** The session watcher: while wired, poll the session seam FIRST
+     *  (the probe leads the loop — the first verdict lands at wire
+     *  time, not ten minutes in) and sleep between ticks. A DEAD
+     *  probe (the island logged out, the server expired the cookie)
+     *  means: stop ringing for an account we can no longer resume —
+     *  drop the ntfy lane, tear the engine down, and TELL the user
+     *  (a silent lane death was the undiagnosable no-ring failure).
+     *  An UNREACHABLE probe is a link problem, not a logout: keep
+     *  watching (the next tick re-probes; a tunnel flap must never
+     *  permanently silence the phone). The server-side device row
+     *  deregistration is BEST EFFORT here (the logout usually already
+     *  killed the cookie, so the DELETE runs unauthorized — the
+     *  JS-bridge alternative in the plan needs the operator's pick;
+     *  until then the shell at least stops listening). */
     private fun startSessionWatch(appContext: Context) {
         sessionWatch?.cancel()
         sessionWatch =
             scope.launch {
-                while (isActive && guard.current() != null) {
-                    delay(SESSION_WATCH_INTERVAL_MS)
-                    when (SessionApi.probeSession()) {
-                        SessionApi.SessionProbe.ALIVE, SessionApi.SessionProbe.UNREACHABLE -> continue
-                        SessionApi.SessionProbe.DEAD -> {
-                            onSessionDead(appContext)
-                            break
-                        }
-                    }
+                sessionWatchLoop(appContext)
+            }
+    }
+
+    /** The watcher loop, one hop off [startSessionWatch] so the pin
+     *  drives it with a fake probe and a short tick (no 10-minute
+     *  sleep, no HTTP — the meta-proof lesson). */
+    internal suspend fun sessionWatchLoop(appContext: Context) {
+        while (currentCoroutineContext().isActive && guard.current() != null) {
+            when (sessionProbe()) {
+                SessionApi.SessionProbe.ALIVE, SessionApi.SessionProbe.UNREACHABLE -> Unit
+                SessionApi.SessionProbe.DEAD -> {
+                    onSessionDead(appContext)
+                    break
                 }
             }
+            delay(sessionWatchIntervalMs)
+        }
     }
 
     /** The dead-session teardown, one hop off the watcher loop so the
      *  pin can drive it directly (no 10-minute sleep, no HTTP). Tells
      *  the user FIRST (the teardown kills the very lane that would
-     *  carry anything later), then stands the lane down. */
+     *  carry anything later), on the VISIBLE account channel — the
+     *  min-importance push channel would swallow the one notice that
+     *  must not be missed — and taps through into the shell, where
+     *  the island's login card is one glance away. */
     internal fun onSessionDead(appContext: Context) {
+        val openShell =
+            PendingIntent.getActivity(
+                appContext,
+                0,
+                Intent(appContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_IMMUTABLE,
+            )
         val builder =
             NotificationCompat
-                .Builder(appContext, App.CHANNEL_PUSH)
+                .Builder(appContext, App.CHANNEL_ACCOUNT)
                 .setSmallIcon(android.R.drawable.stat_notify_sync_noanim)
                 .setContentTitle(appContext.getString(R.string.session_expired_title))
                 .setContentText(appContext.getString(R.string.session_expired_body))
+                .setContentIntent(openShell)
                 .setAutoCancel(true)
         appContext
             .getSystemService(NotificationManager::class.java)
@@ -162,7 +210,7 @@ object CallLayer {
      *  until a google-services.json exists, so the migration gates on
      *  that owner step, not on a blind API flip (recorded in AGENTS). */
     @Suppress("DEPRECATION")
-    private suspend fun registerPushLanes(context: Context): Boolean {
+    private suspend fun registerPushLanes(context: Context): SessionApi.PushRegisterVerdict {
         val ntfy = SessionApi.registerPushDevice(context, "ntfy", DeviceIdentity.ntfyTopic(context))
         runCatching { Tasks.await(FirebaseMessaging.getInstance().token) }
             .getOrNull()
