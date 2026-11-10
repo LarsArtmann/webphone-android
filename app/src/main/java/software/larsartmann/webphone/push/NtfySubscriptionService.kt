@@ -223,7 +223,6 @@ class NtfySubscriptionService : Service() {
         socket = null
         if (stopped) return
         if (disconnectGracePending) return
-        WakeLane.report(WakeLaneState.DISCONNECTED)
         disconnectGracePending = true
         Thread {
             Thread.sleep(disconnectGraceMs)

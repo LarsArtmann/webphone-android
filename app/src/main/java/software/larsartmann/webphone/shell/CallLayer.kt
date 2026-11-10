@@ -166,6 +166,7 @@ object CallLayer {
         laneAlive: () -> Boolean = { guard.current() != null },
     ) {
         while (currentCoroutineContext().isActive && laneAlive()) {
+            delay(sessionWatchIntervalMs)
             when (sessionProbe()) {
                 SessionApi.SessionProbe.ALIVE, SessionApi.SessionProbe.UNREACHABLE -> Unit
                 SessionApi.SessionProbe.DEAD -> {
@@ -173,7 +174,6 @@ object CallLayer {
                     break
                 }
             }
-            delay(sessionWatchIntervalMs)
         }
     }
 
