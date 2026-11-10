@@ -13,6 +13,7 @@ import org.robolectric.RobolectricTestRunner
 import software.larsartmann.webphone.push.WakeLaneState
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlin.test.fail
 
 /**
@@ -118,30 +119,46 @@ class NtfySubscriptionServiceTest {
     }
 
     @Test
-    fun `a transport flap inside the grace window never surfaces as wake off`() {
+    fun `a transport flap that heals inside the grace window never surfaces as wake off`() {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().withWebSocketUpgrade(object : WebSocketListener() {}))
+        server.enqueue(MockResponse().withWebSocketUpgrade(object : WebSocketListener() {}))
+        server.start()
         val controller =
             Robolectric
-                .buildService(NtfySubscriptionService::class.java)
-                .create()
+                .buildService(
+                    NtfySubscriptionService::class.java,
+                    startIntent(server.url("/").toString(), "flicker"),
+                ).create()
+                .startCommand(0, 0)
         try {
             val service = controller.get()
-            service.disconnectGraceMs = 150
+            awaitCondition(5_000, "the subscription socket to open") { server.requestCount >= 1 }
             WakeLane.report(WakeLaneState.ARMED)
 
+            // The flap: transport down (grace armed, default 2.5 s),
+            // then the reconnect thread heals the socket ~200 ms in —
+            // INSIDE the window, exactly the production strobe case.
+            service.reconnectBackoffBaseMs = 200
             service.onTransportDown()
+            service.scheduleReconnect(server.url("/").toString(), "flicker")
+
+            repeat(30) {
+                Thread.sleep(100)
+                assertTrue(
+                    WakeLane.state.value != WakeLaneState.DISCONNECTED,
+                    "a flap that healed inside the grace must never surface as wake off (state was ${WakeLane.state.value})",
+                )
+            }
             assertEquals(
                 WakeLaneState.ARMED,
                 WakeLane.state.value,
-                "the grace must hold the verdict - an instant DISCONNECTED is the flicker the grace exists to kill",
+                "the healed socket must land ARMED - the flap's whole trace is one verdict",
             )
-
-            // The flap heals: the socket is back before the window closes.
-            repeat(20) {
-                Thread.sleep(50)
-                assertEquals(WakeLaneState.ARMED, WakeLane.state.value)
-            }
         } finally {
             controller.destroy()
+            Thread.sleep(500)
+            runCatching { server.shutdown() }
         }
     }
 
@@ -205,6 +222,30 @@ class NtfySubscriptionServiceTest {
             controller.destroy()
             Thread.sleep(500)
             runCatching { server.shutdown() }
+        }
+    }
+
+    @Test
+    fun `a standing register refusal survives socket events until the next wire`() {
+        val controller =
+            Robolectric
+                .buildService(NtfySubscriptionService::class.java)
+                .create()
+        try {
+            val service = controller.get()
+            service.disconnectGraceMs = 50
+            WakeLane.report(WakeLaneState.REFUSED_SEAM_OFF)
+
+            service.onTransportDown()
+            Thread.sleep(300)
+            assertEquals(
+                WakeLaneState.REFUSED_SEAM_OFF,
+                WakeLane.state.value,
+                "an open socket on a seam-off server must not overwrite the refusal with ARMED/DISCONNECTED - " +
+                    "ARMED would be a lie (the register answer said this install cannot be rung)",
+            )
+        } finally {
+            controller.destroy()
         }
     }
 

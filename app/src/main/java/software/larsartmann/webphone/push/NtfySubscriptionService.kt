@@ -48,6 +48,10 @@ class NtfySubscriptionService : Service() {
      *  the window with a much shorter value. */
     internal var disconnectGraceMs = 2_500L
 
+    /** Test seam: the reconnect backoff's base (the flicker pin makes
+     *  the heal land INSIDE the grace window; production keeps 1 s). */
+    internal var reconnectBackoffBaseMs = 1_000L
+
     /** Set while a grace thread is pending — a second failure inside
      *  the window must not stack a second thread. */
     @Volatile private var disconnectGracePending = false
@@ -219,6 +223,7 @@ class NtfySubscriptionService : Service() {
         socket = null
         if (stopped) return
         if (disconnectGracePending) return
+        WakeLane.report(WakeLaneState.DISCONNECTED)
         disconnectGracePending = true
         Thread {
             Thread.sleep(disconnectGraceMs)
@@ -238,7 +243,7 @@ class NtfySubscriptionService : Service() {
         if (reconnecting || stopped) return
         reconnecting = true
         reconnectAttempts += 1
-        val backoff = minOf(60_000L, 1_000L shl (reconnectAttempts - 1).coerceAtMost(6))
+        val backoff = minOf(60_000L, reconnectBackoffBaseMs shl (reconnectAttempts - 1).coerceAtMost(6))
         Thread {
             Thread.sleep(backoff)
             reconnecting = false
