@@ -6,9 +6,11 @@ import androidx.test.core.app.ApplicationProvider
 import okhttp3.WebSocketListener
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import software.larsartmann.webphone.push.WakeLaneState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.fail
@@ -30,6 +32,13 @@ import kotlin.test.fail
  */
 @RunWith(RobolectricTestRunner::class)
 class NtfySubscriptionServiceTest {
+    @Before
+    fun resetTheLedger() {
+        // Statics persist across methods in a classloader: every pin
+        // below asserts an exact ledger verdict.
+        WakeLane.report(WakeLaneState.UNKNOWN)
+    }
+
     private fun startIntent(
         server: String,
         topic: String,
@@ -103,6 +112,97 @@ class NtfySubscriptionServiceTest {
             // websocket a beat, then treat a lingering queue as teardown
             // noise (the contract assertions above already held; the
             // forkEvery fence gives the next class a fresh JVM).
+            Thread.sleep(500)
+            runCatching { server.shutdown() }
+        }
+    }
+
+    @Test
+    fun `a transport flap inside the grace window never surfaces as wake off`() {
+        val service =
+            Robolectric
+                .buildService(NtfySubscriptionService::class.java)
+                .create()
+                .get()
+        try {
+            service.disconnectGraceMs = 150
+            WakeLane.report(WakeLaneState.ARMED)
+
+            service.onTransportDown()
+            assertEquals(
+                WakeLaneState.ARMED,
+                WakeLane.state.value,
+                "the grace must hold the verdict - an instant DISCONNECTED is the flicker the grace exists to kill",
+            )
+
+            // The flap heals: the socket is back before the window closes.
+            repeat(20) {
+                Thread.sleep(50)
+                assertEquals(WakeLaneState.ARMED, WakeLane.state.value)
+            }
+        } finally {
+            service.destroy()
+        }
+    }
+
+    @Test
+    fun `a transport outage past the grace window surfaces as disconnected`() {
+        val service =
+            Robolectric
+                .buildService(NtfySubscriptionService::class.java)
+                .create()
+                .get()
+        try {
+            service.disconnectGraceMs = 100
+            WakeLane.report(WakeLaneState.ARMED)
+            service.onTransportDown()
+
+            val deadline = System.nanoTime() + 5_000_000_000
+            while (System.nanoTime() < deadline && WakeLane.state.value != WakeLaneState.DISCONNECTED) {
+                Thread.sleep(50)
+            }
+            assertEquals(
+                WakeLaneState.DISCONNECTED,
+                WakeLane.state.value,
+                "a REAL outage must surface - the grace is a flicker filter, not a verdict suppressor",
+            )
+        } finally {
+            service.destroy()
+        }
+    }
+
+    @Test
+    fun `the stop guard holds - a failure after ACTION_STOP never reports disconnected`() {
+        val server = MockWebServer()
+        server.enqueue(MockResponse().withWebSocketUpgrade(object : WebSocketListener() {}))
+        server.start()
+        val controller =
+            Robolectric
+                .buildService(
+                    NtfySubscriptionService::class.java,
+                    startIntent(server.url("/").toString(), "stop-guard"),
+                ).create()
+                .startCommand(0, 0)
+        try {
+            awaitCondition(5_000, "the subscription socket to open") { server.requestCount >= 1 }
+            val stop =
+                Intent(ApplicationProvider.getApplicationContext(), NtfySubscriptionService::class.java)
+                    .setAction(NtfySubscriptionService.ACTION_STOP)
+            controller.get().onStartCommand(stop, 0, 1)
+
+            WakeLane.report(WakeLaneState.ARMED)
+            controller.get().disconnectGraceMs = 50
+            controller.get().onTransportDown()
+            repeat(10) {
+                Thread.sleep(50)
+                assertEquals(
+                    WakeLaneState.ARMED,
+                    WakeLane.state.value,
+                    "a stopped lane must stay silent - the stopped ledger would be a ghost verdict",
+                )
+            }
+        } finally {
+            controller.destroy()
             Thread.sleep(500)
             runCatching { server.shutdown() }
         }

@@ -1,5 +1,6 @@
 package software.larsartmann.webphone.shell
 
+import software.larsartmann.webphone.push.WakeLaneState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

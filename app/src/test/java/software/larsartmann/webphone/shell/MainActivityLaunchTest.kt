@@ -59,7 +59,7 @@ class MainActivityLaunchTest {
 
     @Test
     fun `a refused wake lane shows the wake-off verdict with a reason`() {
-        WakeLane.report(WakeLaneState.REFUSED)
+        WakeLane.report(WakeLaneState.REFUSED_SEAM_OFF)
         val controller = Robolectric.buildActivity(MainActivity::class.java).setup()
         val label = controller.get().statusLabel
         assertTrue(
@@ -81,8 +81,19 @@ class MainActivityLaunchTest {
             "Not connected",
             linePillText(context, info, WakeLaneState.UNKNOWN).first,
         )
+        assertTrue(linePillText(context, info, WakeLaneState.STARTING).first.contains("wake starting"))
         assertTrue(linePillText(context, info, WakeLaneState.ARMED).first.contains("wake on"))
         assertTrue(linePillText(context, info, WakeLaneState.DISCONNECTED).first.contains("wake off"))
-        assertTrue(linePillText(context, info, WakeLaneState.SESSION_DEAD).second != null)
+        assertTrue(linePillText(context, info, WakeLaneState.SESSION_DEAD).first.contains("wake off"))
+        for (refusal in listOf(
+            WakeLaneState.REFUSED_SEAM_OFF,
+            WakeLaneState.REFUSED_INVALID,
+            WakeLaneState.REFUSED_AUTH,
+            WakeLaneState.REFUSED_OTHER,
+        )) {
+            val (label, reason) = linePillText(context, info, refusal)
+            assertTrue(label.contains("wake off"), "$refusal must show wake off: got \"$label\"")
+            assertNotNull(reason, "$refusal must carry its reason for TalkBack")
+        }
     }
 }

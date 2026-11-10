@@ -49,6 +49,12 @@ object CallLayer {
      *  a fake — a unit test must not phone the live stack). */
     internal var sessionProbe: () -> SessionApi.SessionProbe = { SessionApi.probeSession() }
 
+    /** Test seam: the best-effort deregister the teardown runs (the
+     *  pin substitutes a no — a unit test must not phone the live
+     *  stack, and the real call is worthless anyway: the dead session's
+     *  cookie usually cannot authorize it). */
+    internal var deregisterPushDevice: (Context) -> Boolean = { SessionApi.deregisterPushDevice(it) }
+
     /** Notification id 1001-1003 are the ring/FGS/ntfy lane's own
      *  surfaces (App conventions); the dead-session notice is 1004. */
     private const val SESSION_DEAD_NOTIFICATION_ID = 1004
@@ -153,9 +159,13 @@ object CallLayer {
 
     /** The watcher loop, one hop off [startSessionWatch] so the pin
      *  drives it with a fake probe and a short tick (no 10-minute
-     *  sleep, no HTTP — the meta-proof lesson). */
-    internal suspend fun sessionWatchLoop(appContext: Context) {
-        while (currentCoroutineContext().isActive && guard.current() != null) {
+     *  sleep, no HTTP — the meta-proof lesson). [laneAlive] is the
+     *  wiring guard, injectable for the same reason. */
+    internal suspend fun sessionWatchLoop(
+        appContext: Context,
+        laneAlive: () -> Boolean = { guard.current() != null },
+    ) {
+        while (currentCoroutineContext().isActive && laneAlive()) {
             when (sessionProbe()) {
                 SessionApi.SessionProbe.ALIVE, SessionApi.SessionProbe.UNREACHABLE -> Unit
                 SessionApi.SessionProbe.DEAD -> {
@@ -193,7 +203,7 @@ object CallLayer {
         appContext
             .getSystemService(NotificationManager::class.java)
             ?.notify(SESSION_DEAD_NOTIFICATION_ID, builder.build())
-        runCatching { SessionApi.deregisterPushDevice(appContext) }
+        runCatching { deregisterPushDevice(appContext) }
         NtfySubscriptionService.stop(appContext)
         shutdown()
         WakeLane.report(WakeLaneState.SESSION_DEAD)

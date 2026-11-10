@@ -14,6 +14,7 @@ import software.larsartmann.webphone.push.WakeLaneState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 /**
  * The dead-session teardown's contract, driven directly through the
@@ -36,7 +37,16 @@ class CallLayerSessionDeadTest {
         val notificationManager = appContext.getSystemService(NotificationManager::class.java)
         val posted = shadowOf(notificationManager).allNotifications
         assertEquals(1, posted.size, "the user must be told the ring lane paused")
-        assertEquals(App.CHANNEL_PUSH, posted[0].channelId)
+        assertEquals(
+            App.CHANNEL_ACCOUNT,
+            posted[0].channelId,
+            "the one notice that must not be missed rides the VISIBLE account channel - " +
+                "the min-importance push channel would swallow it",
+        )
+        assertNotNull(
+            posted[0].contentIntent,
+            "the notice must tap through into the shell, where the login card is one glance away",
+        )
 
         val stopped = shadowOf(appContext as Application).nextStartedService
         assertNotNull(stopped, "the teardown must start the stop intent")

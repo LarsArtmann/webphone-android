@@ -4,6 +4,8 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import software.larsartmann.webphone.call.CallEngine
+import software.larsartmann.webphone.push.WakeLane
+import software.larsartmann.webphone.push.WakeLaneState
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -48,5 +50,16 @@ class CallLayerWiringGateTest {
         } finally {
             CallLayer.wiringEnabled = true
         }
+    }
+
+    @Test
+    fun `shutdown returns the ledger to unknown - the state is being re-decided`() {
+        WakeLane.report(WakeLaneState.ARMED)
+        CallLayer.shutdown()
+        assertEquals(
+            WakeLaneState.UNKNOWN,
+            WakeLane.state.value,
+            "a torn-down lane must not keep claiming a verdict (Settings teardown re-wires on next resume)",
+        )
     }
 }
