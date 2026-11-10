@@ -119,12 +119,12 @@ class NtfySubscriptionServiceTest {
 
     @Test
     fun `a transport flap inside the grace window never surfaces as wake off`() {
-        val service =
+        val controller =
             Robolectric
                 .buildService(NtfySubscriptionService::class.java)
                 .create()
-                .get()
         try {
+            val service = controller.get()
             service.disconnectGraceMs = 150
             WakeLane.report(WakeLaneState.ARMED)
 
@@ -141,18 +141,18 @@ class NtfySubscriptionServiceTest {
                 assertEquals(WakeLaneState.ARMED, WakeLane.state.value)
             }
         } finally {
-            service.destroy()
+            controller.destroy()
         }
     }
 
     @Test
     fun `a transport outage past the grace window surfaces as disconnected`() {
-        val service =
+        val controller =
             Robolectric
                 .buildService(NtfySubscriptionService::class.java)
                 .create()
-                .get()
         try {
+            val service = controller.get()
             service.disconnectGraceMs = 100
             WakeLane.report(WakeLaneState.ARMED)
             service.onTransportDown()
@@ -167,7 +167,7 @@ class NtfySubscriptionServiceTest {
                 "a REAL outage must surface - the grace is a flicker filter, not a verdict suppressor",
             )
         } finally {
-            service.destroy()
+            controller.destroy()
         }
     }
 
