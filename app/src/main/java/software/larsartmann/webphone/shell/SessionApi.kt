@@ -65,9 +65,44 @@ object SessionApi {
         val websocketUrl: String,
     )
 
-    /** Is the session cookie still alive? (The CallLayer watcher's
-     *  heartbeat — 401 after an island logout.) */
-    fun sessionAlive(): Boolean = call("GET", "/api/session", null) != null
+    /** The session probe's verdict: a logout is DEFINITIVE (the HTTP
+     *  status named it), a network failure is not — the watcher must
+     *  never tear the ring lane down because a tunnel flapped (the
+     *  flap would have silenced the phone forever). */
+    enum class SessionProbe { ALIVE, DEAD, UNREACHABLE }
+
+    /** Classify one /api/session answer. Pure (the classifier the
+     *  unit test pins); [probeSession] supplies the code. A null code
+     *  is a transport failure (IOException) — never a logout. */
+    internal fun probeFromCode(code: Int?): SessionProbe =
+        when {
+            code == null -> SessionProbe.UNREACHABLE
+            code in 200..299 -> SessionProbe.ALIVE
+            code == 401 || code == 403 -> SessionProbe.DEAD
+            else -> SessionProbe.UNREACHABLE
+        }
+
+    /** Probe the session cookie's life for the CallLayer watcher:
+     *  ALIVE keeps the lane, DEAD tears it down (the island logged
+     *  out / the server expired the cookie), UNREACHABLE keeps it and
+     *  waits for the next tick. */
+    fun probeSession(): SessionProbe {
+        val request =
+            Request
+                .Builder()
+                .url(App.origin.trimEnd('/') + "/api/session")
+                .header("Cookie", sessionCookieHeader())
+                .get()
+                .build()
+        val code: Int? =
+            runCatching {
+                client.newCall(request).execute().use { response -> response.code }
+            }.getOrNull()
+        if (code == null || code !in 200..299) {
+            Log.i(TAG, "GET /api/session answered $code")
+        }
+        return probeFromCode(code)
+    }
 
     /** Resume the session cookie into SIP credentials (the island's
      *  boot resume path). 401 = not signed in (the WebView must show

@@ -2,6 +2,7 @@ package software.larsartmann.webphone.shell
 
 import android.Manifest
 import android.animation.ValueAnimator
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -32,6 +33,8 @@ import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallActivity
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.call.DialpadActivity
+import software.larsartmann.webphone.push.WakeLane
+import software.larsartmann.webphone.push.WakeLaneState
 import software.larsartmann.webphone.ui.circleBackground
 import software.larsartmann.webphone.ui.dp
 import software.larsartmann.webphone.ui.dpf
@@ -40,6 +43,45 @@ import software.larsartmann.webphone.ui.pillBackground
 import software.larsartmann.webphone.ui.pulse
 import software.larsartmann.webphone.ui.styleText
 import software.larsartmann.webphone.ui.themeColor
+
+/**
+ * The line pill's text pair: the visible label (registration state,
+ * suffixed with the wake lane's verdict once it is known) and the
+ * accessibility description that carries the REASON when the wake
+ * lane is off — the why a bare "wake off" pill cannot say. File-level
+ * (not a method) so the pin builds labels without an activity.
+ */
+internal fun linePillText(
+    context: Context,
+    info: CallEngine.RegistrationInfo,
+    wake: WakeLaneState,
+): Pair<String, String?> {
+    val registration =
+        context.getString(
+            when {
+                info.status == CallEngine.Registration.REGISTERED -> R.string.registration_registered
+                info.status == CallEngine.Registration.CONNECTING -> R.string.registration_connecting
+                // The cause matters: "the PBX refused you" and "no
+                // route to the PBX" ask for different fixes.
+                info.failure == CallEngine.RegistrationFailure.AUTH_REJECTED -> R.string.registration_auth_rejected
+                else -> R.string.registration_off
+            },
+        )
+    return when (wake) {
+        WakeLaneState.UNKNOWN -> registration to null
+        WakeLaneState.ARMED ->
+            context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_on)) to null
+        WakeLaneState.REFUSED ->
+            context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
+                context.getString(R.string.wake_reason_refused)
+        WakeLaneState.SESSION_DEAD ->
+            context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
+                context.getString(R.string.wake_reason_session_dead)
+        WakeLaneState.DISCONNECTED ->
+            context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
+                context.getString(R.string.wake_reason_disconnected)
+    }
+}
 
 /**
  * The shell: the stack origin's own pages render in the WebView (the
@@ -58,11 +100,12 @@ import software.larsartmann.webphone.ui.themeColor
 class MainActivity : AppCompatActivity() {
     internal lateinit var webSurface: WebSurface
     private lateinit var statusDot: View
-    private lateinit var statusLabel: TextView
+    internal lateinit var statusLabel: TextView
     private lateinit var chrome: LinearLayout
     private var linePulse: ValueAnimator? = null
     private var requestedBatteryExemption = false
     private var backInvoker: OnBackInvokedCallback? = null
+    private var wake: WakeLaneState = WakeLaneState.UNKNOWN
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -198,7 +241,15 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                CallEngine.registration.collect { renderRegistration(it) }
+                launch {
+                    CallEngine.registration.collect { renderRegistration(it) }
+                }
+                launch {
+                    WakeLane.state.collect {
+                        wake = it
+                        renderRegistration(CallEngine.registration.value)
+                    }
+                }
             }
         }
 
@@ -274,17 +325,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderRegistration(info: CallEngine.RegistrationInfo) {
-        statusLabel.text =
-            getString(
-                when {
-                    info.status == CallEngine.Registration.REGISTERED -> R.string.registration_registered
-                    info.status == CallEngine.Registration.CONNECTING -> R.string.registration_connecting
-                    // The cause matters: "the PBX refused you" and "no
-                    // route to the PBX" ask for different fixes.
-                    info.failure == CallEngine.RegistrationFailure.AUTH_REJECTED -> R.string.registration_auth_rejected
-                    else -> R.string.registration_off
-                },
-            )
+        val (label, wakeDescription) = linePillText(this, info, wake)
+        statusLabel.text = label
+        statusLabel.contentDescription = wakeDescription
         val registered = info.status == CallEngine.Registration.REGISTERED
         statusDot.background =
             circleBackground(

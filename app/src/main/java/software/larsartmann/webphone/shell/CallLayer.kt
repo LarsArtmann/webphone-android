@@ -1,6 +1,8 @@
 package software.larsartmann.webphone.shell
 
+import android.app.NotificationManager
 import android.content.Context
+import androidx.core.app.NotificationCompat
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
@@ -11,8 +13,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import software.larsartmann.webphone.App
+import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.push.NtfySubscriptionService
+import software.larsartmann.webphone.push.WakeLane
+import software.larsartmann.webphone.push.WakeLaneState
 import software.larsartmann.webphone.sip.SipEngine
 
 /**
@@ -32,6 +37,10 @@ object CallLayer {
     private var sessionWatch: Job? = null
 
     private const val SESSION_WATCH_INTERVAL_MS = 10 * 60 * 1000L
+
+    /** Notification id 1001-1003 are the ring/FGS/ntfy lane's own
+     *  surfaces (App conventions); the dead-session notice is 1004. */
+    private const val SESSION_DEAD_NOTIFICATION_ID = 1004
 
     /**
      * Test seam for the JVM suite: the Robolectric tests launch
@@ -75,7 +84,13 @@ object CallLayer {
             if (!guard.attach(created, attempt)) return@launch
             CallEngine.attach(created)
             created.connect()
-            registerPushLanes(appContext)
+            val ntfyRegistered = registerPushLanes(appContext)
+            if (!ntfyRegistered) {
+                // The stack refused the wake address (seam off, 404/422,
+                // CSRF failure): closed-app rings are impossible — say
+                // so on the pill instead of failing in logcat only.
+                WakeLane.report(WakeLaneState.REFUSED)
+            }
             NtfySubscriptionService.start(
                 appContext,
                 App.origin,
@@ -86,26 +101,54 @@ object CallLayer {
     }
 
     /** The session watcher: while wired, poll the session seam. A
-     *  dead session means the island logged out — stop ringing for an
-     *  account we can no longer resume: drop the ntfy lane, tear the
-     *  engine down. The server-side device row deregistration is BEST
-     *  EFFORT here (the logout usually already killed the cookie, so
-     *  the DELETE runs unauthorized — the JS-bridge alternative in the
-     *  plan needs the operator's pick; until then the shell at least
-     *  stops listening). */
+     *  DEAD probe (the island logged out, the server expired the
+     *  cookie) means: stop ringing for an account we can no longer
+     *  resume — drop the ntfy lane, tear the engine down, and TELL
+     *  the user (a silent lane death was the undiagnosable no-ring
+     *  failure). An UNREACHABLE probe is a link problem, not a
+     *  logout: keep watching (the next tick re-probes; a tunnel flap
+     *  must never permanently silence the phone). The server-side
+     *  device row deregistration is BEST EFFORT here (the logout
+     *  usually already killed the cookie, so the DELETE runs
+     *  unauthorized — the JS-bridge alternative in the plan needs the
+     *  operator's pick; until then the shell at least stops
+     *  listening). */
     private fun startSessionWatch(appContext: Context) {
         sessionWatch?.cancel()
         sessionWatch =
             scope.launch {
                 while (isActive && guard.current() != null) {
                     delay(SESSION_WATCH_INTERVAL_MS)
-                    if (SessionApi.sessionAlive()) continue
-                    runCatching { SessionApi.deregisterPushDevice(appContext) }
-                    NtfySubscriptionService.stop(appContext)
-                    shutdown()
-                    break
+                    when (SessionApi.probeSession()) {
+                        SessionApi.SessionProbe.ALIVE, SessionApi.SessionProbe.UNREACHABLE -> continue
+                        SessionApi.SessionProbe.DEAD -> {
+                            onSessionDead(appContext)
+                            break
+                        }
+                    }
                 }
             }
+    }
+
+    /** The dead-session teardown, one hop off the watcher loop so the
+     *  pin can drive it directly (no 10-minute sleep, no HTTP). Tells
+     *  the user FIRST (the teardown kills the very lane that would
+     *  carry anything later), then stands the lane down. */
+    internal fun onSessionDead(appContext: Context) {
+        val builder =
+            NotificationCompat
+                .Builder(appContext, App.CHANNEL_PUSH)
+                .setSmallIcon(android.R.drawable.stat_notify_sync_noanim)
+                .setContentTitle(appContext.getString(R.string.session_expired_title))
+                .setContentText(appContext.getString(R.string.session_expired_body))
+                .setAutoCancel(true)
+        appContext
+            .getSystemService(NotificationManager::class.java)
+            ?.notify(SESSION_DEAD_NOTIFICATION_ID, builder.build())
+        runCatching { SessionApi.deregisterPushDevice(appContext) }
+        NtfySubscriptionService.stop(appContext)
+        shutdown()
+        WakeLane.report(WakeLaneState.SESSION_DEAD)
     }
 
     /** Register this install's wake addresses with the stack: the ntfy
@@ -119,15 +162,20 @@ object CallLayer {
      *  until a google-services.json exists, so the migration gates on
      *  that owner step, not on a blind API flip (recorded in AGENTS). */
     @Suppress("DEPRECATION")
-    private suspend fun registerPushLanes(context: Context) {
-        SessionApi.registerPushDevice(context, "ntfy", DeviceIdentity.ntfyTopic(context))
+    private suspend fun registerPushLanes(context: Context): Boolean {
+        val ntfy = SessionApi.registerPushDevice(context, "ntfy", DeviceIdentity.ntfyTopic(context))
         runCatching { Tasks.await(FirebaseMessaging.getInstance().token) }
             .getOrNull()
             ?.let { SessionApi.registerPushDevice(context, "fcm", it) }
+        return ntfy
     }
 
     /** Idempotent teardown: invalidate first (in-flight wires become
-     *  orphans and refuse to attach), then detach + drop the engine. */
+     *  orphans and refuse to attach), then detach + drop the engine.
+     *  The wake ledger returns to UNKNOWN — the state is being
+     *  re-decided (Settings teardown re-wires on the next resume); a
+     *  definitive verdict (dead session) is reported AFTER teardown
+     *  by its own path. */
     fun shutdown() {
         guard.invalidate()
         sessionWatch?.cancel()
@@ -138,5 +186,6 @@ object CallLayer {
         }
         CallEngine.detach()
         guard.clear()
+        WakeLane.report(WakeLaneState.UNKNOWN)
     }
 }

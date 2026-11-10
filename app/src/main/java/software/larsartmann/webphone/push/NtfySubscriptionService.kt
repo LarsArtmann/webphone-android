@@ -113,6 +113,7 @@ class NtfySubscriptionService : Service() {
                     ) {
                         Log.i(TAG, "ntfy subscription open")
                         reconnectAttempts = 0
+                        WakeLane.report(WakeLaneState.ARMED)
                     }
 
                     override fun onMessage(
@@ -129,6 +130,7 @@ class NtfySubscriptionService : Service() {
                     ) {
                         Log.w(TAG, "ntfy subscription failure: ${t.message}")
                         socket = null
+                        if (!stopped) WakeLane.report(WakeLaneState.DISCONNECTED)
                         scheduleReconnect(server, topic)
                     }
 
@@ -138,6 +140,7 @@ class NtfySubscriptionService : Service() {
                         reason: String,
                     ) {
                         socket = null
+                        if (!stopped) WakeLane.report(WakeLaneState.DISCONNECTED)
                         scheduleReconnect(server, topic)
                     }
                 },

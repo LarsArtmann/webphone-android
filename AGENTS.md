@@ -265,6 +265,24 @@ tracked in TODO_LIST.
   INVITE only lands once `CallLayer.ensureWired` brings the leg up —
   whether the server re-invites long enough for that race to be won
   is unknown.
+- **The wake lane has a UI verdict + a flap-safe probe (2026-11-10
+  no-ring diagnosis)**: the line pill suffixed registration with
+  `· wake on/off` (the `push/WakeLane` ledger; reasons ride the
+  contentDescription) BECAUSE every wake-lane failure used to be
+  logcat-only — a seam-off server, a refused registration, a dead
+  session, and a dropped socket all looked identical from the couch:
+  silence. The session watcher tears down ONLY on a definitive
+  401/403 (`SessionApi.probeSession` tri-state; the old boolean probe
+  treated transport failure as logout, so one tunnel flap silenced
+  the phone FOREVER — the lane is torn down and nothing re-arms until
+  reopen); a dead session also posts the "Ringing paused"
+  notification (id 1004). Never reintroduce a boolean session probe.
+  AND: the phone can still legitimately stay silent — the SERVER side
+  is off by default (the FS dialplan's ring hook arms only with
+  `ringhook.enable` on the consuming stack, and `push.ntfy.*` must be
+  configured; webphone TODO_LIST 2026-11-08 says the E2E ring proof
+  is STILL OPEN) — a `Connected · wake off` pill with register-404 in
+  logcat means exactly that stack-side gap.
 - **Mic FGS background-start ban**: Android 15+ forbids starting a
   `microphone` foreground service from the background. `CallService`
   is only ever started from user interaction (the answer flow through
@@ -409,8 +427,9 @@ tracked in TODO_LIST.
   `WebRtcEngine`, `SessionApi`, `RingEvent`); per-call/per-connection
   state is nested classes (`CallMedia`, `Leg`).
 - Notification IDs: 1001 = incoming ring, 1002 = call FGS, 1003 = ntfy
-  FGS. Channels `calls` (high, bypass-DND) and `push` (min) are created
-  in `App.onCreate`.
+  FGS, 1004 = dead-session notice (`CallLayer.onSessionDead`). Channels
+  `calls` (high, bypass-DND) and `push` (min) are created in
+  `App.onCreate`.
 - UI is programmatic in v0.1 (`CallActivity` builds views in code);
   viewBinding is enabled. `minSdk = 31`, `targetSdk = 36`,
   `compileSdk = 37` (the 2026-10-28 toolchain jump moved compileSdk;

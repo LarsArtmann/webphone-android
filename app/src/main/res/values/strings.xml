@@ -43,4 +43,12 @@
     <string name="web_offline_title">Can\'t reach the phone system</string>
     <string name="web_offline_body">The stack at %1$s didn\'t answer. Check your connection or the origin in Settings, then retry.</string>
     <string name="web_offline_retry">Retry</string>
+    <string name="line_and_wake">%1$s · %2$s</string>
+    <string name="wake_on">wake on</string>
+    <string name="wake_off">wake off</string>
+    <string name="wake_reason_refused">Calls may not ring while the app is closed: the server did not accept this phone\'s wake address (push disabled or refused there).</string>
+    <string name="wake_reason_session_dead">Ringing while closed is paused: the sign-in expired. Open WebPhone and sign in again to re-arm it.</string>
+    <string name="wake_reason_disconnected">Calls may not ring while the app is closed: the push connection is down right now.</string>
+    <string name="session_expired_title">Ringing paused</string>
+    <string name="session_expired_body">The WebPhone sign-in expired, so calls will not ring on this phone until you open the app and sign in again.</string>
 </resources>
