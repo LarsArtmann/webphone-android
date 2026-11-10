@@ -41,8 +41,14 @@ a real stack:
   35). Re-verify per release bump (the check needs build-tools ≥ 35 —
   the `-P` flag does not exist in 34).
 - The `/api/session` + `/api/push-devices` contracts mirror the server
-  seam that landed 2026-10-23 (webphone `internal/push`); field-name
-  drift is caught at the first device boot, not before.
+  seam that landed 2026-10-23 (webphone `internal/push`). Since
+  2026-11-10 the drift is BUILD-TIME-pinned: the server renders
+  byte-pinned fixtures from its own types, this repo vendors them
+  (`scripts/sync-wire-fixtures.sh`) and `WireContractTest` decodes
+  each through the real parsers — a renamed key reds the JVM suite,
+  never the first device boot (the historical `sip_password` drift —
+  REGISTER on empty credentials — was found and fixed by exactly this
+  train).
 
 ## Build and verify
 
