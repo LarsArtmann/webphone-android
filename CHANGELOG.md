@@ -32,6 +32,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Cross-repo contract note filed as webphone#21 (J15/M049): the OIDC
   `begin`→IdP hop must stay a server-side 302 — the Android auth
   detour depends on it; draft kept at `docs/drafts/`
+- Byte-pinned wire fixtures from the server repo: webphone's
+  `webphone contracts` renders consumer fixtures
+  (`docs/contracts/wire/` there) from its own types; this repo vendors
+  them (`scripts/sync-wire-fixtures.sh`, copy + `--check` drift gate)
+  into `app/src/test/resources/wire/` and `WireContractTest` decodes
+  every one through the REAL parsers — a renamed key on either side
+  reds the JVM suite, never the first device boot (the pin is
+  meta-proven: the historical `sip_password` key drift fails the
+  brokered-arm test)
+- `WireFacts`: the ONE parse home for the push wire fact
+  {event, from, call_id} — FCM data maps and ntfy frames decode
+  through the same pure functions the receivers delegate to
+
+### Fixed
+
+- `SessionApi.resumeSession` read SIP facts the server never sends
+  (`sip_domain`/`sip_password`/`websocket_url`): REGISTER ran on EMPTY
+  credentials — the same no-ring class the wake lane was chasing. The
+  resume now reads the credential from the session answer's real
+  exactly-one arm (`sip_credential` brokered / `password` legacy),
+  fetches the SIP connection facts (`sipDomain`, `websocketPath`)
+  from `/config.js` — the island's own config source — and refuses to
+  return a non-registerable identity (no config facts, no credential,
+  no extension) instead of silently REGISTERing nowhere
 
 ### Changed
 

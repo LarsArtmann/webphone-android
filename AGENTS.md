@@ -214,6 +214,24 @@ stable `device_id`; token rotation replaces the row), WSS `/sip`
 drift surfaces at first device boot, not at compile time. Push payload
 events: `ring` and `ring_end`.
 
+Since 2026-11-10 that drift is BUILD-TIME-pinned: the server renders
+byte-pinned consumer fixtures from its own types (webphone
+`docs/contracts/wire/`, via `webphone contracts`), this repo vendors
+them into `app/src/test/resources/wire/`, and `WireContractTest`
+decodes each through the REAL parsers (`WireFacts`,
+`SessionApi.parseSessionIdentity`, `SessionApi.registerPayload`) — a
+renamed key on either side reds the JVM suite, never the first device
+boot. The sync ritual: whenever the webphone contract tree changes,
+run `scripts/sync-wire-fixtures.sh` (copy; `--check` is the drift
+gate, exit 1) with `WEBPHONE_DIR` pointing at the server checkout
+(default `../webphone`). The session answer carries the identity and
+exactly ONE credential arm (`sip_credential` brokered / `password`
+legacy); the SIP connection facts (`sipDomain`, `websocketPath`) come
+from `/config.js` (`SessionApi.fetchIslandConfig`) — an answer without
+config facts or a credential is NOT a registerable identity (the
+honest-null pin; the empty-credential REGISTER that silently never
+rang is what the 2026-11-10 drift fix ended).
+
 The AUTH seam (webphone `internal/sso` + `internal/server/sso_api.go`):
 the island's login card links `GET /api/auth/oauth2/begin` (same-origin
 anchor), which 302s to the OIDC IdP (Pocket ID) and back to
