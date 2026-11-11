@@ -475,6 +475,23 @@ tracked in TODO_LIST.
   preflight calls `GET /api/v1/user` — write:repository alone 403s there,
   proven 2026-11-11), and `read:repository` for the phone (OPTIONAL since
   the repo went public: anonymous release reads work).
+- **Forge "No known key found for this signature in database" on signed
+  commits (2026-11-11)**: every commit here is SSH-signed
+  (`gpg.format=ssh` in `~/.config/git/config`), and the badge stays
+  UNVERIFIED until two independent gates pass — either one failing alone
+  renders the same string: (1) the commit's committer email must be an
+  ACTIVATED email on the forge account (`GetUserByEmail` gates the whole
+  key loop; the account carried only `lars@local` while commits use
+  `git@lars.software`), and (2) the signing key needs the
+  challenge-verified flag — `parseCommitWithSSHSignature` skips keys with
+  `verified=false`, and that flag flips ONLY via the web flow
+  (Settings → SSH/GPG Keys → Verify: sign the page's token with
+  `ssh-keygen -Y sign -f <keyfile> -n gitea`, paste the armored block;
+  the signature must cover the server-derived time-windowed token, so it
+  cannot be pre-generated). The v1 API cannot do either leg:
+  `POST /user/gpg_key_verify` is GPG-only, and adding emails needs
+  `write:user` (the release token is `write:repository,read:user` — 403
+  proven 2026-11-11).
 
 ## Conventions
 
