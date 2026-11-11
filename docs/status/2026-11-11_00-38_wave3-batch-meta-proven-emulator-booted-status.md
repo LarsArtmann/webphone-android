@@ -166,6 +166,7 @@
 ## f) UP TO 50 THINGS TO GET DONE NEXT (ranked, agent-executable unless marked)
 
 **Immediate (this session's unfinished tail):**
+
 1. Run F61 verify-gate on the batch (`bash scripts/verify-gate.sh`).
 2. COMMIT the wave-3 batch with a real message; push origin + github.
 3. Check smoke job 075; kill/keep the emulator deliberately.
@@ -196,41 +197,41 @@
 18. F11–F13: THE E2E ring proof (browser call → rings closed → verdict).
 19. F36–F38: E2E tails — answer-path race verdict + ring_end stand-down.
 20. F39–F42: ntfy read-auth decision (OWNER answers; header seam if
-    denied) — subscribe currently sends NO auth header.
+denied) — subscribe currently sends NO auth header.
 21. F43–F45: Caddy `<origin>/<topic>/ws` route verify + ring-group
-    ruling recorded.
+ruling recorded.
 22. F23–F25 (if grants missing): USER grants POST_NOTIFICATIONS + battery
-    exemption, adb verify.
+exemption, adb verify.
 
 **Docs & keepability (wave 3/4):**
 23. F70: HARVEST the three 2026-11-10 reports + this plan into
-    TODO_LIST rows.
+TODO_LIST rows.
 24. F71: ROADMAP rows from the plan's raw ideas.
 25. F72: cross-repo ring-E2E standing row in TODO_LIST.
 26. F73: Actions-billing owner runbook (exact clicks).
 27. F74: mirror-PAT `workflow`-scope runbook + sops update steps.
 28. F84: ROADMAP parking rows P1–P9 (keep-alive alarm, ring counter,
-    CallStyle 31–33, localization, ledger history, label rename,
-    pill tap-through dialer, executed dedup rows).
+CallStyle 31–33, localization, ledger history, label rename,
+pill tap-through dialer, executed dedup rows).
 29. F83 (post-verdict): annotate the three status reports (docs-health
-    ANNOTATE).
+ANNOTATE).
 30. F80–F82 (post-verdict): README honesty flip, FEATURES live-evidence
-    rows, AGENTS open-question retirement.
+rows, AGENTS open-question retirement.
 31. Emulator script hardening (TODO_LIST row): timeout-bound boot +
-    install, log-file output — do it BEFORE the next emulator wave.
+install, log-file output — do it BEFORE the next emulator wave.
 32. WakeLane `lastProbe` timestamp field + F77–F79 detail sheet (tap
-    pill → reason + last-probe + Retry → ensureWired) + pins.
+pill → reason + last-probe + Retry → ensureWired) + pins.
 33. F33 gate + commit after the overlay fix (folded with 4 if same wave).
 34. `NtfySubscriptionServiceTest` label rename to the new seam vocabulary
-    (P6 parking row) — small, do with the next touch of that file.
+(P6 parking row) — small, do with the next touch of that file.
 35. `forkEvery` cost audit (existing TODO_LIST row) — this session added
-    ~3 s of sleeps to the suite; measure the wall-time trade.
+~3 s of sleeps to the suite; measure the wall-time trade.
 36. Add `ring-diagnose.sh` to README's troubleshooting section.
 37. Record the 422-capacity correction in the cross-repo notes (the
-    plan's 409 premise came from somewhere upstream — check webphone
-    TODO_LIST/FEATURES mention the same number).
+plan's 409 premise came from somewhere upstream — check webphone
+TODO_LIST/FEATURES mention the same number).
 38. Session-start `pgrep gradle` habit: add the `GradleWorkerMain` +
-    `--status Busy` one-liner to AGENTS as the canonical check.
+`--status Busy` one-liner to AGENTS as the canonical check.
 
 **Parked (existing rows, unchanged):**
 39. M050 re-run with the hardened harness.
@@ -239,16 +240,16 @@
 42. Warning-freeze gate step.
 43. Pre-push hook running verify-gate (opt-in).
 44. `assetlinks.json` draft + cross-repo filing (F75–F76, needs the
-    release publish).
+release publish).
 45. Test-count honesty gate step.
 46. Local CI rehearsal (M035 row).
 47. `push-devices` dereg-on-logout authorization seam (the JS-bridge
-    question the watcher KDoc flags).
+question the watcher KDoc flags).
 48. ring-group ruling (F45) — owner question, keep on record.
 49. Island safe-area fix (cross-repo, W01) — still untouched pending the
-    webphone repo's call.
+webphone repo's call.
 50. Update-lane first real Obtainium cycle (the device half stays
-    UNPROVEN until one phone updates through a published release).
+UNPROVEN until one phone updates through a published release).
 
 ## g) QUESTIONS I CANNOT ANSWER MYSELF
 
