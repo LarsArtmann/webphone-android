@@ -192,14 +192,14 @@ internal class WebSurface(
     private var authDetour: Uri? = null
 
     /** Whether the CURRENT main-frame load ended in a transport
-    *  failure. This is what keeps the offline overlay honest: the
-    *  overlay dismisses on `onPageFinished` ONLY when the load that
-    *  just finished never failed — dropping it at load START (the
-    *  old rule) flashed Chromium's raw error page ("Webpage not
-    *  available") for the whole attempt window whenever the stack
-    *  was unreachable (emulator-proven 2026-11-11, airplane mode:
-    *  the overlay was up but the retry path still surfed the raw
-    *  `net::ERR_INTERNET_DISCONNECTED` page for seconds). */
+     *  failure. This is what keeps the offline overlay honest: the
+     *  overlay dismisses on `onPageFinished` ONLY when the load that
+     *  just finished never failed — dropping it at load START (the
+     *  old rule) flashed Chromium's raw error page ("Webpage not
+     *  available") for the whole attempt window whenever the stack
+     *  was unreachable (emulator-proven 2026-11-11, airplane mode:
+     *  the overlay was up but the retry path still surfed the raw
+     *  `net::ERR_INTERNET_DISCONNECTED` page for seconds). */
     private var mainFrameLoadFailed = false
 
     private val pickerLauncher =
