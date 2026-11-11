@@ -8,6 +8,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import software.larsartmann.webphone.App
+import software.larsartmann.webphone.R
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -40,7 +41,11 @@ class WebSurfaceTest {
                 assertTrue(surface.offlineVisible(), "main-frame failure raises the overlay")
 
                 surface.retry()
-                assertFalse(surface.offlineVisible(), "retry dismisses the overlay")
+                assertTrue(
+                    surface.offlineVisible(),
+                    "retry keeps the overlay up through the attempt " +
+                        "(dismissal is success-gated — no raw-error-page flash)",
+                )
                 assertEquals(
                     App.origin,
                     shadowOf(surface.currentWebView()).lastLoadedUrl,
@@ -146,7 +151,77 @@ class WebSurfaceTest {
                 )
 
                 surface.retry()
-                assertFalse(surface.offlineVisible(), "retry dismisses the overlay")
+                assertTrue(
+                    surface.offlineVisible(),
+                    "retry keeps the overlay up through the attempt",
+                )
+                val client = surface.ShellWebViewClient()
+                val web = surface.currentWebView()
+                client.onPageStarted(web, App.origin, null)
+                client.onPageFinished(web, App.origin)
+                assertFalse(
+                    surface.offlineVisible(),
+                    "a load that finished without transport failure dismisses the overlay",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `a failed load attempt keeps the overlay up instead of flashing the raw error page`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val surface = activity.webSurface
+                val client = surface.ShellWebViewClient()
+                val web = surface.currentWebView()
+
+                surface.onMainFrameTransportFailure(true)
+                assertTrue(surface.offlineVisible(), "transport failure raises the overlay")
+
+                client.onPageStarted(web, App.origin, null)
+                assertTrue(
+                    surface.offlineVisible(),
+                    "a load START must not dismiss the overlay — the old " +
+                        "rule flashed Chromium's raw error page for the whole " +
+                        "attempt window (emulator-proven 2026-11-11)",
+                )
+
+                surface.onMainFrameTransportFailure(true)
+                client.onPageFinished(web, App.origin)
+                assertTrue(
+                    surface.offlineVisible(),
+                    "a transport-failed load finishing must keep the overlay up " +
+                        "(Chromium fires onPageFinished for its error pages too)",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `retry re-resolves the overlay body to the current origin`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                val surface = activity.webSurface
+                surface.onMainFrameTransportFailure(true)
+
+                val previous = App.origin
+                try {
+                    App.origin = "https://fallback.example.test"
+                    surface.retry()
+
+                    assertEquals(
+                        activity.getString(R.string.web_offline_body, App.origin),
+                        surface.offlineBodyText(),
+                        "the overlay body never names a stack the user switched away from",
+                    )
+                    assertEquals(
+                        App.origin,
+                        shadowOf(surface.currentWebView()).lastLoadedUrl,
+                        "retry re-aims the CURRENT origin",
+                    )
+                } finally {
+                    App.origin = previous
+                }
             }
         }
     }

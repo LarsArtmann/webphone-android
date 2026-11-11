@@ -573,6 +573,10 @@ internal class WebSurface(
 
     internal fun offlineVisible(): Boolean = offlineOverlay.visibility == android.view.View.VISIBLE
 
+    /** Test seam: the overlay body as actually rendered (the origin
+     *  named in the "can't reach X" sentence). */
+    internal fun offlineBodyText(): String = offlineBody.text.toString()
+
     /** Test seam: the LIVE WebView instance (renderer rebuilds swap it). */
     internal fun currentWebView(): WebView = webView
 
