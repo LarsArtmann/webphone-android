@@ -81,6 +81,20 @@ read works, push credentials unchanged).
 - Mirror lag check (same probe as `domains`):
   `git fetch origin && git fetch github && git rev-parse origin/main github/main` —
   equal SHAs mean the mirror is keeping up.
+- **Forge commit badges are Verified now (2026-11-11)** — every SSH-signed
+  commit/tag on the forge (webphone-android AND the SystemNix mirror)
+  previously rendered "No known key found for this signature in database"
+  because TWO gates were missing: the committer email as an activated
+  `email_address` row (the account had only the provisioning default
+  `lars@local`) and `public_key.verified=1` on the signing key (NO API or
+  CLI sets that flag — admin/API-added keys land verified=0). Both are
+  nix-managed in SystemNix (`services.forgejo.userEmails` +
+  `.verifiedSigningKeys`, converged by the `forgejo-ssh-keys` oneshot
+  directly in the forge sqlite DB; Forgejo 15's admin email API is
+  GET/DELETE-only, POST 405s). Proven by controlled badge flips on the
+  scratch repo `lars/sig-probe`. Do NOT "clean up" the extra emails on the
+  lars forge account (`git@lars.software`,
+  `larsartmann@users.noreply.github.com`) — they ARE the fix.
 - **NOTHING pushes ANY remote automatically** — the daemon commits locally
   only (verified 2026-10-25: both remotes lagged local while the mirror was
   unattached). UPDATE 2026-11-11: the push mirror IS ALIVE now (a plain
