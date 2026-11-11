@@ -56,4 +56,11 @@
     <string name="wake_reason_disconnected">Calls may not ring while the app is closed: the push connection is down right now.</string>
     <string name="session_expired_title">Ringing paused</string>
     <string name="session_expired_body">The WebPhone sign-in expired, so calls will not ring on this phone until you open the app and sign in again.</string>
+    <string name="wake_detail_title">Wake lane</string>
+    <string name="wake_detail_armed">The wake lane is armed — calls ring on this phone even when WebPhone is closed.</string>
+    <string name="wake_detail_unknown">The shell has not wired the wake lane yet — sign in once and it will ask the server.</string>
+    <string name="wake_never_checked">Not checked yet.</string>
+    <string name="wake_last_checked">Last checked: %s</string>
+    <string name="wake_retry_action">Retry</string>
+    <string name="wake_close">Close</string>
 </resources>

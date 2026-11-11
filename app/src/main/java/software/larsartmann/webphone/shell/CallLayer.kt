@@ -166,7 +166,9 @@ object CallLayer {
         laneAlive: () -> Boolean = { guard.current() != null },
     ) {
         while (currentCoroutineContext().isActive && laneAlive()) {
-            when (sessionProbe()) {
+            val probe = sessionProbe()
+            WakeLane.reportProbe()
+            when (probe) {
                 SessionApi.SessionProbe.ALIVE, SessionApi.SessionProbe.UNREACHABLE -> Unit
                 SessionApi.SessionProbe.DEAD -> {
                     onSessionDead(appContext)
@@ -222,6 +224,7 @@ object CallLayer {
     @Suppress("DEPRECATION")
     private suspend fun registerPushLanes(context: Context): SessionApi.PushRegisterVerdict {
         val ntfy = SessionApi.registerPushDevice(context, "ntfy", DeviceIdentity.ntfyTopic(context))
+        WakeLane.reportProbe()
         runCatching { Tasks.await(FirebaseMessaging.getInstance().token) }
             .getOrNull()
             ?.let { SessionApi.registerPushDevice(context, "fcm", it) }
@@ -245,5 +248,16 @@ object CallLayer {
         CallEngine.detach()
         guard.clear()
         WakeLane.report(WakeLaneState.UNKNOWN)
+    }
+
+    /** The wake-off detail sheet's Retry: teardown + a fresh wire.
+     *  A plain `ensureWired` is a NO-OP here — the lane is usually
+     *  wired-but-refused (the guard holds), so the only honest retry
+     *  is a full teardown (which returns the ledger to UNKNOWN) and a
+     *  re-decide from the session seam up (resume → engine → ntfy
+     *  subscribe → re-register). */
+    fun rewire(context: Context) {
+        shutdown()
+        ensureWired(context)
     }
 }

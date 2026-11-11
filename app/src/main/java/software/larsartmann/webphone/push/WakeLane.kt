@@ -71,9 +71,25 @@ object WakeLane {
     /** Read-mostly: the shell collects this for the line pill. */
     val state: StateFlow<WakeLaneState> = _state.asStateFlow()
 
+    /** Wall-clock seam (the pins freeze it). */
+    internal var nowMs: () -> Long = { System.currentTimeMillis() }
+
+    /** When the lane last heard a DEFINITE answer from the stack (a
+     *  register verdict or a watcher probe tick) — the wake-off detail
+     *  sheet's "last checked" line. A refusal without a timestamp
+     *  cannot say how stale it is; 0 means "never probed". */
+    var lastProbeAtMs: Long = 0L
+        private set
+
     /** The writers' single seam (production writes AND the pins that
      *  prove them). */
     fun report(state: WakeLaneState) {
         _state.value = state
+    }
+
+    /** Stamp NOW as the last definite stack answer. Called where a
+     *  verdict lands (the register path and every watcher tick). */
+    internal fun reportProbe() {
+        lastProbeAtMs = nowMs()
     }
 }

@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.text.format.DateUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -20,6 +21,7 @@ import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -94,6 +96,47 @@ internal fun linePillText(
     }
 }
 
+/** The wake-off detail sheet's body line (file-level so the pin
+ *  builds it without an activity): the state's full sentence — the
+ *  pill's content description is one tap away, not in your face, and
+ *  a bare "wake off" never says what to DO. */
+internal fun wakeDetailBody(
+    context: Context,
+    state: WakeLaneState,
+): String =
+    when (state) {
+        WakeLaneState.UNKNOWN -> context.getString(R.string.wake_detail_unknown)
+        WakeLaneState.STARTING -> context.getString(R.string.wake_starting)
+        WakeLaneState.ARMED -> context.getString(R.string.wake_detail_armed)
+        WakeLaneState.REFUSED_SEAM_OFF -> context.getString(R.string.wake_reason_refused_seam_off)
+        WakeLaneState.REFUSED_INVALID -> context.getString(R.string.wake_reason_refused_invalid)
+        WakeLaneState.REFUSED_AUTH -> context.getString(R.string.wake_reason_refused_auth)
+        WakeLaneState.REFUSED_OTHER -> context.getString(R.string.wake_reason_refused_other)
+        WakeLaneState.SESSION_DEAD -> context.getString(R.string.wake_reason_session_dead)
+        WakeLaneState.DISCONNECTED -> context.getString(R.string.wake_reason_disconnected)
+    }
+
+/** The detail sheet's "last checked" line: a refusal without a
+ *  timestamp cannot say how stale it is (a seam-off verdict from
+ *  yesterday reads differently than one from a minute ago). 0 means
+ *  the lane never heard a definite answer. */
+internal fun wakeLastCheckedLine(
+    context: Context,
+    stampMs: Long,
+): String =
+    if (stampMs == 0L) {
+        context.getString(R.string.wake_never_checked)
+    } else {
+        context.getString(
+            R.string.wake_last_checked,
+            DateUtils.formatDateTime(
+                context,
+                stampMs,
+                DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_ABBREV_ALL,
+            ),
+        )
+    }
+
 /**
  * The shell: the stack origin's own pages render in the WebView (the
  * island login mints the session cookie; Messages/Fax/Voicemail/
@@ -112,11 +155,17 @@ class MainActivity : AppCompatActivity() {
     internal lateinit var webSurface: WebSurface
     private lateinit var statusDot: View
     internal lateinit var statusLabel: TextView
+    internal lateinit var linePill: LinearLayout
     private lateinit var chrome: LinearLayout
+    internal lateinit var wakeDetail: LinearLayout
+    internal lateinit var wakeDetailTitle: TextView
+    internal lateinit var wakeDetailBodyText: TextView
+    internal lateinit var wakeDetailLastChecked: TextView
+    internal lateinit var wakeDetailRetry: AppCompatButton
     private var linePulse: ValueAnimator? = null
     private var requestedBatteryExemption = false
     private var backInvoker: OnBackInvokedCallback? = null
-    private var wake: WakeLaneState = WakeLaneState.UNKNOWN
+    internal var wake: WakeLaneState = WakeLaneState.UNKNOWN
 
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -172,7 +221,13 @@ class MainActivity : AppCompatActivity() {
                 setPadding(dp(14), dp(9), dp(14), dp(9))
                 addView(statusDot)
                 addView(statusLabel)
+                // The pill is the wake-off detail sheet's TAP TARGET:
+                // the verdict label is one glance, the full why + when
+                // + retry is one tap. Nothing else in the chrome is
+                // tappable twice.
+                setOnClickListener { showWakeDetail() }
             }
+        this.linePill = linePill
 
         val dialFab =
             iconButton(
@@ -242,6 +297,16 @@ class MainActivity : AppCompatActivity() {
                     ViewGroup.LayoutParams.WRAP_CONTENT,
                     Gravity.BOTTOM or Gravity.END,
                 ).apply { setMargins(dp(16), dp(16), dp(16), dp(16)) },
+        )
+        wakeDetail = buildWakeDetail()
+        // Topmost: the sheet must cover the chrome (its Retry re-wires
+        // the lane the chrome's pill is describing).
+        root.addView(
+            wakeDetail,
+            FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            ),
         )
 
         setContentView(root)
@@ -397,6 +462,105 @@ class MainActivity : AppCompatActivity() {
         runCatching { startActivity(direct) }.onFailure {
             runCatching { startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
         }
+    }
+
+    /** The wake-off detail sheet: an in-activity overlay (same shape
+     *  as the WebView's offline overlay — design tokens, no dialog
+     *  dependency) because the WHY a closed app will not ring deserves
+     *  a full sentence, a staleness stamp, and a retry — not a toast.
+     *  Tapped in from the line pill; Retry tears the lane down and
+     *  re-decides it ([CallLayer.rewire]). */
+    private fun buildWakeDetail(): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(32), dp(24), dp(32), dp(24))
+            setBackgroundColor(themeColor(R.attr.wpBackground))
+            visibility = View.GONE
+
+            wakeDetailTitle =
+                TextView(this@MainActivity).apply {
+                    styleText(18f, themeColor(R.attr.wpOnSurface), medium = true)
+                }
+            wakeDetailBodyText =
+                TextView(this@MainActivity).apply {
+                    styleText(14f, themeColor(R.attr.wpOnSurfaceMuted))
+                    setPadding(0, dp(8), 0, 0)
+                }
+            wakeDetailLastChecked =
+                TextView(this@MainActivity).apply {
+                    styleText(12f, themeColor(R.attr.wpOnSurfaceMuted))
+                    setPadding(0, dp(12), 0, 0)
+                }
+            wakeDetailRetry =
+                AppCompatButton(this@MainActivity).apply {
+                    background = pillBackground(themeColor(R.attr.wpAccent))
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.wp_on_accent))
+                    textSize = 15f
+                    isAllCaps = false
+                    setPadding(dp(28), dp(12), dp(28), dp(12))
+                    minimumHeight = dp(48)
+                    text = getString(R.string.wake_retry_action)
+                    setOnClickListener { retryWake() }
+                }
+            val close =
+                AppCompatButton(this@MainActivity).apply {
+                    background = pillBackground(ContextCompat.getColor(this@MainActivity, R.color.chrome_glass))
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.chrome_on_glass))
+                    textSize = 15f
+                    isAllCaps = false
+                    setPadding(dp(28), dp(12), dp(28), dp(12))
+                    minimumHeight = dp(48)
+                    text = getString(R.string.wake_close)
+                    setOnClickListener { wakeDetail.visibility = View.GONE }
+                }
+
+            addView(wakeDetailTitle)
+            addView(
+                wakeDetailBodyText,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+            addView(wakeDetailLastChecked)
+            addView(
+                wakeDetailRetry,
+                LinearLayout
+                    .LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply {
+                        topMargin = dp(24)
+                        gravity = Gravity.CENTER_HORIZONTAL
+                    },
+            )
+            addView(
+                close,
+                LinearLayout
+                    .LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply {
+                        topMargin = dp(12)
+                        gravity = Gravity.CENTER_HORIZONTAL
+                    },
+            )
+        }
+
+    /** Fill the sheet from the LIVE state and show it. ARMED hides the
+     *  Retry button: re-wiring a working lane is not a user task. */
+    internal fun showWakeDetail() {
+        wakeDetailTitle.text = getString(R.string.wake_detail_title)
+        wakeDetailBodyText.text = wakeDetailBody(this, wake)
+        wakeDetailLastChecked.text = wakeLastCheckedLine(this, WakeLane.lastProbeAtMs)
+        wakeDetailRetry.visibility = if (wake == WakeLaneState.ARMED) View.GONE else View.VISIBLE
+        wakeDetail.visibility = View.VISIBLE
+    }
+
+    private fun retryWake() {
+        wakeDetail.visibility = View.GONE
+        CallLayer.rewire(this)
     }
 
     override fun onDestroy() {
