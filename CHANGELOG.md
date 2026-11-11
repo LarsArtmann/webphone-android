@@ -65,6 +65,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   didn't ring"
 - `docs/FCM_ACTIVATION.md`: the exact drop-in checklist for the day
   the dormant FCM lane goes live
+- Wake-off detail sheet: tapping the line pill opens an in-activity
+  surface with the verdict's full sentence, a "Last checked" stamp
+  (new `WakeLane` probe ledger — register verdicts and watcher ticks
+  stamp it), and a Retry that tears the lane down and re-wires it
+  (`CallLayer.rewire` — a plain `ensureWired` no-ops on a
+  wired-but-refused lane); ARMED hides Retry
 
 ### Fixed
 

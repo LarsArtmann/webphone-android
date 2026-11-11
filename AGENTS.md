@@ -12,7 +12,7 @@ silently replaces.
 **Status: v0.1 scaffold, first runtime smoke done.** Load-bearing code is
 implemented but untested against LIVE infrastructure (the README
 "honesty contract" section lists the markers). There IS now: a JVM test
-source set (134 tests: protocol unit tests + Robolectric smoke + the
+source set (138 tests: protocol unit tests + Robolectric smoke + the
 deep-link/auth-detour surface + the wake-lane/session-watch verdicts,
 ktlint-gated) and a CI workflow
 (mirrored to GitHub 2026-10-25; the `push`/`pull_request`/
@@ -673,6 +673,15 @@ tracked in TODO_LIST.
   surf through on Retry. Never reintroduce a load-start dismissal;
   `retry()`/`loadUri()`/`loadOriginIfChanged()` only re-resolve the
   overlay body text now. Pins: `WebSurfaceTest` (meta-proven).
+- **The wake-off detail sheet's Retry is a REWIRE, not an
+  ensureWired** (2026-11-11): a refused lane is wired-but-attached
+  (the guard holds), so plain `ensureWired` would no-op — Retry must
+  tear down (`CallLayer.rewire` = shutdown + ensureWired) and let the
+  ledger return to UNKNOWN while re-deciding. The sheet's body and
+  its "Last checked" stamp never share a sentence (UNKNOWN has its
+  own body string; `wake_never_checked` is the stamp's only). The
+  probe stamp lands at the register verdict AND every watcher tick
+  (`WakeLane.reportProbe` — the seam `nowMs` is frozen in pins).
 - **The phone's WiFi DNS reality (found 2026-11-11)**: the Edge 60's
   home WiFi (`UPC504705697`) DHCP-hands the ISP resolvers
   (193.47.158.254/255, domain `play.pl`) — `*.home.lan` names do NOT
