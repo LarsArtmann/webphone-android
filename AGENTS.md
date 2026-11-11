@@ -30,14 +30,22 @@ and locally verified (signed APK, versionCode 200, forge API probed), but
 no release has been published yet and no phone has updated through it, so
 treat the device half as UNPROVEN until the first real cycle. DEVICE DEPLOY
 (2026-11-11): 0.2.1 (vc201) was adb-installed in place over the debug-signed
-0.2.0 and verified (dumpsys + launch + liveness); the `forgejo-token` file
-exists but is 0-BYTE — `--doctor` reports `token: MISSING`, so the publish
-half of the lane is still blocked (TODO_LIST has the row).
+0.2.0 and verified (dumpsys + launch + liveness). REPO VISIBILITY (2026-11-11):
+both remotes are PUBLIC now (GitHub via `gh repo edit`; Forgejo via API PATCH
+`private=false`, anonymous GET verified on both). The release-lane token is
+minted and stored: `~/.config/webphone-android/forgejo-token` holds a
+`write:repository,read:user` token (CLI-minted on the forge host as user
+`lars`; `--doctor` green: token valid, repo private=False). Superseded
+`webphone-android-release` token (write:repository-only, no `read:user`,
+never stored anywhere) is revocable in the Forgejo UI; the sops
+`forgejo_token` in SystemNix is a literal `CHANGE_ME` placeholder, not a
+real credential.
 
 ## Repository & mirrors
 
 Forgejo is the primary (canonical) remote; GitHub is the off-site
-mirror. Both are **private**.
+mirror. Both are **public** (flipped 2026-11-11 from private; anonymous
+read works, push credentials unchanged).
 
 - Forgejo: `forgejo@evo-x2.home.lan:lars/webphone-android.git`
   (`origin`), created native via SSH push-to-create (Forgejo default is
@@ -524,6 +532,34 @@ tracked in TODO_LIST.
     Multi-host IdPs would need a different allowance (operator question
     stands). Keep this shape — it is what makes "same-origin only" and
     "OIDC works" true at the same time.
+- **The IdP is passkey-ONLY and the WebView must opt into WebAuthn
+  (2026-11-11, the "OAuth broken / fingerprint re-login" diagnosis)**:
+  Pocket ID supports ONLY passwordless sign-in — the "Authenticate"
+  button IS the login (fingerprint/PIN unlock), there is no password
+  door (only a one-time admin-issued login code). Android WebView ships
+  with WebAuthn support DISABLED by default; the provider has supported
+  it since Chromium M131 but ONLY after the app opts in:
+  `WebSurface.optInToPasskeys` sets
+  `WEB_AUTHENTICATION_SUPPORT_FOR_APP` (androidx.webkit 1.18) when
+  `WebViewFeature.WEB_AUTHENTICATION` is supported, guarded +
+  `runCatching` (Robolectric has no provider; a too-old provider
+  degrades to the dead button instead of crashing). The verdict is
+  LOGGED (`webauthn in webview: …`) — a device train reads it from
+  logcat, never from a silent button. FOR_APP (not FOR_BROWSER — this
+  shell is not a browser) also means Credential Manager serves the
+  ceremony only for RP hosts that prove the app via Digital Asset
+  Links: `auth.larsartmann.cloud` (Pocket ID's RP ID) must serve
+  `/.well-known/assetlinks.json` with the `get_login_creds` relation +
+  the RELEASE cert fingerprint — 404 there as of 2026-11-11, so the
+  stack half is still open (TODO_LIST row; the draft is
+  `docs/drafts/2026-11-11_stack-serve-assetlinks-on-idp-host-for-webview-passkeys.md`,
+  `scripts/assetlinks.sh` emits both relations). Until that lands, the
+  in-shell login STILL dead-ends at the RP check — the app half alone
+  is necessary, not sufficient. "Stay logged in" was never broken:
+  the server's session cookie is persistent (7-day sliding idle,
+  30-day absolute cap) and the app flushes the cookie jar on
+  page-finish/pause — what LOOKED like logout problems were forced
+  logins (app-data wipes, the 30-day cap) with no possible re-login.
 - **The debug keystore lives at `~/.config/.android/debug.keystore`
   (found 2026-10-27)**: the nix JDK resolves AGP's debug keystore via
   the XDG config home, so the CLASSIC `~/.android/debug.keystore` can

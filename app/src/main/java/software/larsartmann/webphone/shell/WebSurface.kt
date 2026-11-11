@@ -16,11 +16,11 @@ import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
 import android.webkit.PermissionRequest
 import android.webkit.RenderProcessGoneDetail
-import android.webkit.WebSettings
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
