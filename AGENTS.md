@@ -545,7 +545,11 @@ tracked in TODO_LIST.
   `runCatching` (Robolectric has no provider; a too-old provider
   degrades to the dead button instead of crashing). The verdict is
   LOGGED (`webauthn in webview: …`) — a device train reads it from
-  logcat, never from a silent button. FOR_APP (not FOR_BROWSER — this
+  logcat, never from a silent button. EMULATOR-PROVEN 2026-11-11: the
+  API 36 AVD's WebView provider (com.google.android.webview
+  133.0.6943.137, ≥ M131) answers `FOR_APP enabled (provider
+  readback=1)` and the live island still loads — no crash, no
+  regression. FOR_APP (not FOR_BROWSER — this
   shell is not a browser) also means Credential Manager serves the
   ceremony only for RP hosts that prove the app via Digital Asset
   Links: `auth.larsartmann.cloud` (Pocket ID's RP ID) must serve
