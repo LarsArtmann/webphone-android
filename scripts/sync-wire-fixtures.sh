@@ -51,7 +51,7 @@ case "$mode" in
         echo "Re-run without --check to re-vendor, then follow the new contract." >&2
         exit 1
     fi
-    echo "wire fixtures fresh ($(ls "$dst" | wc -l) files match $src)"
+    echo "wire fixtures fresh ($(find "$dst" -mindepth 1 -maxdepth 1 -name '*.json' | wc -l) files match $src)"
     ;;
 copy)
     mkdir -p "$dst"
@@ -61,7 +61,7 @@ copy)
     # sweep scripts use for generated trees).
     find "$dst" -name '*.json' -delete
     cp "$src"/*.json "$dst/"
-    echo "vendored $(ls "$dst" | wc -l) wire fixtures from $src into $dst"
+    echo "vendored $(find "$dst" -mindepth 1 -maxdepth 1 -name '*.json' | wc -l) wire fixtures from $src into $dst"
     ;;
 *)
     echo "usage: $0 [--check]" >&2

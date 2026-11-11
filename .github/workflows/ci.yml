@@ -56,6 +56,13 @@ jobs:
       - name: 16 KB page-alignment gate
         run: '"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/debug/app-debug.apk'
 
+      # The universal-APK contract: every ABI's native libs must be in
+      # the artifact (a dependency swap or stray abiFilters shrinks
+      # lib/ silently, and only some device classes notice). Stdlib
+      # python3, no setup needed.
+      - name: ABI completeness gate (debug)
+        run: python3 scripts/abi-check.py app/build/outputs/apk/debug/app-debug.apk
+
       # WCAG contrast guard over the color-token pairs (the 2.44:1
       # answer-button class can never drift back silently). Stdlib
       # python3, no setup needed.
@@ -73,6 +80,9 @@ jobs:
       # not only the debug artifact.
       - name: 16 KB page-alignment gate (release)
         run: '"$ANDROID_HOME/build-tools/36.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/release/app-release-unsigned.apk'
+
+      - name: ABI completeness gate (release)
+        run: python3 scripts/abi-check.py app/build/outputs/apk/release/app-release-unsigned.apk
 
       # Keep the retrace map: without it a crash stack from the
       # minified release is unreadable (J08/M031).

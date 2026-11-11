@@ -108,7 +108,7 @@ fi
 # SDK's build-tools.
 APKSIGNER="$(command -v apksigner || true)"
 if [ -z "$APKSIGNER" ] && [ -n "${ANDROID_HOME:-}" ]; then
-    APKSIGNER="$(ls -1 "$ANDROID_HOME"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)"
+    APKSIGNER="$(find "$ANDROID_HOME"/build-tools -maxdepth 2 -name apksigner -type f 2>/dev/null | sort -V | tail -1)"
 fi
 if [ -f "$APK" ] && [ -n "$APKSIGNER" ]; then
     APK_FP="$("$APKSIGNER" verify --print-certs "$APK" 2>/dev/null |

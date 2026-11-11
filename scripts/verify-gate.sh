@@ -6,7 +6,7 @@
 # gate the AGENTS "Build and verify" section demands, in order, loudly:
 #
 #   assembleDebug -> testDebugUnitTest -> ktlintCheck -> 16 KB zipalign
-#   -> contrast-check -> dprint check
+#   -> abi-check -> contrast-check -> dprint check
 #
 # Each Gradle step is time-bounded by `timeout` (the outer belt over the
 # in-build test fence): a wedged run fails HERE instead of hiding.
@@ -38,19 +38,19 @@ fi
 
 apk="app/build/outputs/apk/debug/app-debug.apk"
 
-step "1/6 assembleDebug"
+step "1/7 assembleDebug"
 timeout 900 nix develop -c ./gradlew assembleDebug --console=plain
 
-step "2/6 testDebugUnitTest (wedge-fenced)"
+step "2/7 testDebugUnitTest (wedge-fenced)"
 timeout 1500 nix develop -c ./gradlew testDebugUnitTest --console=plain
 
-step "3/6 ktlintCheck + KGP parity"
+step "3/7 ktlintCheck + KGP parity"
 timeout 600 nix develop -c ./gradlew ktlintCheck kgpParityCheck --console=plain
 
-step "4/6 16 KB page alignment (build-tools 36 zipalign)"
+step "4/7 16 KB page alignment (build-tools 36 zipalign)"
 # ANDROID_HOME exists only INSIDE the nix devShell — resolve it through
 # the same environment the Gradle steps run in.
-sdk_home="$(nix develop -c bash -c 'echo "$ANDROID_HOME"')"
+sdk_home="$(nix develop -c printenv ANDROID_HOME)"
 zipalign="$sdk_home/build-tools/36.0.0/zipalign"
 if [ ! -x "$zipalign" ]; then
     echo "zipalign not found at $zipalign — is ANDROID_HOME set and the" >&2
@@ -63,15 +63,21 @@ test -f "$apk" || {
 }
 "$zipalign" -c -P 16 4 "$apk"
 
-step "5/6 contrast-check (both modes, WCAG gate)"
+step "5/7 ABI completeness (the APK stays universal)"
+# One APK serves every device class; a dependency swap or stray
+# abiFilters would shrink lib/ silently — refuse that here, at the
+# exact artifact that ships.
+python3 scripts/abi-check.py "$apk"
+
+step "6/7 contrast-check (both modes, WCAG gate)"
 if [ "${SKIP_CONTRAST:-0}" = "1" ]; then
     echo "skipped (SKIP_CONTRAST=1) — only legitimate when no token changed"
 else
     python3 scripts/contrast-check.py
 fi
 
-step "6/6 dprint check (markdown/yaml/json formatting)"
+step "7/7 dprint check (markdown/yaml/json formatting)"
 nix run nixpkgs#dprint -- check
 
 step "GATE GREEN"
-echo "assembleDebug + tests + ktlint + zipalign + contrast + dprint: all green."
+echo "assembleDebug + tests + ktlint + zipalign + abi + contrast + dprint: all green."

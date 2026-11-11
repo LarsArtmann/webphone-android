@@ -16,7 +16,7 @@ AVD_HOME="${ANDROID_AVD_HOME:-$PWD/.avd}"
 export ANDROID_AVD_HOME="$AVD_HOME"
 mkdir -p "$AVD_HOME" photos
 
-SDK="${ANDROID_HOME:?run inside nix develop .#emulator}"
+: "${ANDROID_HOME:?run inside nix develop .#emulator}"
 APK="${1:-app/build/outputs/apk/debug/app-debug.apk}"
 [ -f "$APK" ] || {
     echo "APK missing: $APK (run assembleDebug first)" >&2

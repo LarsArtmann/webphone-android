@@ -260,6 +260,10 @@ gate() {
     "$build_tools/zipalign" -c -P 16 4 "$apk" ||
         die "release APK is not 16 KB aligned (mandatory for Android 16; see AGENTS.md)"
 
+    note "ABI completeness gate (the APK stays universal)"
+    "$PYTHON" scripts/abi-check.py "$apk" ||
+        die "release APK is missing an ABI (arm64-v8a/armeabi-v7a/x86/x86_64) — check the webrtc dependency"
+
     note "signature verification"
     "$build_tools/apksigner" verify --print-certs "$apk" | sed -n '1,8p'
 

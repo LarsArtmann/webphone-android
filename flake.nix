@@ -47,6 +47,10 @@
         };
       in
       {
+        # `nix fmt` (and BuildFlow's nix-fmt roundtrip, which re-evaluates
+        # a copy of this flake) needs an explicit formatter attribute —
+        # there is no fleet-wide default without one.
+        formatter = pkgs.nixfmt-rfc-style;
         devShells.default = pkgs.mkShell {
           packages = [
             pkgs.jdk21

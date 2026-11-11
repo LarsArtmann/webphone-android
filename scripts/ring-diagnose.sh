@@ -44,7 +44,7 @@ if [ -z "$SERIAL" ]; then
     COUNT="$(printf '%s\n' "$DEVICES" | wc -l)"
     if [ "$COUNT" -ne 1 ]; then
         echo "FAIL  $COUNT devices attached, none pinned. Re-run with a serial:"
-        printf '      %s\n' $DEVICES
+        printf '%s\n' "$DEVICES" | sed 's/^/      /'
         exit 1
     fi
     SERIAL="$(printf '%s\n' "$DEVICES" | head -1)"
