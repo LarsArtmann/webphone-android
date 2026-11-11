@@ -58,8 +58,8 @@ NOT verified, and why:
    - `.github/workflows/ci.yml` — two steps, debug AND
      unsigned-release artifacts.
 4. **Meta-proven both directions** (the repo's pin-discipline rule):
-   GREEN on both real APKs; RED + exit 1 on an arm-only fixture; RED
-   + exit 1 on the subtle hole fixture (see d).
+   GREEN on both real APKs; exit 1 on an arm-only fixture and exit 1
+   on the subtle hole fixture (see d).
 5. **AGENTS.md updated**: the gate is documented in "Build and
    verify", the universal-APK Obtainium bullet now names the gate,
    and the "amd64-v8a is not a real ABI" note is recorded so the next
@@ -212,5 +212,17 @@ self-inflicted flaws. Honesty over polish:
 
 ---
 
-*Report written 2026-11-11 13:39; background verify-gate verdict to be
-appended when the run completes. Auto-commit daemon will file this.*
+## Verify-gate verdict (appended after the background run)
+
+`bash scripts/verify-gate.sh` finished: steps 1-6 GREEN — assembleDebug,
+the full JVM suite, ktlint + KGP parity, the 16 KB zipalign check, the
+new ABI completeness gate (green on the debug APK), and contrast 50/50
+in both modes. Step 7 (dprint check) was RED, exit 20 — and the
+offending file was THIS report (a wrapped line and the italic close
+marker). Both were fixed and this verdict appended in the same edit;
+`dprint check` re-ran green after. No other step failed.
+
+---
+
+_Report written 2026-11-11 13:39; verify-gate verdict appended after
+the background run completed._
