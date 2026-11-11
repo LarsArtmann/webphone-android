@@ -44,8 +44,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `WireFacts`: the ONE parse home for the push wire fact
   {event, from, call_id} — FCM data maps and ntfy frames decode
   through the same pure functions the receivers delegate to
+- Wake-lane verdict vocabulary: `STARTING` (the wiring window is
+  visible from the first millisecond) and four NAMED refusal classes
+  (seam off / invalid-or-device-list-full / sign-in rejected / other)
+  replacing the generic `REFUSED`; a refusal STICKS until the next
+  wire attempt, so a socket-open can no longer overwrite it with
+  `ARMED` on a seam-off stack
+- Register verdict mapping (`SessionApi.registerVerdictFromCode`):
+  204 registered, 404 seam off, 403 session/CSRF, 422 invalid or
+  device-list full, transport failure → network — the pill names the
+  actual refusal instead of failing in logcat only
+- Account notice channel (`account`, notification id 1004): a dead
+  session posts a tappable "Ringing paused" notice into the shell;
+  the watcher probe now LEADS the loop (first verdict at wire time,
+  not ten minutes in) and the server-row deregistration runs through
+  an injected seam so unit tests never phone the live stack
+- `scripts/ring-diagnose.sh`: one command that walks the ring chain
+  on any attached device (install/version/grants/whitelist/ntfy
+  checks, 24h logcat, hint table) — the first-line tool when "it
+  didn't ring"
+- `docs/FCM_ACTIVATION.md`: the exact drop-in checklist for the day
+  the dormant FCM lane goes live
 
 ### Fixed
+
+- The offline overlay flashed Chromium's raw error page ("Webpage not
+  available") during every offline retry: dismissal fired at load
+  START instead of on a load that finished without a transport
+  failure. Dismissal is now success-gated (`mainFrameLoadFailed`);
+  emulator-proven in airplane mode (overlay holds through Retry,
+  meta-proven pin, on-device re-verified 2026-11-11)
+- Push-register capacity rejection was assumed to be HTTP 409; the
+  server answers 422 for BOTH an invalid body and a full device list
+  (verified in webphone `internal/server/api`)
 
 - `SessionApi.resumeSession` read SIP facts the server never sends
   (`sip_domain`/`sip_password`/`websocket_url`): REGISTER ran on EMPTY
