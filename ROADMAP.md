@@ -86,6 +86,9 @@ Raw ideas:
   commits make history dense; born from the 48-file ktlint blob)
 - A quarterly toolchain-review cadence so the repo never again sits
   3 Kotlin minors behind (the 2026-10-28 jump closed a 2.1.0 → 2.4.21 gap)
+- Forgejo-side CI: a `.forgejo/workflows` pipeline on the primary remote
+  (the gogenfilter pilot pattern) — an execution home that does not
+  depend on GitHub Actions billing
 
 ### 6. Wake-lane hardening (parking set)
 

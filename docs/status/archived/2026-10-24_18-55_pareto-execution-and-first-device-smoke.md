@@ -78,9 +78,9 @@ way: zero fatals, identical UI. The release lane is proven, not assumed.
   risky shortcut left).~~ done — docs/status/2026-10-25_10-00 §a T07 (single-lock confinement)
 - ~~INVITE 401 ladder + silence watchdog (Medium; test seams ready).~~ done — docs/status/2026-10-25_10-00 §a T09/T13
 - ~~Second-call busy heads-up; CallStyle notifications (post-train).~~ done — docs/status/2026-10-25_10-00 §a T20/T21/T22 (device verify → TODO R23)
-- ~~Live-stack everything (blocked on Q1): answer-path race, field
-  contracts, two-way audio, ring-while-closed E2E.~~ **→ routed — TODO_LIST (R15/R16/R20; still blocked on Q1)**
-- ~~Logout deregistration decision (cookie-poll shipped vs JS bridge).~~ **→ routed — TODO_LIST (R21/N054-N056; operator KEEP-vs-PURGE)**
+- Live-stack everything (blocked on Q1): answer-path race, field
+  contracts, two-way audio, ring-while-closed E2E. **→ routed — TODO_LIST (R15/R16/R20; still blocked on Q1)**
+- Logout deregistration decision (cookie-poll shipped vs JS bridge). **→ routed — TODO_LIST (R21/N054-N056; operator KEEP-vs-PURGE)**
 
 ## f) Operator questions (unchanged + refined)
 

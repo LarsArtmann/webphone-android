@@ -180,8 +180,8 @@ Single `:app` module, package-per-concern under
 
 Unit tests live under `app/src/test/` mirroring the packages; Robolectric
 tests MUST set `@Config(application = Application::class)` — the manifest
-`App` initializes WebRTC's native factory, which
-`UnsatisfiedLinkError`s on the JVM.
+`App` initializes WebRTC's native factory, which throws
+`UnsatisfiedLinkError` on the JVM.
 
 ### Control flow
 

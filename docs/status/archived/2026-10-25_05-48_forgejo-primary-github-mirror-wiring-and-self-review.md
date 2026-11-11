@@ -93,7 +93,7 @@ re-scoped; non-workflow commits flow fine.
   never opened this session.~~ done — README audited + modernized in the docs-health audit (06-27 §a6)
 - ~~`dependabot.yml` — AGENTS.md claims "Dependabot handles version
   bumps" but `.github/` contains only `ci.yml` (pre-existing gap,
-  noticed mid-session, not acted on).~~ non-issue — `.github/dependabot.yml` exists (gradle ×2 + github-actions; 06-27 §a2)
+  noticed mid-session, not acted on).~~ moot — non-issue: `.github/dependabot.yml` exists (gradle ×2 + github-actions; 06-27 §a2)
 - ~~CI execution home — see questions.~~ done — GitHub Actions + push trigger (10-00 §a F040); first green run → TODO R13
 - ~~Porting `scripts/mirror-lag.sh` (fleet-proven in domains) instead of
   the inline two-liner now documented in AGENTS.md.~~ done — docs/status/2026-10-25_10-00 §a F078

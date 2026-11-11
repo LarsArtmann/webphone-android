@@ -12,6 +12,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Fleet policy (cue-policy #CIWorkflow): CI never publishes — least
+# privilege is a plain contents:read, anything wider must be explicit.
+permissions:
+  contents: read
+
 jobs:
   verify:
     name: Build, test, align, format
