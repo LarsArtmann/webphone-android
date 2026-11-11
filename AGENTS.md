@@ -65,14 +65,19 @@ read works, push credentials unchanged).
   entry added 2026-10-25). It attaches on the next SystemNix deploy
   (`nix run .#deploy`) or a root-shell hand-run of the phase-5 script
   `forgejo-push-mirror` with `FORGEJO_CANONICAL_REPOS=webphone-android`.
-- **Mirror credential trap (LIVE for this repo):** the sops
-  `github_token` sync PAT lacks `workflow` scope and this repo HAS
-  `.github/workflows/ci.yml` — GitHub rejects mirror pushes containing
-  workflow-file changes ("refusing to allow a Personal Access Token …
-  without `workflow` scope"; the same trap froze `domains` at 114
-  commits behind as of 2026-10-25). Fix: regenerate the PAT with
-  repo+workflow scope, update the sops secret, redeploy. Commits that
-  do not touch `.github/workflows/` mirror fine.
+- **Mirror credential trap (RESOLVED 2026-11-11):** the sops
+  `github_token` sync PAT used to lack `workflow` scope, so GitHub
+  rejected mirror pushes containing workflow-file changes (the same
+  trap froze `domains` at 114 commits behind as of 2026-10-25).
+  EMPIRICALLY DEAD for this repo: commits touching
+  `.github/workflows/ci.yml` (the ABI gate steps) mirrored to GitHub
+  fine on 2026-11-11 (`scripts/mirror-lag.sh` → zero lag at a SHA that
+  includes them; `git show github/main:.github/workflows/ci.yml`
+  carries the ABI steps) — presumably the PAT was re-scoped owner-side.
+  If a mirror push ever fails with "refusing to allow a Personal
+  Access Token … without `workflow` scope" again, the fix is the old
+  one: regenerate the PAT with repo+workflow scope, update the sops
+  secret, redeploy.
 - Mirror lag check (same probe as `domains`):
   `git fetch origin && git fetch github && git rev-parse origin/main github/main` —
   equal SHAs mean the mirror is keeping up.
