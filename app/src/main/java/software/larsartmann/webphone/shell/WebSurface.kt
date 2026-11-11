@@ -16,6 +16,7 @@ import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
 import android.webkit.PermissionRequest
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.WebSettings
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
@@ -29,6 +30,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.ui.dp
@@ -159,6 +162,14 @@ private fun effectivePort(uri: Uri): Int =
  *   platform decision (never move signaling/audio back into the
  *   WebView) — the island's getUserMedia asks are refused up front
  *   instead of hanging until timeout.
+ * - **Passkeys opted IN** ([optInToPasskeys]): the stack's IdP (Pocket
+ *   ID) is passkey-ONLY — there is no password to fall back to — so a
+ *   WebView without WebAuthn support cannot EVER complete the OIDC
+ *   login (the "OAuth broken / fingerprint won't work" diagnosis,
+ *   2026-11-11). Support exists in the WebView provider since M131 but
+ *   is off unless the embedding app turns it on via androidx.webkit,
+ *   and even then the IdP's host must prove this app via Digital Asset
+ *   Links (see [optInToPasskeys] for the cross-repo dependency).
  * - **Dark-mode seam** (API 33+): the web app is dark-first and
  *   declares `color-scheme: dark light` with `prefers-color-scheme`
  *   blocks plus its own manual override — with algorithmic darkening
@@ -247,6 +258,7 @@ internal class WebSurface(
             if (Build.VERSION.SDK_INT >= 33) {
                 settings.isAlgorithmicDarkeningAllowed = true
             }
+            optInToPasskeys(settings)
             webViewClient = ShellWebViewClient()
             webChromeClient = ShellWebChromeClient()
             setDownloadListener { url, _, contentDisposition, mimeType, _ ->
@@ -257,6 +269,63 @@ internal class WebSurface(
             // (found by the first emulator smoke, 2026-10-24).
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, false)
         }
+
+    /**
+     * Turn on WebAuthn (passkeys) INSIDE the WebView — the seam that
+     * makes in-shell OIDC login POSSIBLE at all.
+     *
+     * WHY this exists: the stack's IdP (Pocket ID) only supports
+     * passwordless sign-in — the passkey button IS the login, unlocked
+     * by fingerprint/PIN. Android WebView historically shipped with
+     * WebAuthn support DISABLED (`WEB_AUTHENTICATION_SUPPORT_NONE`, the
+     * default), so the "Authenticate" button at the IdP did nothing:
+     * `navigator.credentials.get` never reached Credential Manager, the
+     * spinner died silently, and the user was locked out of an account
+     * that has no other door ("OAuth broken", 2026-11-11). The provider
+     * has supported WebAuthn since Chromium M131, but ONLY after the
+     * embedding app opts in here — an app-side choice, not a web one.
+     *
+     * WHICH level: FOR_APP, not FOR_BROWSER. FOR_BROWSER would let this
+     * WebView mint/assert passkeys for ANY relying party — a browser's
+     * power, and this shell is deliberately NOT a browser (same trust
+     * line as [navigationVerdict]). FOR_APP lets Credential Manager
+     * serve the ceremony only for RP hosts that PROVE this app via
+     * Digital Asset Links: `https://<rp>/.well-known/assetlinks.json`
+     * must list this package + the RELEASE cert fingerprint under the
+     * `delegate_permission/common.get_login_creds` relation. For the
+     * IdP that host is `auth.larsartmann.cloud` (Pocket ID's RP ID =
+     * its public URL host) — the stack does NOT serve it yet (404,
+     * verified 2026-11-11), so until the stack lands the statement the
+     * ceremony still fails at the RP check. That half is cross-repo
+     * (webphone/SystemNix — `scripts/assetlinks.sh` emits the relation;
+     * TODO_LIST tracks the row). The app-side prerequisite is DONE here.
+     *
+     * Guarded + swallowed on purpose: `isFeatureSupported` answers for
+     * the INSTALLED WebView provider (M131+ needed), and Robolectric has
+     * no provider at all — on a too-old provider the shell degrades to
+     * today's behavior (the login stays impossible) instead of
+     * crashing. The verdict is LOGGED so a device train can read the
+     * truth from logcat instead of guessing from a silent button.
+     */
+    private fun optInToPasskeys(settings: WebSettings) {
+        val supported =
+            runCatching { WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION) }
+                .getOrNull() == true
+        if (!supported) {
+            Log.i(TAG, "webauthn in webview: unsupported (WebView provider predates M131)")
+            return
+        }
+        runCatching {
+            WebSettingsCompat.setWebAuthenticationSupport(
+                settings,
+                WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP,
+            )
+            val readback = WebSettingsCompat.getWebAuthenticationSupport(settings)
+            Log.i(TAG, "webauthn in webview: FOR_APP enabled (provider readback=$readback)")
+        }.onFailure {
+            Log.w(TAG, "webauthn opt-in failed: ${it.message}")
+        }
+    }
 
     private fun buildOfflineOverlay(): LinearLayout =
         LinearLayout(activity).apply {

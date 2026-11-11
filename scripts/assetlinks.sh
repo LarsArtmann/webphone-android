@@ -2,7 +2,29 @@
 # Emit a serve-ready /.well-known/assetlinks.json for the webphone repo
 # (R04/N012): the fingerprint of the keystore THIS machine actually
 # signs the debug APK with, the package the manifest declares, and the
-# relation the intent filter needs.
+# relations the two consumers need.
+#
+# TWO relations, TWO serving duties (both in ONE file is fine — a
+# statement only applies on the host that serves it):
+#
+#   1. delegate_permission/common.handle_all_urls — App Links (R18).
+#      Serve on the stack origin (pbx.artmann.tech); flips autoVerify
+#      so implicit https deep links stop bouncing to Chrome.
+#
+#   2. delegate_permission/common.get_login_creds — WebAuthn/passkeys
+#      in the app's WebView (the 2026-11-11 "OAuth broken" fix, app
+#      half: WebSurface.optInToPasskeys). Credential Manager only lets
+#      the shell run a passkey ceremony for an RP host that serves
+#      THIS relation naming the app + cert fingerprint. The IdP host
+#      auth.larsartmann.cloud (Pocket ID; passkey-ONLY sign-in) MUST
+#      serve it or the in-shell login still dead-ends at the RP check
+#      (verified 404 there, 2026-11-11). Serve on auth.larsartmann.cloud
+#      AND pbx.artmann.tech (the island may mint web passkeys too).
+#
+# IMPORTANT: this emits the DEBUG keystore by default. The PHONE runs
+# the RELEASE-signed build — serve the statement generated with the
+# release keystore passed explicitly:
+#   scripts/assetlinks.sh ~/.config/webphone-android/release.keystore
 #
 # Usage:
 #   scripts/assetlinks.sh                     # auto-discover (see below)
@@ -106,6 +128,16 @@ cat <<EOF
 [
   {
     "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "$PACKAGE",
+      "sha256_cert_fingerprints": [
+        "$FINGERPRINT"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.get_login_creds"],
     "target": {
       "namespace": "android_app",
       "package_name": "$PACKAGE",

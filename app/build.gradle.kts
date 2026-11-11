@@ -156,6 +156,10 @@ dependencies {
     implementation(libs.coroutines)
     implementation(libs.webrtc)
     implementation(libs.firebase.messaging)
+    // androidx.webkit is the opt-in switch for WebAuthn INSIDE the
+    // WebView (WebViewFeature.WEB_AUTHENTICATION): without it the shell's
+    // login at the passkey-only IdP can never complete (see WebSurface).
+    implementation(libs.androidx.webkit)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.coroutines.test)
