@@ -6,8 +6,14 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -48,9 +54,10 @@
       in
       {
         # `nix fmt` (and BuildFlow's nix-fmt roundtrip, which re-evaluates
-        # a copy of this flake) needs an explicit formatter attribute —
-        # there is no fleet-wide default without one.
-        formatter = pkgs.nixfmt-rfc-style;
+        # a copy of this flake) needs an explicit formatter attribute.
+        # nixfmt-tree walks the tree without the deprecated directory
+        # argument and skips non-Nix files (flake.lock included).
+        formatter = pkgs.nixfmt-tree;
         devShells.default = pkgs.mkShell {
           packages = [
             pkgs.jdk21
@@ -70,5 +77,6 @@
           ANDROID_SDK_ROOT = "${emulatorSdk.androidsdk}/libexec/android-sdk";
           JAVA_HOME = pkgs.jdk21.home;
         };
-      });
+      }
+    );
 }

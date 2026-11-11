@@ -97,7 +97,7 @@ mechanically). The one-command form is
 `bash scripts/verify-gate.sh` — it refuses to start while another
 Gradle process is alive, then runs assemble + tests + ktlint + the
 KGP-parity check + the 16 KB
-zipalign + contrast + `dprint check` in order, each Gradle step
+zipalign + abi + contrast + `dprint check` in order, each Gradle step
 time-bounded so a wedged build fails loudly (it is the gate, wrapped;
 run its steps by hand only when debugging one of them). After any
 toolchain or dependency jump, add the emulator
@@ -106,6 +106,14 @@ exercises the wired install/launch path the hermetic JVM suite
 deliberately no longer touches. The contrast gate is one command away:
 `python3 scripts/contrast-check.py` (CI runs it; run it after ANY token
 change).
+
+The universal-APK contract is gated too: `python3 scripts/abi-check.py
+<apk>` (run by verify-gate.sh, release.sh, and CI on both artifacts)
+refuses any APK missing `arm64-v8a`, `armeabi-v7a`, `x86`, or `x86_64`
+native libs — a dependency swap or stray `abiFilters` shrinks `lib/`
+silently, and the loss would otherwise surface only as a crash on
+someone else's device class. There are NO per-ABI builds, and
+"amd64-v8a" is not a real ABI (amd64 IS x86_64, already covered).
 
 The two devShells split the SDK deliberately: the BUILD shell carries
 platform 37 + build-tools 36.0.0 (compileSdk 37), while the `.#emulator`
@@ -405,7 +413,8 @@ tracked in TODO_LIST.
   in this repo can make an update appear without both; a tag with no
   asset is invisible, and an APK with no release is unreachable. The
   file name is otherwise free — one universal APK (45 MB, all ABIs)
-  means no ABI filter is needed, and `webphone-android-<version>.apk`
+  means no ABI filter is needed (ABI completeness is GATED:
+  `scripts/abi-check.py`), and `webphone-android-<version>.apk`
   keeps the version visible in the asset list.
 - **version.txt is the version; versionCode is derived**: versionName is
   the file's content, versionCode is `major*10000 + minor*100 + patch`
