@@ -191,6 +191,17 @@ internal class WebSurface(
      *  (the IdP of an OIDC login). Null while the shell is on-origin. */
     private var authDetour: Uri? = null
 
+    /** Whether the CURRENT main-frame load ended in a transport
+    *  failure. This is what keeps the offline overlay honest: the
+    *  overlay dismisses on `onPageFinished` ONLY when the load that
+    *  just finished never failed — dropping it at load START (the
+    *  old rule) flashed Chromium's raw error page ("Webpage not
+    *  available") for the whole attempt window whenever the stack
+    *  was unreachable (emulator-proven 2026-11-11, airplane mode:
+    *  the overlay was up but the retry path still surfed the raw
+    *  `net::ERR_INTERNET_DISCONNECTED` page for seconds). */
+    private var mainFrameLoadFailed = false
+
     private val pickerLauncher =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val callback = pendingPicker
@@ -308,7 +319,7 @@ internal class WebSurface(
             )
         }
 
-    private inner class ShellWebViewClient : WebViewClient() {
+    internal inner class ShellWebViewClient : WebViewClient() {
         override fun shouldOverrideUrlLoading(
             view: WebView,
             request: WebResourceRequest,
@@ -324,7 +335,9 @@ internal class WebSurface(
             url: String,
             favicon: android.graphics.Bitmap?,
         ) {
-            hideOffline()
+            // A load START proves nothing about reachability — the
+            // overlay must NOT drop here (see [mainFrameLoadFailed]).
+            mainFrameLoadFailed = false
             // The belt (R01): a main-frame page START runs the same
             // bless/clear machine as the commit — idempotent (same
             // authority dedups), and it catches loads whose commit may
@@ -356,6 +369,11 @@ internal class WebSurface(
             // The login POST mints the cookie in-page; flush it to disk
             // immediately so even a foreground process kill cannot eat it.
             runCatching { CookieManager.getInstance().flush() }
+            // The single DISMISSAL seam: a load that finished without a
+            // transport failure clears the overlay. Chromium fires this
+            // callback for its own error pages too — the flag is what
+            // keeps a failed load from dismissing anything.
+            if (!mainFrameLoadFailed) hideOffline()
         }
 
         override fun onReceivedError(
@@ -460,7 +478,10 @@ internal class WebSurface(
     /** Follow a Settings origin change (idempotent per origin). */
     fun loadOriginIfChanged() {
         if (App.origin != loadedOrigin) {
-            hideOffline()
+            // Overlay stays up through the load (dismissal is
+            // success-gated); re-resolve the body so the text never
+            // names a stack the user just switched away from.
+            if (offlineVisible()) showOffline()
             authDetour = null
             webView.loadUrl(App.origin)
             loadedOrigin = App.origin
@@ -475,7 +496,7 @@ internal class WebSurface(
      *  origin-root state). */
     fun loadUri(uri: Uri) {
         if (navigationVerdict(uri, Uri.parse(App.origin)) !is NavigationVerdict.LoadInShell) return
-        hideOffline()
+        if (offlineVisible()) showOffline()
         authDetour = null
         webView.loadUrl(uri.toString())
         loadedOrigin = App.origin
@@ -486,7 +507,11 @@ internal class WebSurface(
         // detour dies HERE (an offline retry never commits, so the
         // commit-side hook alone would leave the blessing stale).
         authDetour = null
-        hideOffline()
+        // The overlay stays UP through the retry attempt (dismissal is
+        // success-gated now — see [mainFrameLoadFailed]); re-resolve
+        // the body for the same stale-origin reason as
+        // [loadOriginIfChanged].
+        if (offlineVisible()) showOffline()
         webView.loadUrl(App.origin)
     }
 
@@ -530,6 +555,7 @@ internal class WebSurface(
         container.addView(webView, 0)
         loadedOrigin = null
         authDetour = null
+        mainFrameLoadFailed = false
         loadOriginIfChanged()
     }
 
@@ -642,6 +668,7 @@ internal class WebSurface(
      *  routine, and HTTP error STATUSES are the origin's own pages. */
     internal fun onMainFrameTransportFailure(isMainFrame: Boolean) {
         if (!isMainFrame) return
+        mainFrameLoadFailed = true
         showOffline()
     }
 
