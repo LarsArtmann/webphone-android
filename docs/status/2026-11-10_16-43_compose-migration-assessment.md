@@ -125,7 +125,7 @@ vs a Compose reality — task 43).
 
 9. `WebPhoneTheme`: resolve `wp*` attrs once per configuration into a CompositionLocal palette (reuse `themeColor`); ZERO `Color(0xFF…)` constants.
 10. Compose equivalents of the Design.kt vocabulary: `iconButton` (48dp floor), `pillBackground`, `roundedBackground`, `circleBackground` — ripple inside the silhouette preserved.
-11. `pulse` → `rememberInfiniteTransition`, still gated on `animationsEnabled()`.
+~~11. `pulse` → `rememberInfiniteTransition`, still gated on `animationsEnabled()`.~~ Won't implement — Compose is NOT-now by ROADMAP decision; the assessment owns the migration notes
 12. Call screen stays fixed-dark; `Theme.WebPhone.Call` remains the activity theme.
 13. READ `scripts/contrast-check.py` before any token work — verify the inherited mechanics claim (defect 4).
 14. uiMode stays OUT of `configChanges`; verify day/night re-resolve on the emulator (Robolectric cannot catch it).
@@ -155,7 +155,7 @@ vs a Compose reality — task 43).
 29. Duration ticker as a `LaunchedEffect` loop (no onTick view mutation).
 30. Keypad card + toggle pads (`keypadCard`/`togglePad`/`keypadToggle`) as composables.
 31. Mic-permission flow re-checked under Compose.
-32. `scheduleEndAutoFinish` + `onNewIntent` re-collect semantics preserved.
+~~32. `scheduleEndAutoFinish` + `onNewIntent` re-collect semantics preserved.~~ Won't implement — same Compose NOT-now decision; the assessment preserves the semantics notes
 33. Telecom/BT callbacks keep funneling through `CallEngine` (single-writer rule untouched).
 34. Emulator train for post-time CallStyle behaviors (platform rejection is device territory).
 
@@ -173,7 +173,7 @@ vs a Compose reality — task 43).
 41. Reconcile AGP 9.4.1 (AGENTS.md) vs 9.5.1 (catalog): `git log` the toml, fix the AGENTS toolchain line — the d.2 split brain, still unreported in-repo.
 42. One version-drift sweep: diff every version AGENTS.md pins (Gradle 9.8.2, Kotlin 2.4.21, build-tools) against reality; single edit.
 43. If Compose is adopted: rewrite the AGENTS "UI is programmatic in v0.1" convention line + the design-token rule (tokens stay XML, theme resolves via CompositionLocal) — else the doc lies.
-44. FEATURES.md row for the UI framework when it changes.
+~~44. FEATURES.md row for the UI framework when it changes.~~ NOT-DO — condition never fired: the UI framework is unchanged (ROADMAP Compose decision); FEATURES rows already name the programmatic UI
 45. README honesty-contract markers update if the UI stack changes.
 46. Harvest this report's (f) into TODO_LIST.md via docs-health HARVEST — deferred to owner instruction (this session ends in WAIT).
 47. List `docs/status/` + `docs/reviews/` for prior episodes (the self-review series convention; never checked this session).

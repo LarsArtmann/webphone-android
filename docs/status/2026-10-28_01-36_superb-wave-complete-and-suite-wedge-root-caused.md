@@ -302,8 +302,8 @@ HARVEST must apply routing rigor — most are not bounded TODO_LIST rows).
     bound in a test). Low. S.
 36. DialpadActivity refactor: extract recents persistence into a small
     store class (the file is ~460 lines and growing). Low. M.
-37. Session watcher: revisit 10-min cookie-poll vs push-driven teardown
-    after R21's decision lands. Low. M.
+~~37. Session watcher: revisit 10-min cookie-poll vs push-driven teardown
+    after R21's decision lands. Low. M.~~ done — answered by the 2026-11-10 wake-lane rework: the 10-minute watcher stays, teardown only on a definitive 401/403 (tri-state probe; AGENTS.md wake-lane gotcha)
 38. Add the `Android 15+ mic-FGS background-start ban` answer-path check
     to the device-train checklist (CallService only ever starts from
     user interaction — prove it). Medium. S (checklist line).

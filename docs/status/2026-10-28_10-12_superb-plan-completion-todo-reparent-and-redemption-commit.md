@@ -140,7 +140,7 @@ hold the identical tree.
 
 **Agent-executable NOW (the plan's ~11h track; 1-28 = M021-M053):**
 
-1. M021 task-level fence on `testDebugUnitTest`
+~~1. M021 task-level fence on `testDebugUnitTest`~~ done — J05 wedge-proof fence shipped (timeout=20min + forkEvery=1), commit 97e6929 (docs/status/2026-10-28_22-31 row 2)
 2. M022 per-test timeouts (MockWebServer/WebSocket suites)
 3. M023 `forkEvery`/fresh-executor policy
 4. M024 shared test OkHttp dispatcher; migrate sockets
@@ -151,21 +151,21 @@ hold the identical tree.
 9. M029 parity prove-it (scratch bump → fail → revert)
 10. M030 CI `assembleRelease` in verify job
 11. M031 CI artifact release `mapping.txt`
-12. M037 fix the 2 wrong-actor verdicts (00-25 f40, 01-35 c7)
+~~12. M037 fix the 2 wrong-actor verdicts (00-25 f40, 01-35 c7)~~ done — J11 wrong-actor repair, three archived verdicts corrected, commit 9624909 (22-31 row 7)
 13. M038 full gradle gate over the post-sweep tree
 14. M039 dependabot audit post catalog-reshaping
-15. M040 `--warning-mode all` inventory
+~~15. M040 `--warning-mode all` inventory~~ done — J12-J15 warning-mode-all inventory: 5 warnings + 1 deprecation, 2 fixed + 4 kept, commit fec6741 (22-31 row 8)
 16. M041 kill the Gradle-10 deprecation source
 17. M042 version-catalog update plugin eval (adopt or non-goal)
 18. M043 build-cache eval (adopt or non-goal)
-19. M044 FcmReceiver `@Deprecated` 2-liner
+~~19. M044 FcmReceiver `@Deprecated` 2-liner~~ done — FCM-26 deprecation suppressions recorded with WHY (AGENTS keep-decisions; 22-31 row 8)
 20. M045 Telecom + `onBackPressed` keep-decisions recorded
-21. M046 dialpad "100" blank-vs-seeded
-22. M047 viewbinding-on-test-classpath check
-23. M048 ktlint/dprint ownership boundary check
+~~21. M046 dialpad "100" blank-vs-seeded~~ done — M046 dialpad self-extension hint removed; cold dialpad honestly blank, commit fec6741 (22-31 row 8)
+~~22. M047 viewbinding-on-test-classpath check~~ done — M047 viewbinding-on-test-classpath confirmed harmless (AGP runtime; 22-31 row 8)
+~~23. M048 ktlint/dprint ownership boundary check~~ done — M048 ktlint/dprint boundary re-verified (22-31 row 8)
 24. M049 cross-repo 302-note to webphone
 25. M050 detour CANCEL-leg emulator re-run (uiautomator)
-26. M051 ntfy ACTION_STOP stopped-flag pin
+~~26. M051 ntfy ACTION_STOP stopped-flag pin~~ done — J16 ntfy stop-leak pin, meta-proven both ways, commit dd2fb12 (22-31 row 9)
 27. M052 `wiringEnabled` pin + AttachGuardTest review
 28. M053 one Robolectric SDK policy
 

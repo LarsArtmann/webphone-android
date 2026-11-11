@@ -122,7 +122,7 @@ session's final chat answer and in AGENTS.md ("The wake lane has a UI verdict
 22. ntfy reconnect cap: after N failed hours, post a "lane down" notice instead of looping forever.
 23. FCM lane activation checklist (google-services.json drop-in) remains owner-gated — keep dormant.
 24. `DeviceIdentity` reinstall: new device_id + topic — confirm the old row gets pruned (ErrUnregistered only on ntfy-404 servers; likely lingers — harmless? decide).
-25. Watch the 8-devices-per-extension cap (storeAtCapacity) — second install of the app on a tablet could hit it; surface the 409 as REFUSED-with-reason.
+~~25. Watch the 8-devices-per-extension cap (storeAtCapacity) — second install of the app on a tablet could hit it; surface the 409 as REFUSED-with-reason.~~ done — the cap surfaces as WakeLane REFUSED_INVALID (422, not 409): the pill text names the device-list cap (strings.xml + WakeLane.kt; AGENTS push-register-capacity gotcha)
 
 **Diagnostics (P1):**
 26. `scripts/ring-diagnose.sh` (logcat filters + grants + pill state dump).

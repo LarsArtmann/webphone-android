@@ -156,7 +156,7 @@ self-inflicted flaws. Honesty over polish:
    open verification of this session's own work).
 2. Resolve "Optanium" with the owner (question g1); document the
    verdict either way.
-3. Update the FEATURES.md CI row to include the ABI gate.
+~~3. Update the FEATURES.md CI row to include the ABI gate.~~ done — the FEATURES.md CI row names the ABI gate (build + tests + 16K + abi + contrast + dprint)
 4. Check README's gate/honesty list; add the ABI gate if enumerated.
 5. Harvest this report's (f) into TODO_LIST.md (docs-health HARVEST).
 6. Owner: regenerate the GitHub sync PAT WITH `workflow` scope, update

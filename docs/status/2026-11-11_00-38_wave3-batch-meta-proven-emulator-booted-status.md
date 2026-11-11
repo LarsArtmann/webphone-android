@@ -206,7 +206,7 @@ exemption, adb verify.
 **Docs & keepability (wave 3/4):**
 23. F70: HARVEST the three 2026-11-10 reports + this plan into
 TODO_LIST rows.
-24. F71: ROADMAP rows from the plan's raw ideas.
+~~24. F71: ROADMAP rows from the plan's raw ideas.~~ done — the plan's raw-idea parking set landed as ROADMAP §6 (P1-P9 with triggers)
 25. F72: cross-repo ring-E2E standing row in TODO_LIST.
 26. F73: Actions-billing owner runbook (exact clicks).
 27. F74: mirror-PAT `workflow`-scope runbook + sops update steps.

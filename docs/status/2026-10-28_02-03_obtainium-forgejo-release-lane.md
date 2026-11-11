@@ -210,7 +210,7 @@ touched, +1314/−37 lines. No Kotlin source changed.
 38. Document the attachment `allowed_types` risk + the exact SystemNix knob (`attachment.MAX_SIZE`, and `.apk` in `ALLOWED_TYPES` if ever enforced).
 39. Add a `scripts/release.sh --notes` example to the README (custom notes path).
 40. Record in AGENTS that the forge is Forgejo 15.0.10 and that `--check` output is the fastest health probe.
-41. Add a status-report/README link so the next session finds this report.
+~~41. Add a status-report/README link so the next session finds this report.~~ done — docs/status/README.md live index links this report
 42. Consider making `version.txt` the tag source of truth in CI (`git describe --tags` sanity check).
 43. Evaluate whether `bump` should also open a CHANGELOG stub section automatically.
 44. Reconsider `versionCode` layout if `patch` ever reaches 100 (currently a hard error — good, but document the escalation).

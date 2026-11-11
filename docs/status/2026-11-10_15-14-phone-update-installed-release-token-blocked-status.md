@@ -127,7 +127,7 @@ this section.
 
 **Robustness/docs/process (P2):**
 21. Cross-repo ring-E2E row in THIS repo's TODO_LIST.
-22. HARVEST the 11:48 §f list into TODO_LIST/ROADMAP.
+~~22. HARVEST the 11:48 §f list into TODO_LIST/ROADMAP.~~ done — harvested by the later wake-lane sessions; TODO_LIST carries the survivors (ring-diagnose shipped; parking set in ROADMAP §6)
 23. GitHub Actions billing fix (owner) — CI has been red-since-never since 2026-11-08.
 24. Mirror PAT `workflow` scope (owner).
 25. Post-E2E-proof docs sweep: README honesty markers flip, FEATURES rows, AGENTS annotations.
