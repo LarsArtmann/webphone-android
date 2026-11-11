@@ -123,7 +123,9 @@ scripts/release.sh                # gate → sign → tag vX.Y.Z → push → pu
 content, versionCode is `major*10000 + minor*100 + patch` (so 0.2.0 is
 200). The gate the script enforces is `assembleRelease` +
 `testDebugUnitTest` + `ktlintCheck`, the 16 KB `zipalign -c -P 16 4`
-check on the **signed** APK, `apksigner verify`, and the WCAG contrast
+check on the **signed** APK, the ABI completeness gate
+(`scripts/abi-check.py` — one universal APK carrying the WebRTC native
+lib for every ABI), `apksigner verify`, and the WCAG contrast
 guard. The artifact lands on the release as
 `webphone-android-<version>.apk`; `scripts/forgejo-release.py` owns the
 forge API and is idempotent (a retry reuses the release and replaces the

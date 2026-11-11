@@ -12,6 +12,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [0.2.2] - 2026-11-11
 
+### Added
+
+- ABI completeness gate (`scripts/abi-check.py`): every build artifact —
+  debug, CI, and the signed release APK — must carry the WebRTC native
+  library for ALL FOUR ABIs (arm64-v8a, armeabi-v7a, x86, x86_64) or
+  the build reds before anything is published. The universal-APK
+  contract (one APK, every Android device) is now enforced, not
+  assumed — meta-proven in both directions, including the subtle case
+  where androidx keeps every `lib/` dir non-empty while the WebRTC
+  library itself is missing from an ABI
+
+### Upgrade notes
+
+- Coming from an `adb install`ed DEBUG build (0.2.0/0.2.1)? Android
+  will refuse this update on install: it is signed with the dedicated
+  release key, not the per-machine debug key. One-time fix — uninstall
+  the installed app, then install this release through Obtainium; the
+  stack origin defaults to the live stack, but the login must be done
+  once more. Every later release updates in place normally.
+- No app behavior changes since 0.2.1. This release exists to put a
+  strictly higher version on the update lane (a sideloaded 0.2.1 reads
+  as up-to-date forever) and to be the first cut entirely under the
+  ABI gate.
+
+### Changed
+
+- devShell formatter switched `nixfmt-rfc-style` → `nixfmt-tree`
+  (formatting surface only; no build input changed)
+
 ## [0.2.1] - 2026-11-11
 
 ### Added
