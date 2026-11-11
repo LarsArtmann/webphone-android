@@ -338,7 +338,6 @@ internal class WebSurface(
             // A load START proves nothing about reachability — the
             // overlay must NOT drop here (see [mainFrameLoadFailed]).
             mainFrameLoadFailed = false
-            hideOffline() // META-PROOF BREAK: the old load-start dismissal
             // The belt (R01): a main-frame page START runs the same
             // bless/clear machine as the commit — idempotent (same
             // authority dedups), and it catches loads whose commit may
