@@ -87,6 +87,30 @@ Raw ideas:
 - A quarterly toolchain-review cadence so the repo never again sits
   3 Kotlin minors behind (the 2026-10-28 jump closed a 2.1.0 → 2.4.21 gap)
 
+### 6. Wake-lane hardening (parking set)
+
+The ring-or-silence plan's remaining 20% (P1–P7, 2026-11-10; P8–P9
+shipped immediately as the request-building dedup and the
+`assertNotNull` fix) — parked here with their triggers, not scheduled.
+
+Raw ideas:
+
+- Keep-alive alarm as a belt-and-braces lane restart (a battery-cost
+  decision — trigger: rings go missing in Doze despite the lane)
+- Ring-arrival counter, private log only (no telemetry by decision —
+  trigger: a field "how often does this even fire" question)
+- CallStyle shade on the API 31-33 direct-dial path (trigger: a
+  platform train with a 31-33 device)
+- Localization of the wake/session strings (trigger: a second locale
+  wanting the shell)
+- WakeLane history ring-buffer, last 5 transitions feeding the
+  wake-off detail sheet (trigger: a diagnosed flap the pill alone
+  could not explain)
+- `NtfySubscriptionServiceTest` label rename to the new seam
+  vocabulary (trigger: the next test touched in that file anyway)
+- Pill tap-through to the dialer when wake is on (trigger: first
+  UX pass on the pill; needs the detail sheet shipped first)
+
 ## Decisions
 
 The made-in-head calls, written down (2026-10-25 sweep). Each carries its

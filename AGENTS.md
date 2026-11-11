@@ -12,8 +12,9 @@ silently replaces.
 **Status: v0.1 scaffold, first runtime smoke done.** Load-bearing code is
 implemented but untested against LIVE infrastructure (the README
 "honesty contract" section lists the markers). There IS now: a JVM test
-source set (97 tests: protocol unit tests + Robolectric smoke + the
-deep-link/auth-detour surface, ktlint-gated) and a CI workflow
+source set (134 tests: protocol unit tests + Robolectric smoke + the
+deep-link/auth-detour surface + the wake-lane/session-watch verdicts,
+ktlint-gated) and a CI workflow
 (mirrored to GitHub 2026-10-25; the `push`/`pull_request`/
 `workflow_dispatch` triggers DO create runs, but no job has ever
 executed — the account's Actions billing needs an owner fix, see
@@ -60,12 +61,12 @@ mirror. Both are **private**.
   equal SHAs mean the mirror is keeping up.
 - **NOTHING pushes ANY remote automatically** — the daemon commits locally
   only (verified 2026-10-25: both remotes lagged local while the mirror was
-  unattached). Until the push mirror attaches (next SystemNix deploy):
-  after every session `git push origin main && git push github main` by
-  hand, or both the canonical repo and the twin silently drift. The one
-  exception is deliberate: `scripts/release.sh` pushes `main` and the
-  release tag to `origin` as part of publishing (the tag must exist on the
-  forge for the release asset to mean anything).
+  unattached). UPDATE 2026-11-11: the push mirror IS ALIVE now (a plain
+  `git push origin main` landed on `github` with no hand push — phase 5
+  must have attached via a SystemNix deploy). Hand-push BOTH remotes
+  anyway until `scripts/mirror-lag.sh` proves zero lag; the one exception
+  is deliberate: `scripts/release.sh` pushes `main` and the release tag to
+  `origin` as part of publishing.
 
 ## Build and verify
 
@@ -372,7 +373,11 @@ tracked in TODO_LIST.
   per-sandbox classloader so it cannot leak) gates it off in
   `DeepLinkIntakeTest`/`MainActivityLaunchTest`; the ntfy reconnect
   threads are DAEMON so a leaked sleep can never hold the executor
-  JVM. The wired path is exercised on the emulator train only.
+  JVM. The same hermeticity rule now covers the watcher teardown:
+  `onSessionDead`'s server-row DELETE rides the injected
+  `CallLayer.deregisterPushDevice` seam (a Robolectric pin asserts the
+  CALL, never the HTTP). The wired path is exercised on the emulator
+  train only.
 - **A test run hangs silently for hours WITHOUT test logging**: the
   suite now prints per-test outcomes (`testOptions.unitTests.all {
   testLogging }`) — a stalled run is visible as a missing line.
@@ -446,8 +451,10 @@ tracked in TODO_LIST.
   state is nested classes (`CallMedia`, `Leg`).
 - Notification IDs: 1001 = incoming ring, 1002 = call FGS, 1003 = ntfy
   FGS, 1004 = dead-session notice (`CallLayer.onSessionDead`). Channels
-  `calls` (high, bypass-DND) and `push` (min) are created in
-  `App.onCreate`.
+  `calls` (high, bypass-DND), `push` (min), and `account` (default — a
+  "Ringing paused" notice wants sound-but-not-alarm weight, and the
+  tap-through into the shell needs a real content intent) are created
+  in `App.onCreate`.
 - UI is programmatic in v0.1 (`CallActivity` builds views in code);
   viewBinding is enabled. `minSdk = 31`, `targetSdk = 36`,
   `compileSdk = 37` (the 2026-10-28 toolchain jump moved compileSdk;
@@ -634,6 +641,48 @@ tracked in TODO_LIST.
   (the server's `ring_end` still clears it). Transient states
   (OFF/CONNECTING/OFFLINE) still ring — the bootstrap race needs the
   benefit of the doubt.
+- **Wake-lane refusal vocabulary (2026-11-11, meta-proven pins)**:
+  `WakeLane` is a 9-state ledger — UNKNOWN, STARTING, ARMED, four
+  NAMED refusals (`REFUSED_SEAM_OFF`/`REFUSED_INVALID`/`REFUSED_AUTH`/
+  `REFUSED_OTHER`), SESSION_DEAD, DISCONNECTED. Two rules keep it
+  honest: (1) a refusal STICKS until the next wire attempt —
+  `reportSocketState` skips ARMED/DISCONNECTED/STARTING while a
+  REFUSED_* verdict stands (the baseline let a socket-open overwrite
+  REFUSED with ARMED on a seam-off server: a lie); (2) a signed-OUT
+  shell stays UNKNOWN by design — `ensureWired` bails at
+  `resumeSession()` BEFORE the lane machinery starts, so "Not
+  connected" (not a refusal) is the honest no-session state. The
+  refusal→HTTP mapping: 404 seam-off, 422 invalid-or-device-list-full,
+  403 session/CSRF, transport → DISCONNECTED (never a refusal — a
+  tunnel flap is a link problem).
+- **Push-register capacity is 422, NOT 409** (verified in webphone
+  `internal/server/api`, 2026-11-11): the plan-era "cap-409" premise
+  was wrong — `storeAtCapacity` answers `StatusUnprocessableEntity`,
+  the SAME code as an invalid body/transport/token. The app cannot
+  distinguish "invalid" from "list full" by status; the pill text
+  carries both ("invalid… or its device list is full"). `/api/csrf`
+  needs NO session (apidocs) — a csrf-null verdict means LINK, not
+  auth.
+- **Offline overlay dismissal is SUCCESS-GATED (2026-11-11,
+  emulator-proven)**: the overlay hides ONLY on `onPageFinished` for
+  a load whose `mainFrameLoadFailed` flag is false. The old rule
+  (hide at `onPageStarted`) flashed Chromium's raw error page
+  ("Webpage not available", `net::ERR_INTERNET_DISCONNECTED`) for the
+  whole attempt window on every offline retry — airplane mode on the
+  emulator showed the overlay up AND the raw page under it, ready to
+  surf through on Retry. Never reintroduce a load-start dismissal;
+  `retry()`/`loadUri()`/`loadOriginIfChanged()` only re-resolve the
+  overlay body text now. Pins: `WebSurfaceTest` (meta-proven).
+- **The phone's WiFi DNS reality (found 2026-11-11)**: the Edge 60's
+  home WiFi (`UPC504705697`) DHCP-hands the ISP resolvers
+  (193.47.158.254/255, domain `play.pl`) — `*.home.lan` names do NOT
+  resolve on this segment, so Obtainium forge checks (and anything
+  else aiming at the LAN zone) only work on the dnsblockd LAN or
+  NetBird. Diagnose "forge unreachable on WiFi" here first. Same
+  recon: the phone's POST_NOTIFICATIONS was UNGRANTED and the battery
+  whitelist EMPTY until adb-granted 2026-11-11 (`pm grant` +
+  `dumpsys deviceidle whitelist +`) — re-check both on the next
+  "didn't ring" report (`scripts/ring-diagnose.sh` covers them).
 - **The island page draws under the status bar in the shell** (found
   by the W01 emulator pass, 2026-10-25): the web header renders under
   the transparent status bar (the clock overlaps it) and its top
