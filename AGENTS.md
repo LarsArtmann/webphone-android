@@ -450,7 +450,10 @@ tracked in TODO_LIST.
   assets are uploaded through `POST /releases/{id}/assets?name=…`
   (multipart field `attachment`) and have not been rejected on type, but
   if a future Forgejo starts enforcing the list, add `.apk` there. Tokens
-  need `write:repository` to publish and `read:repository` for the phone.
+  need `write:repository,read:user` to publish (the release script's
+  preflight calls `GET /api/v1/user` — write:repository alone 403s there,
+  proven 2026-11-11), and `read:repository` for the phone (OPTIONAL since
+  the repo went public: anonymous release reads work).
 
 ## Conventions
 
