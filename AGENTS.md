@@ -28,7 +28,11 @@ signed with a dedicated key and published to Forgejo releases
 (`scripts/release.sh`), which Obtainium on the phone reads — implemented
 and locally verified (signed APK, versionCode 200, forge API probed), but
 no release has been published yet and no phone has updated through it, so
-treat the device half as UNPROVEN until the first real cycle.
+treat the device half as UNPROVEN until the first real cycle. DEVICE DEPLOY
+(2026-11-11): 0.2.1 (vc201) was adb-installed in place over the debug-signed
+0.2.0 and verified (dumpsys + launch + liveness); the `forgejo-token` file
+exists but is 0-BYTE — `--doctor` reports `token: MISSING`, so the publish
+half of the lane is still blocked (TODO_LIST has the row).
 
 ## Repository & mirrors
 
@@ -692,6 +696,22 @@ tracked in TODO_LIST.
   whitelist EMPTY until adb-granted 2026-11-11 (`pm grant` +
   `dumpsys deviceidle whitelist +`) — re-check both on the next
   "didn't ring" report (`scripts/ring-diagnose.sh` covers them).
+- **Deploy-day phone recipe (proven 2026-11-11)**: (1) cross-check the
+  SIGNING CERT before any in-place update — pull the phone's `base.apk`,
+  `apksigner verify --print-certs`, compare against
+  `~/.config/.android/debug.keystore`; a mismatch means uninstall-first,
+  not `install -r`. (2) The phone is fingerprint-locked: `wm
+  dismiss-keyguard` is a no-op on a secure lock and that is correct —
+  NEVER try to bypass it. Visual UI verification needs an unlock window;
+  without one, prove liveness with `pidof` + a screencap of the lock
+  screen (the app's notification icons are visible there). (3) Wake the
+  screen (`input keyevent KEYCODE_WAKEUP`) BEFORE launching via monkey —
+  launching onto an off screen wastes the first screenshot. (4) A
+  sideload deploy SPENDS a version number: Obtainium compares the forge
+  release tag against the installed versionName, so publishing a version
+  equal to an already-sideloaded build reads as up-to-date on the phone
+  (0.2.1 is now spent this way — first-release numbering is a §g
+  question, report 2026-11-11_11-43).
 - **The island page draws under the status bar in the shell** (found
   by the W01 emulator pass, 2026-10-25): the web header renders under
   the transparent status bar (the clock overlaps it) and its top
@@ -706,7 +726,11 @@ tracked in TODO_LIST.
 - dprint formats Markdown tables BETWEEN edits — re-view any `.md`
   file before `edit`/`multiedit` or exact matches fail. Run
   `nix run nixpkgs#dprint -- fmt` on touched `.md`/`.yml` files before
-  finishing (CI runs `dprint check`).
+  finishing (CI runs `dprint check`). CAVEAT (found 2026-11-11): the
+  EXPLICIT-FILE form (`fmt CHANGELOG.md`) no-ops with "No files found
+  to format with the specified plugins" while the bare `fmt`/`check`
+  forms work — format with the bare form and verify with `-- check`,
+  never trust the explicit-file form's silence.
 - **Daemon-blob remedy (2026-10-28)**: when the auto-commit daemon
   sweeps a finished pre-push tree into a `chore: auto-commit` blob,
   amend it in place — but ONLY after verifying (a) `git show --name-only

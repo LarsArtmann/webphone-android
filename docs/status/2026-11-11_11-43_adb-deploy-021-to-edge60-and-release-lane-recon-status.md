@@ -228,7 +228,7 @@ Owner-gated (prepared, not executable by an agent):
     (Obtainium will call it up-to-date — the phone runs 0.2.1) vs bump to
     `v0.2.2` first so Obtainium offers a real first update (§g1).
 21. Cut the first release with `scripts/release.sh` (gate + sign + tag + push
-    + forge publish).
+    - forge publish).
 22. Obtainium one-time setup on the phone (add app, read-only token,
     "Allow insecure HTTP requests" ON).
 23. The one-time debug→release swap: uninstall (loses origin-default +
