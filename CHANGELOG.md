@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Passkey (WebAuthn) support inside the shell WebView
+  (`WebSurface.optInToPasskeys`, androidx.webkit 1.18.0): the WebView
+  provider has supported WebAuthn since M131 but ONLY after the
+  embedding app opts in — the shell now sets
+  `WEB_AUTHENTICATION_SUPPORT_FOR_APP` when the installed provider
+  supports the feature, with a logcat verdict line for device trains
+
+### Fixed
+
+- In-shell OIDC login could NEVER complete: the stack's IdP (Pocket ID)
+  is passkey-only — no password exists to fall back to — and the shell's
+  WebView shipped with WebAuthn support at its default OFF, so the IdP's
+  "Authenticate" button silently did nothing (the "OAuth broken /
+  fingerprint re-login doesn't work" report, 2026-11-11). Completing a
+  login also needs the STACK to serve the Digital Asset Links
+  `get_login_creds` statement on the IdP host (cross-repo; draft in
+  `docs/drafts/2026-11-11_stack-serve-assetlinks-on-idp-host-for-webview-passkeys.md`,
+  emitted by `scripts/assetlinks.sh` alongside the App Links relation)
+
 ## [0.2.1] - 2026-11-11
 
 ### Added
