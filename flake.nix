@@ -54,10 +54,18 @@
       in
       {
         # `nix fmt` (and BuildFlow's nix-fmt roundtrip, which re-evaluates
-        # a copy of this flake) needs an explicit formatter attribute.
-        # nixfmt-tree walks the tree without the deprecated directory
-        # argument and skips non-Nix files (flake.lock included).
-        formatter = pkgs.nixfmt-tree;
+        # a COPY of this flake in /tmp) needs an explicit formatter
+        # attribute. The ready-made wrappers misbehave there: bare
+        # `nixfmt` refuses argument-less invocation, its directory mode
+        # is deprecated, and `nixfmt-tree` pins its tree root to the
+        # store path it lives in. Walk the .nix files ourselves instead.
+        formatter = pkgs.writeShellScriptBin "nix-fmt" ''
+          if [ "$#" -gt 0 ]; then
+            exec ${pkgs.nixfmt}/bin/nixfmt "$@"
+          fi
+          exec find . -name '*.nix' -not -path './.git/*' -print0 |
+            xargs -0 -r ${pkgs.nixfmt}/bin/nixfmt
+        '';
         devShells.default = pkgs.mkShell {
           packages = [
             pkgs.jdk21
