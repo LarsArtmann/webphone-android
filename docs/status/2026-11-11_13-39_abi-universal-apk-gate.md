@@ -222,7 +222,38 @@ offending file was THIS report (a wrapped line and the italic close
 marker). Both were fixed and this verdict appended in the same edit;
 `dprint check` re-ran green after. No other step failed.
 
+## Release outcome: v0.2.2 published (appended same day)
+
+Acting on the follow-up directive ("make the next release superb"),
+v0.2.2 was cut through the full lane and verified from the outside:
+
+- Doctor green (token valid, key present, Forgejo 15.0.11, repo
+  public). Gate green on the release APK: assembleRelease, the 138
+  JVM tests, ktlint, the 16 KB zipalign check, the NEW ABI gate
+  (first release cut entirely under it), apksigner, contrast 50/50.
+- Notes tell the whole truth: ABI-gate entry, the one-time-uninstall
+  upgrade note for debug-sideloaded phones, and an explicit "no app
+  behavior changes since 0.2.1" line — 0.2.2 exists to put a strictly
+  higher version on the lane (a sideloaded 0.2.1 reads as up-to-date
+  forever) and to prove the gate.
+- Tag v0.2.2 pushed with main (f928fc7..538920c); release published
+  with the changelog-derived body plus the install block and the
+  signer fingerprint.
+- Outside-in proof: anonymous download byte-identical to the staged
+  artifact (sha256 38e2ab81…); badging shows versionCode 202 /
+  versionName 0.2.2; all four ABIs present; 16 KB aligned; signed by
+  the same release key as v0.2.1 (so in-place updates work after the
+  one-time uninstall).
+- Post-publish hygiene: version.txt bumped to 0.2.3, FEATURES/README
+  lane docs corrected (v0.2.1 published, 138 tests, CI gate list),
+  AGENTS.md update-lane status rewritten: publish half PROVEN, device
+  half still unproven.
+
+Open for the owner: the phone-side first install (uninstall the
+debug-signed 0.2.1, add the app in Obtainium, install 0.2.2) and the
+mirror-lag/github-workflow-scope fix.
+
 ---
 
-_Report written 2026-11-11 13:39; verify-gate verdict appended after
-the background run completed._
+_Report written 2026-11-11 13:39; verify-gate verdict and the v0.2.2
+release outcome appended the same day._

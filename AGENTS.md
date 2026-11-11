@@ -23,12 +23,17 @@ emulator smoke (install + launch) passed 2026-10-24. Deep links
 (tel/callto/sip/stack-https) and the in-shell OIDC auth detour SHIPPED
 2026-10-27 and are emulator-proven (the 404-echo probe + the live
 `begin`→Pocket-ID redirect); the live Pocket ID login itself still
-awaits credentials (R17). **Update lane (2026-10-28):** release APKs are
-signed with a dedicated key and published to Forgejo releases
-(`scripts/release.sh`), which Obtainium on the phone reads — implemented
-and locally verified (signed APK, versionCode 200, forge API probed), but
-no release has been published yet and no phone has updated through it, so
-treat the device half as UNPROVEN until the first real cycle. DEVICE DEPLOY
+awaits credentials (R17). **Update lane (2026-10-28; first releases
+2026-11-11):** release APKs are signed with a dedicated key and
+published to Forgejo releases (`scripts/release.sh`), which Obtainium
+on the phone reads. The publish half is PROVEN: v0.2.1 (13:00) and
+v0.2.2 are live, and v0.2.2 was verified from the OUTSIDE — anonymous
+download byte-identical to the staged artifact, full battery on the
+downloaded bytes (badging 202/0.2.2, 16 KB aligned, ABI gate green,
+release-key signature = the v0.2.1 key). The device half stays
+UNPROVEN: the phone runs a DEBUG-signed 0.2.1, so the first Obtainium
+install needs a ONE-TIME UNINSTALL (release key ≠ debug key — the
+0.2.2 release notes say so); after that, updates land in place. DEVICE DEPLOY
 (2026-11-11): 0.2.1 (vc201) was adb-installed in place over the debug-signed
 0.2.0 and verified (dumpsys + launch + liveness). REPO VISIBILITY (2026-11-11):
 both remotes are PUBLIC now (GitHub via `gh repo edit`; Forgejo via API PATCH
