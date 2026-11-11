@@ -795,6 +795,23 @@ tracked in TODO_LIST.
   to format with the specified plugins" while the bare `fmt`/`check`
   forms work — format with the bare form and verify with `-- check`,
   never trust the explicit-file form's silence.
+- **BuildFlow's nix-fmt roundtrip needs a `formatter` output (2026-11-11,
+  the first green run)**: buildflow copies the flake to a `/tmp` tree and
+  runs `nix fmt` there, which invokes the formatter BARE. Plain `nixfmt`
+  refuses bare invocation (empty-stdin parse error), its `.` directory
+  mode is deprecated, and `pkgs.nixfmt-tree` pins its tree root to the
+  STORE path it lives in (dies with "path . not inside the tree root
+  /nix/store" inside the roundtrip copy). The working shape is the
+  flake's own `writeShellScriptBin` that walks `*.nix` files via
+  `find` when handed no arguments. Keep flake.nix nixfmt-clean (the
+  formatter is wired into the gate now).
+- **Fleet policy gates went live via buildflow (2026-11-11)**: `cue-vet`
+  requires a top-level `permissions:` block in ci.yml (cue-policy
+  #CIWorkflow — CI never publishes, `contents: read` is the floor), and
+  `securitymd` requires a `SECURITY.md` with Supported Versions +
+  Security Practices sections plus a reporting link carrying a
+  response-time line. Both fail a repo from nothing; they are fleet
+  policy, not this repo's invention.
 - **Daemon-blob remedy (2026-10-28)**: when the auto-commit daemon
   sweeps a finished pre-push tree into a `chore: auto-commit` blob,
   amend it in place — but ONLY after verifying (a) `git show --name-only

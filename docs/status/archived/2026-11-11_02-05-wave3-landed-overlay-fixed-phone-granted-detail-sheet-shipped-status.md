@@ -1,4 +1,6 @@
 <!-- Status report: 2026-11-11 ~02:05 CET. Session: "just go fix it all
+
+> **Live remainder:** open §f items live in TODO_LIST.md and ROADMAP.md §6 (this draft is superseded by the 02-04 report; archived 2026-11-11).
      yourself" — the wave-3 batch landed, the overlay bug died, the
      phone got its grants, the docs corpus caught up, and the wake-off
      detail sheet shipped. -->

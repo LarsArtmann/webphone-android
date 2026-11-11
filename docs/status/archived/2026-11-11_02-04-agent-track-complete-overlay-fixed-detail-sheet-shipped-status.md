@@ -1,4 +1,6 @@
 <!-- Status report: 2026-11-11 02:04 CET. Session scope: "NOW GET SHIT
+
+> **Live remainder:** open §f items live in TODO_LIST.md (release-lane, phone, CI rows) and ROADMAP.md §6; harvested by the 11-43/12-57/13-01 chains (archived 2026-11-11).
      DONE" → "just go fix it all yourself". This report supersedes the
      02-05 draft written minutes earlier (which was pre-push and
      future-dated by one minute — see d1). It covers ONLY this

@@ -29,3 +29,19 @@ files** — the living backlog is `TODO_LIST.md`, decisions live in
 | 2026-10-28_00-25 toolchain research (R28)              | ANNOTATED → ARCHIVED | Executed by R29 (01-33) — all 12 c-items + 50 f-items verified done, parked rows carried in TODO/ROADMAP                         |
 | 2026-10-28_01-33 toolchain jump landed (R29)           | SKIP → ARCHIVED      | Closure report with zero numbered open items; residuals self-routed to TODO rows                                                 |
 | 2026-10-28_01-35 post-jump status (R30)                | ANNOTATED → ARCHIVED | 50 f-items + b/c/e resolved; README audit + KGP-parity + wedge-proofing harvested into TODO this sweep                           |
+
+## Archive manifest (2026-11-11 buildflow-gate sweep)
+
+Cadence-driven (21 unarchived > threshold 15); audit-all struck to zero
+first, then check-rows --strict + bare-rows gated clean BEFORE each git
+mv. Open routed §f items carry the `> **Live remainder:**` banner.
+
+| Report                                                    | Classification        | Deciding reason                                                                                                                                                               |
+| --------------------------------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-28_01-36 SUPERB wave complete + wedge root-caused | ANNOTATED → ARCHIVED  | audit-all straggler #37 struck (watcher answered by the wake-lane rework); wrap artifact reflowed; rest routed (TODO/ROADMAP)                                                 |
+| 2026-11-11_00-38 wave-3 batch meta-proven                 | ANNOTATED → ARCHIVED  | F71 struck (ROADMAP §6 = the plan's raw-idea parking set); landed state carried by 02-04                                                                                      |
+| 2026-11-11_02-04 agent track complete                     | ROUTED → ARCHIVED     | Zero bare rows; open §f items harvested by the 11-43/12-57/13-01 chains (banner)                                                                                              |
+| 2026-11-11_02-05 wave-3 landed (draft)                    | SUPERSEDED → ARCHIVED | Draft superseded by 02-04 minutes later (its own header says so); banner points at the owners                                                                                 |
+| 2026-11-11_11-43 adb deploy 0.2.1 + release recon         | ROUTED → ARCHIVED     | Zero bare rows; §f tail harvested into TODO (device-deploy row) by 13-01 (banner)                                                                                             |
+| 2026-11-11_13-01 both remotes public                      | ROUTED → ARCHIVED     | Freshness-verified green (§f harvested into TODO/ROADMAP) at archive time (banner)                                                                                            |
+| 2026-10-28_02-49 docs-health mega-sweep                   | ROUTED → ARCHIVED     | §b table ledger-marked: 4 rows routed to fresh TODO rows (evidence-path sweep, AGENTS slimming, sibling archives, verify-gate), 1 moot; cadence headroom for the 14-56 report |

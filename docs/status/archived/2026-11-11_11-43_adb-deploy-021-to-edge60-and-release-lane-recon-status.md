@@ -1,4 +1,6 @@
 <!-- Status report 2026-11-11 11-43 — point-in-time snapshot. Scope-verified
+
+> **Live remainder:** open §f items live in TODO_LIST.md (device-deploy codify row, release-lane rows) and ROADMAP.md; the 13-01 report harvested the tail (archived 2026-11-11).
      against this session's own command output; carried items are cited, not
      re-researched. -->
 

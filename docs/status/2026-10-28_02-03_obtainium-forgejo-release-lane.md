@@ -210,16 +210,16 @@ touched, +1314/−37 lines. No Kotlin source changed.
 38. Document the attachment `allowed_types` risk + the exact SystemNix knob (`attachment.MAX_SIZE`, and `.apk` in `ALLOWED_TYPES` if ever enforced).
 39. Add a `scripts/release.sh --notes` example to the README (custom notes path).
 40. Record in AGENTS that the forge is Forgejo 15.0.10 and that `--check` output is the fastest health probe.
-~~41. Add a status-report/README link so the next session finds this report.~~ done — docs/status/README.md live index links this report
-42. Consider making `version.txt` the tag source of truth in CI (`git describe --tags` sanity check).
-43. Evaluate whether `bump` should also open a CHANGELOG stub section automatically.
-44. Reconsider `versionCode` layout if `patch` ever reaches 100 (currently a hard error — good, but document the escalation).
-45. Add a second signature check: verify the APK's signer equals `release.properties`' expected cert (keystore vs artifact, the AGENTS lesson).
-46. Keep `work/dryrun*.log` out of the repo tree or delete after a run.
-47. Add `shellcheck` to the devShell so `release.sh` gets a real linter (not just `bash -n`).
-48. Add a `docs/` note on how Obtainium resolves versions (tag vs title) next to the setup steps.
-49. Reconcile the two "status" narratives: README's "v0.1 scaffold" header vs the 0.2.0 version now in `version.txt`.
-50. Sweep the remaining `app-release-unsigned.apk` references (`README.md:61`, `AGENTS.md:220`, `AGENTS.md:335`) so every mention states the conditional correctly.
+    ~~41. Add a status-report/README link so the next session finds this report.~~ done — docs/status/README.md live index links this report
+41. Consider making `version.txt` the tag source of truth in CI (`git describe --tags` sanity check).
+42. Evaluate whether `bump` should also open a CHANGELOG stub section automatically.
+43. Reconsider `versionCode` layout if `patch` ever reaches 100 (currently a hard error — good, but document the escalation).
+44. Add a second signature check: verify the APK's signer equals `release.properties`' expected cert (keystore vs artifact, the AGENTS lesson).
+45. Keep `work/dryrun*.log` out of the repo tree or delete after a run.
+46. Add `shellcheck` to the devShell so `release.sh` gets a real linter (not just `bash -n`).
+47. Add a `docs/` note on how Obtainium resolves versions (tag vs title) next to the setup steps.
+48. Reconcile the two "status" narratives: README's "v0.1 scaffold" header vs the 0.2.0 version now in `version.txt`.
+49. Sweep the remaining `app-release-unsigned.apk` references (`README.md:61`, `AGENTS.md:220`, `AGENTS.md:335`) so every mention states the conditional correctly.
 
 ---
 

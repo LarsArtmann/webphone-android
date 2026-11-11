@@ -89,6 +89,11 @@ Raw ideas:
 - Forgejo-side CI: a `.forgejo/workflows` pipeline on the primary remote
   (the gogenfilter pilot pattern) — an execution home that does not
   depend on GitHub Actions billing
+- Standing bare-row backlog sweep over the live status reports (~400
+  rows at the 2026-11-11 measure), keeping the status-README
+  archive-section count in sync as part of the ritual
+- A `security.txt` once a real contact address exists (SECURITY.md is
+  GitHub-advisory-only today)
 
 ### 6. Wake-lane hardening (parking set)
 

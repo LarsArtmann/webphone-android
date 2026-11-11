@@ -156,40 +156,40 @@ self-inflicted flaws. Honesty over polish:
    open verification of this session's own work).
 2. Resolve "Optanium" with the owner (question g1); document the
    verdict either way.
-~~3. Update the FEATURES.md CI row to include the ABI gate.~~ done — the FEATURES.md CI row names the ABI gate (build + tests + 16K + abi + contrast + dprint)
-4. Check README's gate/honesty list; add the ABI gate if enumerated.
-5. Harvest this report's (f) into TODO_LIST.md (docs-health HARVEST).
-6. Owner: regenerate the GitHub sync PAT WITH `workflow` scope, update
+   ~~3. Update the FEATURES.md CI row to include the ABI gate.~~ done — the FEATURES.md CI row names the ABI gate (build + tests + 16K + abi + contrast + dprint)
+3. Check README's gate/honesty list; add the ABI gate if enumerated.
+4. Harvest this report's (f) into TODO_LIST.md (docs-health HARVEST).
+5. Owner: regenerate the GitHub sync PAT WITH `workflow` scope, update
    the sops secret, redeploy SystemNix (unblocks ci.yml mirroring —
    pre-existing trap, now bite-ier since CI carries the ABI gate).
-7. Hand-push `main` to both remotes so Forgejo carries the gate
+6. Hand-push `main` to both remotes so Forgejo carries the gate
    (user approval needed — never push unasked).
-8. Run `scripts/mirror-lag.sh` after that push; record zero-lag proof.
-9. Add an abi-check `--self-test` (embedded fixtures) and the same
+7. Run `scripts/mirror-lag.sh` after that push; record zero-lag proof.
+8. Add an abi-check `--self-test` (embedded fixtures) and the same
    for contrast-check.py; wire into the JVM suite or the gate itself.
-10. x86_64 runtime proof: boot an x86_64 AVD from the `.#emulator`
-    shell, install the APK, launch (turns "the slice is present" into
-    "the slice works").
-11. Move/duplicate the ABI gate onto the STAGED release asset in
+9. x86_64 runtime proof: boot an x86_64 AVD from the `.#emulator`
+   shell, install the APK, launch (turns "the slice is present" into
+   "the slice works").
+10. Move/duplicate the ABI gate onto the STAGED release asset in
     `release.sh` (the exact bytes Obtainium downloads).
-12. Re-measure the universal APK size; correct the "45 MB" claim in
+11. Re-measure the universal APK size; correct the "45 MB" claim in
     AGENTS.md if drifted (quoted, not verified, this session).
-13. After the billing fix: watch the first real CI run confirm both
+12. After the billing fix: watch the first real CI run confirm both
     ABI steps execute green.
-14. Decision item: Forgejo-native runner as CI fallback while GitHub
+13. Decision item: Forgejo-native runner as CI fallback while GitHub
     billing stays broken (the workflow file already lives on the
     mirror; a runner would make these gates real TODAY).
-15. Consider a Gradle-side belt (e.g. a task asserting the packaged
+14. Consider a Gradle-side belt (e.g. a task asserting the packaged
     jni list matches REQUIRED_ABIS at build time) so the failure
     surfaces in `assembleDebug` itself, not only in the post-build
     gate.
-16. Add the ABI-gate fact to the next release checklist stub
+15. Add the ABI-gate fact to the next release checklist stub
     (CHANGELOG 0.2.x) so the first published cycle exercises it live.
-17. Sweep for other `lib/`-shaped risks: R8 keep rules cover
+16. Sweep for other `lib/`-shaped risks: R8 keep rules cover
     `org.webrtc.**` classes, nothing pins the .so NAMES — abi-check
     now does for presence; alignment is zipalign's job; nothing
     asserts the .so is LOADABLE per ABI (item 10 covers this best).
-18. If a real x86 device ever enters the fleet, add it to the device
+17. If a real x86 device ever enters the fleet, add it to the device
     train rotation (today: one phone + arm emulator).
 
 ## g) QUESTIONS I CANNOT ANSWER MYSELF

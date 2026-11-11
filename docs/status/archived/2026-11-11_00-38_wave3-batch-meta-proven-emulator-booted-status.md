@@ -1,5 +1,7 @@
 # Status: wave-3 batch shipped + meta-proven; emulator mid-boot; nothing committed yet
 
+> **Live remainder:** open §f items live in TODO_LIST.md and ROADMAP.md §6 (wave-3 tail; the 02-04 report carries the landed state; archived 2026-11-11).
+
 **When:** 2026-11-10, session running past midnight → report written 2026-11-11 00:38 CET
 **Scope:** the user approved the SUPERB plan execution (`docs/planning/2026-11-10_16-06_SUPERB-ring-or-silence-parto.md`) — "NOW GET SHIT DONE, the WHOLE TODO LIST". This report covers the agent-executable slice executed so far and is honest about what is mid-flight, not started, or blocked on owner/user inputs.
 

@@ -1,5 +1,7 @@
 # Status Report — 2026-11-11 13:01 — Both Remotes Public + Release-Lane Token Unblocked
 
+> **Live remainder:** open §f items live in TODO_LIST.md and ROADMAP.md (freshness-verified green at archive time; archived 2026-11-11).
+
 **Session scope:** one task — "make this repo public" — executed end-to-end on a
 two-remote repo (Forgejo canonical `origin`, GitHub mirror `github`), plus the
 credential and documentation work the flip dragged in. All observations below are

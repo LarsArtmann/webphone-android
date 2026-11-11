@@ -59,7 +59,8 @@ def make_opener(token: str, insecure: bool) -> urllib.request.OpenerDirector:
             file=sys.stderr,
         )
     opener = urllib.request.build_opener(urllib.request.HTTPSHandler(context=context))
-    opener.addheaders = [
+    # consumed inside urllib on every request (vulture false positive)
+    opener.addheaders = [  # noqa: V101
         ("Authorization", f"token {token}"),
         ("Accept", "application/json"),
         ("User-Agent", "webphone-android-release"),

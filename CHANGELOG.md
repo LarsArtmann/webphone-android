@@ -25,8 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Upgrade notes
 
-- Coming from an `adb install`ed DEBUG build (0.2.0/0.2.1)? Android
-  will refuse this update on install: it is signed with the dedicated
+- Coming from a DEBUG build (0.2.0/0.2.1) installed via `adb install`?
+  Android will refuse this update on install: it is signed with the dedicated
   release key, not the per-machine debug key. One-time fix — uninstall
   the installed app, then install this release through Obtainium; the
   stack origin defaults to the live stack, but the login must be done

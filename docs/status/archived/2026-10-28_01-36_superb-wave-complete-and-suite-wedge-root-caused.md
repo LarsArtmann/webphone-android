@@ -1,5 +1,7 @@
 # Status — SUPERB Wave Complete, Suite-Wedge Root-Caused, Toolchain Jumped Mid-Session (2026-10-28 01:36)
 
+> **Live remainder:** open §f items live in TODO_LIST.md (live-stack/device-train/CI rows, R13-R16) and ROADMAP.md; the 2026-10-28 22-31 + 23-30 harvests dispositioned the list (archived 2026-11-11).
+
 > **Session scope:** continuation of the 4th-wave session (R03→R11 per
 > `docs/planning/2026-10-27_15-17_SUPERB-detour-hardening-and-train-unblocks.md`).
 > This slice: the blocked final gate → root-causing the hours-long suite
@@ -274,8 +276,8 @@ HARVEST must apply routing rigor — most are not bounded TODO_LIST rows).
 26. targetSdk 36→37 behavior-change audit (new debt from the toolchain
     jump; needs the device train first). Medium. L.
 27. Re-run the full emulator train (`emulator-train.sh`) on the post-jump
-    tree — boot + install + launch + screenshot proof on AGP 9/compileSdk
-    37. High. M.
+    tree — boot + install + launch + screenshot proof on
+    AGP 9/compileSdk 37. High. M.
 28. Update the AGENTS.md verification gate to include `ktlintCheck` in
     the one-command gate line (the gate is now tests + assemble +
     zipalign + ktlint + dprint — say so in one place). Medium. S.
@@ -302,45 +304,45 @@ HARVEST must apply routing rigor — most are not bounded TODO_LIST rows).
     bound in a test). Low. S.
 36. DialpadActivity refactor: extract recents persistence into a small
     store class (the file is ~460 lines and growing). Low. M.
-~~37. Session watcher: revisit 10-min cookie-poll vs push-driven teardown
+    ~~37. Session watcher: revisit 10-min cookie-poll vs push-driven teardown
     after R21's decision lands. Low. M.~~ done — answered by the 2026-11-10 wake-lane rework: the 10-minute watcher stays, teardown only on a definitive 401/403 (tri-state probe; AGENTS.md wake-lane gotcha)
-38. Add the `Android 15+ mic-FGS background-start ban` answer-path check
+37. Add the `Android 15+ mic-FGS background-start ban` answer-path check
     to the device-train checklist (CallService only ever starts from
     user interaction — prove it). Medium. S (checklist line).
-39. Pin the Robolectric `@Config(sdk=[34])` rationale in AGENTS.md (why
+38. Pin the Robolectric `@Config(sdk=[34])` rationale in AGENTS.md (why
     34 and not compileSdk-matching 37 after the jump — the answer may
     be "shadow coverage", but it should be written down). Low. S.
-40. Verify `assembleRelease` + R8 on the post-jump toolchain (the
+39. Verify `assembleRelease` + R8 on the post-jump toolchain (the
     release lane was green pre-jump; AGP 9 changed minification
     defaults). Medium. M.
-41. Contrast gate: run `contrast-check.py` on the current tree (it is a
+40. Contrast gate: run `contrast-check.py` on the current tree (it is a
     CI step that has also never run remotely; local run proves the
     tokens post-reformat). Medium. S.
-42. Confirm Dependabot's new-toolchain reality (Gradle 9.8.2 wrapper
+41. Confirm Dependabot's new-toolchain reality (Gradle 9.8.2 wrapper
     updates, AGP 9.4.1, Kotlin 2.4.21 entries all resolve) after the
     jump. Low. S.
-43. Cross-check `libs.versions.toml` vs the root buildscript Kotlin pin
+42. Cross-check `libs.versions.toml` vs the root buildscript Kotlin pin
     equality rule the jump introduced (documented in af0084f — a drift
     here breaks the build opaquely; a catalog-check task could enforce
     it). Medium. S.
-44. Write the session-4 retrospective errata into the 15-17 plan (the
+43. Write the session-4 retrospective errata into the 15-17 plan (the
     premise-bust + the two-wedge story) so the plan is self-contained
     for future readers. Low. S.
-45. Prune `/tmp` evidence artifacts (gate logs, jstacks, screenshots)
+44. Prune `/tmp` evidence artifacts (gate logs, jstacks, screenshots)
     into `docs/status/attachments/` or delete — they are the only
     surviving copies of the wedge proof. Low. S.
-46. Emulator: decide whether `crush-daily` sessions may boot the AVD
+45. Emulator: decide whether `crush-daily` sessions may boot the AVD
     (two adb trees, port 5037 contention — the AGENTS.md gotcha) and
     encode the answer in the emulator scripts' pre-flight. Low. S.
-47. Add a `.gitignore`/docs note for `/tmp`-independent evidence when
+46. Add a `.gitignore`/docs note for `/tmp`-independent evidence when
     trains matter (screenshots belong in the repo, not `/tmp`).
     Low. S.
-48. README: the 94-test + ktlint + toolchain facts belong in the build
+47. README: the 94-test + ktlint + toolchain facts belong in the build
     section once the post-jump gate closes (§f-1). Low. S.
-49. ROADMAP: record the "scheduled sessions may refactor under you"
+48. ROADMAP: record the "scheduled sessions may refactor under you"
     reality — the multi-agent workflow is a permanent fact of this
     repo, and its risks (§d3) deserve a named mitigation. Low. S.
-50. Close the loop: after §f-1's gate is green, flip TODO_LIST's Ready
+49. Close the loop: after §f-1's gate is green, flip TODO_LIST's Ready
     section from empty to the harvested top-10 of this list. Medium. S.
 
 ## g) Three questions I cannot answer myself
