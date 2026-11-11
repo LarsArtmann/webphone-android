@@ -109,10 +109,12 @@ change).
 
 The universal-APK contract is gated too: `python3 scripts/abi-check.py
 <apk>` (run by verify-gate.sh, release.sh, and CI on both artifacts)
-refuses any APK missing `arm64-v8a`, `armeabi-v7a`, `x86`, or `x86_64`
-native libs — a dependency swap or stray `abiFilters` shrinks `lib/`
-silently, and the loss would otherwise surface only as a crash on
-someone else's device class. There are NO per-ABI builds, and
+refuses any APK where `libjingle_peerconnection_so.so` (the WebRTC JNI
+bridge — the load-bearing lib) is missing from `arm64-v8a`,
+`armeabi-v7a`, `x86`, or `x86_64` — a dependency swap or stray
+`abiFilters` shrinks `lib/` silently (androidx libs alone would keep
+the dirs non-empty), and the loss would otherwise surface only as a
+crash on someone else's device class. There are NO per-ABI builds, and
 "amd64-v8a" is not a real ABI (amd64 IS x86_64, already covered).
 
 The two devShells split the SDK deliberately: the BUILD shell carries

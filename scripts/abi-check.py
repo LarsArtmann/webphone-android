@@ -10,8 +10,16 @@ R8/packaging regression would silently shrink that set, and the loss
 only surfaces as a crash on SOMEONE ELSE'S device (an x86_64
 Chromebook installing an arm-only APK gets an unusable app, not a
 build error). This gate turns that into a red build at the exact
-artifact that ships: it opens the APK, lists the lib/<abi>/ dirs that
-actually made it in, and refuses anything short of the full set.
+artifact that ships.
+
+"Any .so under lib/<abi>/" is NOT a sufficient assertion: androidx
+datastore ships libdatastore_shared_counter.so for every ABI, so a
+webrtc dependency that dropped one ABI would keep the directory
+non-empty while the app crashes on that device class at first WebRTC
+use. The gate therefore demands the LOAD-BEARING lib — the WebRTC JNI
+bridge — in every required ABI. If the upstream lib name ever changes,
+this gate reds with that fact in the message; that is the intended
+behavior, update LOAD_BEARING_LIB in the same change.
 
 Run by verify-gate.sh (debug APK), release.sh (signed APK), and CI
 (both artifacts). Stdlib only — same constraint as contrast-check.py.
@@ -25,6 +33,9 @@ import zipfile
 
 REQUIRED_ABIS = ("arm64-v8a", "armeabi-v7a", "x86", "x86_64")
 
+# The one native lib without which the app cannot place a call.
+LOAD_BEARING_LIB = "libjingle_peerconnection_so.so"
+
 
 def main() -> int:
     if len(sys.argv) != 2:
@@ -33,24 +44,22 @@ def main() -> int:
 
     apk_path = sys.argv[1]
     with zipfile.ZipFile(apk_path) as apk:
-        present = {
-            entry.split("/")[1]
-            for entry in apk.namelist()
-            if entry.startswith("lib/") and entry.count("/") >= 2
-        }
+        entries = set(apk.namelist())
 
+    present = {
+        abi for abi in REQUIRED_ABIS if f"lib/{abi}/{LOAD_BEARING_LIB}" in entries
+    }
     missing = [abi for abi in REQUIRED_ABIS if abi not in present]
     if missing:
         print(
-            f"ABI GATE RED: {apk_path} is missing native libs for "
-            f"{', '.join(missing)} (found only: {', '.join(sorted(present)) or 'none'}). "
-            "The APK must stay universal — check the webrtc dependency "
-            "and any abiFilters/packaging changes.",
+            f"ABI GATE RED: {apk_path} is missing {LOAD_BEARING_LIB} for "
+            f"{', '.join(missing)}. The APK must stay universal — check the "
+            "stream-webrtc dependency and any abiFilters/packaging changes.",
             file=sys.stderr,
         )
         return 1
 
-    print(f"ABI gate green: {', '.join(REQUIRED_ABIS)} all present in {apk_path}")
+    print(f"ABI gate green: {LOAD_BEARING_LIB} present for {', '.join(REQUIRED_ABIS)} in {apk_path}")
     return 0
 
 
