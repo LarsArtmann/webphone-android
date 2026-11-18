@@ -1,5 +1,10 @@
 created_at: 2026-10-25T04:48:13.06335724Z
-updated_at: 2026-11-01T05:09:41.335328665Z
+updated_at: 2026-11-18T11:19:39.121024934Z
 tags:
-  - app
+    - app
+    - business
+    - android
+    - telephony
 importance: 63
+domain: communication
+subdomain: telephony
