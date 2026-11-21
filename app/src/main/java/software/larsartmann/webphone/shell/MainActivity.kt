@@ -17,6 +17,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,6 +36,7 @@ import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallActivity
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.call.DialpadActivity
+import software.larsartmann.webphone.push.NtfySubscriptionService
 import software.larsartmann.webphone.push.WakeLane
 import software.larsartmann.webphone.push.WakeLaneState
 import software.larsartmann.webphone.ui.circleBackground
@@ -137,6 +139,23 @@ internal fun wakeLastCheckedLine(
         )
     }
 
+/** The line-switch verdict's toast sentence (file-level so the pin
+ *  builds it without an activity): SUCCESS names the line it landed
+ *  on; every refusal says WHICH failure it was — a bare "failed"
+ *  collapses four different futures into one silence. */
+internal fun switchToastText(
+    context: Context,
+    verdict: SessionApi.SwitchVerdict,
+    label: String,
+): String =
+    when (verdict) {
+        SessionApi.SwitchVerdict.SWITCHED -> context.getString(R.string.switch_success, label)
+        SessionApi.SwitchVerdict.NOT_MAPPED -> context.getString(R.string.switch_not_mapped)
+        SessionApi.SwitchVerdict.SEAM_OFF -> context.getString(R.string.switch_seam_off)
+        SessionApi.SwitchVerdict.NETWORK -> context.getString(R.string.switch_network)
+        SessionApi.SwitchVerdict.OTHER -> context.getString(R.string.switch_other)
+    }
+
 /**
  * The shell: the stack origin's own pages render in the WebView (the
  * island login mints the session cookie; Messages/Fax/Voicemail/
@@ -161,6 +180,7 @@ class MainActivity : AppCompatActivity() {
     internal lateinit var wakeDetailTitle: TextView
     internal lateinit var wakeDetailBodyText: TextView
     internal lateinit var wakeDetailLastChecked: TextView
+    internal lateinit var wakeDetailLines: LinearLayout
     internal lateinit var wakeDetailRetry: AppCompatButton
     private var linePulse: ValueAnimator? = null
     private var requestedBatteryExemption = false
@@ -492,6 +512,12 @@ class MainActivity : AppCompatActivity() {
                     styleText(12f, themeColor(R.attr.wpOnSurfaceMuted))
                     setPadding(0, dp(12), 0, 0)
                 }
+            wakeDetailLines =
+                LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(0, dp(16), 0, 0)
+                    visibility = View.GONE
+                }
             wakeDetailRetry =
                 AppCompatButton(this@MainActivity).apply {
                     background = pillBackground(themeColor(R.attr.wpAccent))
@@ -525,6 +551,13 @@ class MainActivity : AppCompatActivity() {
             )
             addView(wakeDetailLastChecked)
             addView(
+                wakeDetailLines,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+            addView(
                 wakeDetailRetry,
                 LinearLayout
                     .LayoutParams(
@@ -549,13 +582,118 @@ class MainActivity : AppCompatActivity() {
         }
 
     /** Fill the sheet from the LIVE state and show it. ARMED hides the
-     *  Retry button: re-wiring a working lane is not a user task. */
-    internal fun showWakeDetail() {
+     *  Retry button: re-wiring a working lane is not a user task. The
+     *  owned-lines picker renders from [CallLayer.lastIdentity] (the
+     *  same object the SIP engine registered with) — injectable so
+     *  the pin drives the rendering without a wire. */
+    internal fun showWakeDetail(identity: SessionApi.SessionIdentity? = CallLayer.lastIdentity) {
         wakeDetailTitle.text = getString(R.string.wake_detail_title)
         wakeDetailBodyText.text = wakeDetailBody(this, wake)
         wakeDetailLastChecked.text = wakeLastCheckedLine(this, WakeLane.lastProbeAtMs)
         wakeDetailRetry.visibility = if (wake == WakeLaneState.ARMED) View.GONE else View.VISIBLE
+        renderLineRows(identity)
         wakeDetail.visibility = View.VISIBLE
+    }
+
+    /** The owned-lines picker: visible only when the login owns MORE
+     *  than one line (a single-line account needs no switcher). The
+     *  active line (lines[0] by the server's contract) is marked and
+     *  inert; every other owned line is a switch affordance. Rebuilt
+     *  on every show — the identity moves with each re-wire, stale
+     *  rows must not linger. */
+    private fun renderLineRows(identity: SessionApi.SessionIdentity?) {
+        wakeDetailLines.removeAllViews()
+        val lines = identity?.lines ?: emptyList()
+        wakeDetailLines.visibility = if (lines.size > 1) View.VISIBLE else View.GONE
+        if (lines.size < 2) return
+        wakeDetailLines.addView(
+            TextView(this).apply {
+                styleText(14f, themeColor(R.attr.wpOnSurface), medium = true)
+                text = getString(R.string.lines_section_title)
+                gravity = Gravity.CENTER_HORIZONTAL
+            },
+        )
+        val active = lines.first()
+        for (line in lines) {
+            val isActive = line == active
+            val row =
+                AppCompatButton(this).apply {
+                    val tint =
+                        if (isActive) {
+                            themeColor(R.attr.wpAccent) to ContextCompat.getColor(this@MainActivity, R.color.wp_on_accent)
+                        } else {
+                            ContextCompat.getColor(this@MainActivity, R.color.chrome_glass) to
+                                ContextCompat.getColor(this@MainActivity, R.color.chrome_on_glass)
+                        }
+                    background = pillBackground(tint.first)
+                    setTextColor(tint.second)
+                    textSize = 15f
+                    isAllCaps = false
+                    setPadding(dp(28), dp(12), dp(28), dp(12))
+                    minimumHeight = dp(48)
+                    text =
+                        if (isActive) {
+                            getString(R.string.line_active_label, line.label())
+                        } else {
+                            line.label()
+                        }
+                    if (!isActive) {
+                        setOnClickListener { switchToLine(line.extension) }
+                    }
+                }
+            wakeDetailLines.addView(
+                row,
+                LinearLayout
+                    .LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ).apply {
+                        topMargin = dp(8)
+                        gravity = Gravity.CENTER_HORIZONTAL
+                    },
+            )
+        }
+    }
+
+    /** Switch the session onto another line the SAME login owns. The
+     *  switch POST is blocking OkHttp — off the UI thread, with the
+     *  verdict landed back on it. A live call blocks the switch: the
+     *  re-wire the success path runs would tear it down mid-
+     *  conversation. [switchCall] is the injectable seam (the pin
+     *  drives [applySwitchVerdict] directly instead of the thread). */
+    internal fun switchToLine(
+        extension: String,
+        switchCall: (String) -> SessionApi.SwitchVerdict = SessionApi::switchLine,
+    ) {
+        val phase = CallEngine.state.value.phase
+        if (phase != CallEngine.Phase.IDLE && phase != CallEngine.Phase.ENDED) {
+            Toast.makeText(this, R.string.switch_in_call, Toast.LENGTH_SHORT).show()
+            return
+        }
+        Thread {
+            val verdict = switchCall(extension)
+            runOnUiThread { applySwitchVerdict(extension, verdict) }
+        }.start()
+    }
+
+    /** The switch verdict's UI consequence (internal so the pin drives
+     *  it without the thread): SWITCHED dismisses the sheet and re-wires
+     *  the whole shell — the old line's registration, push subscription
+     *  and web session are void the moment the server re-minted the
+     *  session; every refusal keeps the sheet open (pick again or
+     *  close — the pill still describes the untouched line). */
+    internal fun applySwitchVerdict(
+        extension: String,
+        verdict: SessionApi.SwitchVerdict,
+    ) {
+        val label =
+            CallLayer.lastIdentity?.lines?.firstOrNull { it.extension == extension }?.label() ?: extension
+        Toast.makeText(this, switchToastText(this, verdict, label), Toast.LENGTH_SHORT).show()
+        if (verdict != SessionApi.SwitchVerdict.SWITCHED) return
+        wakeDetail.visibility = View.GONE
+        NtfySubscriptionService.stop(this)
+        webSurface.retry()
+        CallLayer.rewire(this)
     }
 
     private fun retryWake() {

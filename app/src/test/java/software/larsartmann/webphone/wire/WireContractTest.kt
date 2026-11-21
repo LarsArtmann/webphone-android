@@ -28,7 +28,9 @@ import kotlin.test.fail
  *   draft ready must not wake anybody.
  * - sessionIdentity, both credential arms: exactly ONE of `password`
  *   (legacy) or `sip_credential` (brokered) rides the answer; the SIP
- *   connection facts live in /config.js, NOT here.
+ *   connection facts live in /config.js, NOT here; the owned lines
+ *   ride the TYPED `lines[{extension,did}]` wire (active first — the
+ *   old parallel `numbers`/`extensions` lists are gone).
  * - the registration upsert: registerPayload emits exactly the keys
  *   the server's request DTO declares.
  */
@@ -132,6 +134,53 @@ class WireContractTest {
                 wsOrigin = "https://pbx.example.org",
             ) ?: fail("the brokered arm must resume")
         assertEquals("fixture-sip-credential", identity.sipPassword)
+    }
+
+    @Test
+    fun `the owned lines ride the typed lines wire - active first, parallel lists gone`() {
+        val root = JSONObject(fixture("session-identity-brokered"))
+        assertFalse(root.has("numbers"), "the parallel numbers list is GONE from the wire")
+        assertFalse(root.has("extensions"), "the parallel extensions list is GONE from the wire")
+        val identity =
+            SessionApi.parseSessionIdentity(
+                fixture("session-identity-brokered"),
+                SessionApi.IslandConfig(sipDomain = "pbx.example.org", websocketPath = "/sip"),
+                wsOrigin = "https://pbx.example.org",
+            ) ?: fail("the lines wire must resume")
+        assertEquals(
+            listOf(
+                SessionApi.SessionLine(extension = "1001", did = "+15551234567"),
+                SessionApi.SessionLine(extension = "1002", did = ""),
+            ),
+            identity.lines,
+            "lines[] is the typed owned-set wire; an absent did is the empty string (the bare-extension line)",
+        )
+        assertEquals(
+            identity.extension,
+            identity.lines.first().extension,
+            "the ACTIVE line is lines[0] by the server's contract — the picker marks it without a second source",
+        )
+    }
+
+    @Test
+    fun `an answer without the lines key degrades to the single top-level line`() {
+        // The password fixture models the answer shape that predates
+        // the typed wire (and the extension-only login): no `lines` key.
+        // The picker stays honest against an older server instead of
+        // rendering an empty account.
+        val identity =
+            SessionApi.parseSessionIdentity(
+                fixture("session-identity-password"),
+                SessionApi.IslandConfig(sipDomain = "pbx.example.org", websocketPath = "/sip"),
+                wsOrigin = "https://pbx.example.org",
+            ) ?: fail("the fallback must resume")
+        assertEquals(listOf(SessionApi.SessionLine("1001", "+15551234567")), identity.lines)
+    }
+
+    @Test
+    fun `line labels are DID-first with the bare extension fallback`() {
+        assertEquals("+15551234567 · 1001", SessionApi.SessionLine("1001", "+15551234567").label())
+        assertEquals("1002", SessionApi.SessionLine("1002", "").label(), "no DID = the bare extension, never an empty label")
     }
 
     @Test

@@ -63,4 +63,12 @@
     <string name="wake_last_checked">Last checked: %s</string>
     <string name="wake_retry_action">Retry</string>
     <string name="wake_close">Close</string>
+    <string name="lines_section_title">Your lines</string>
+    <string name="line_active_label">%1$s · active</string>
+    <string name="switch_success">Switched to %1$s — reconnecting</string>
+    <string name="switch_in_call">Hang up before switching lines</string>
+    <string name="switch_not_mapped">This account does not own that line</string>
+    <string name="switch_seam_off">Line switching is off for this login</string>
+    <string name="switch_network">Could not reach the server — try again</string>
+    <string name="switch_other">The server declined the switch</string>
 </resources>
