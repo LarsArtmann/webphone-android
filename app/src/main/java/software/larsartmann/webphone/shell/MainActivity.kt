@@ -618,15 +618,13 @@ class MainActivity : AppCompatActivity() {
             val isActive = line == active
             val row =
                 AppCompatButton(this).apply {
-                    val tint =
-                        if (isActive) {
-                            themeColor(R.attr.wpAccent) to ContextCompat.getColor(this@MainActivity, R.color.wp_on_accent)
-                        } else {
-                            ContextCompat.getColor(this@MainActivity, R.color.chrome_glass) to
-                                ContextCompat.getColor(this@MainActivity, R.color.chrome_on_glass)
-                        }
-                    background = pillBackground(tint.first)
-                    setTextColor(tint.second)
+                    if (isActive) {
+                        background = pillBackground(themeColor(R.attr.wpAccent))
+                        setTextColor(ContextCompat.getColor(this@MainActivity, R.color.wp_on_accent))
+                    } else {
+                        background = pillBackground(ContextCompat.getColor(this@MainActivity, R.color.chrome_glass))
+                        setTextColor(ContextCompat.getColor(this@MainActivity, R.color.chrome_on_glass))
+                    }
                     textSize = 15f
                     isAllCaps = false
                     setPadding(dp(28), dp(12), dp(28), dp(12))
@@ -687,7 +685,11 @@ class MainActivity : AppCompatActivity() {
         verdict: SessionApi.SwitchVerdict,
     ) {
         val label =
-            CallLayer.lastIdentity?.lines?.firstOrNull { it.extension == extension }?.label() ?: extension
+            CallLayer.lastIdentity
+                ?.lines
+                ?.firstOrNull { it.extension == extension }
+                ?.label()
+                ?: extension
         Toast.makeText(this, switchToastText(this, verdict, label), Toast.LENGTH_SHORT).show()
         if (verdict != SessionApi.SwitchVerdict.SWITCHED) return
         wakeDetail.visibility = View.GONE
