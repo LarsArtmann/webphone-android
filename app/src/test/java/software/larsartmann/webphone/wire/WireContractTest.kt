@@ -180,7 +180,11 @@ class WireContractTest {
     @Test
     fun `line labels are DID-first with the bare extension fallback`() {
         assertEquals("+15551234567 · 1001", SessionApi.SessionLine("1001", "+15551234567").label())
-        assertEquals("1002", SessionApi.SessionLine("1002", "").label(), "no DID = the bare extension, never an empty label")
+        assertEquals(
+            "1002",
+            SessionApi.SessionLine("1002", "").label(),
+            "no DID = the bare extension, never an empty label",
+        )
     }
 
     @Test

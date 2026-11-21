@@ -269,7 +269,11 @@ class MainActivityWakeDetailTest {
             context.getString(R.string.switch_not_mapped),
             ShadowToast.getTextOfLatestToast(),
         )
-        assertEquals(View.VISIBLE, activity.get().wakeDetail.visibility, "a refusal keeps the sheet — pick again or close")
+        assertEquals(
+            View.VISIBLE,
+            activity.get().wakeDetail.visibility,
+            "a refusal keeps the sheet — pick again or close",
+        )
 
         activity.get().applySwitchVerdict("1002", SessionApi.SwitchVerdict.NETWORK)
         assertEquals(
