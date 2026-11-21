@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Owned-lines picker + line switching (webphone's `lines[]` wire,
+  2026-11-21): the session identity decodes the typed
+  `lines[{extension,did}]` list (the active line first; an answer
+  without the key degrades to the single top-level line — the old
+  parallel `numbers`/`extensions` lists are gone from the wire and
+  asserted absent in `WireContractTest`, whose fixtures re-vendor via
+  `scripts/sync-wire-fixtures.sh`). The wake-detail sheet lists the
+  login's owned lines ("Your lines"; DID-first labels, the active one
+  marked) whenever the login owns more than one; tapping a non-active
+  line switches (`POST /api/session/switch` over the same CSRF dance
+  push registration rides), stops the ntfy subscription and reloads
+  the web surface — a live call blocks the switch ("Hang up before
+  switching lines"). `CallLayer.lastIdentity` exposes the
+  resume-resolved identity for the picker; the switch verdicts are a
+  pure classifier pinned by `SessionApiSwitchVerdictTest`.
+
 ## [0.2.2] - 2026-11-11
 
 ### Added
