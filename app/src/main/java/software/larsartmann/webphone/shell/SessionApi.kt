@@ -61,8 +61,20 @@ object SessionApi {
             .followRedirects(true)
             .build()
 
+    /** One owned line of the signed-in account (the sessionIdentity
+     *  `lines[]` wire): the PBX extension plus the DID it presents. The
+     *  label is the stack's one convention — DID first, the bare
+     *  extension when the operator configured no DID. */
+    data class SessionLine(
+        val extension: String,
+        val did: String,
+    ) {
+        fun label(): String = if (did.isEmpty()) extension else "$did · $extension"
+    }
+
     data class SessionIdentity(
         val extension: String,
+        val lines: List<SessionLine>,
         val sipDomain: String,
         val sipPassword: String,
         val websocketUrl: String,
@@ -103,6 +115,25 @@ object SessionApi {
             code == 403 -> PushRegisterVerdict.AUTH
             code == 422 -> PushRegisterVerdict.INVALID
             else -> PushRegisterVerdict.OTHER
+        }
+
+    /** The line-switch answer's verdict (the server owns the statuses:
+     *  200 re-mints the session onto the target line and answers the
+     *  FULL session shape, 403 the login owns no mapped lines or the
+     *  asked extension is not one of them, 404 the identity layer is
+     *  off — an extension-only login cannot switch). A null code is a
+     *  transport failure, never a refusal. */
+    enum class SwitchVerdict { SWITCHED, NOT_MAPPED, SEAM_OFF, NETWORK, OTHER }
+
+    /** Classify one switch answer. Pure (the classifier the unit test
+     *  pins); [switchLine] supplies the code. */
+    internal fun switchVerdictFromCode(code: Int?): SwitchVerdict =
+        when {
+            code == null -> SwitchVerdict.NETWORK
+            code in 200..299 -> SwitchVerdict.SWITCHED
+            code == 403 -> SwitchVerdict.NOT_MAPPED
+            code == 404 -> SwitchVerdict.SEAM_OFF
+            else -> SwitchVerdict.OTHER
         }
 
     /** Classify one /api/session answer. Pure (the classifier the
@@ -157,8 +188,10 @@ object SessionApi {
     ): SessionIdentity? =
         runCatching {
             val root = JSONObject(body)
+            val extension = root.optString("extension")
             SessionIdentity(
-                extension = root.optString("extension"),
+                extension = extension,
+                lines = parseLines(root, extension),
                 sipDomain = config?.sipDomain.orEmpty(),
                 sipPassword = root.optString("sip_credential").ifEmpty { root.optString("password") },
                 websocketUrl =
@@ -168,6 +201,26 @@ object SessionApi {
         }.getOrNull()?.takeIf {
             it.extension.isNotEmpty() && it.sipDomain.isNotEmpty() && it.sipPassword.isNotEmpty()
         }
+
+    /** Decode the owned-lines list (the active line is `lines[0]` by
+     *  the server's contract). An answer predating the typed wire (no
+     *  `lines` key) degrades to the single line the top-level facts
+     *  describe — the picker stays honest against an older server
+     *  instead of rendering an empty account. Pure (pinned with the
+     *  vendored fixtures). */
+    internal fun parseLines(
+        root: JSONObject,
+        activeExtension: String,
+    ): List<SessionLine> {
+        val array = root.optJSONArray("lines")
+        val parsed =
+            (0 until (array?.length() ?: 0)).mapNotNull { i ->
+                val line = array?.optJSONObject(i) ?: return@mapNotNull null
+                val ext = line.optString("extension")
+                if (ext.isEmpty()) null else SessionLine(extension = ext, did = line.optString("did"))
+            }
+        return parsed.ifEmpty { listOf(SessionLine(activeExtension, root.optString("did"))) }
+    }
 
     /** Fetch the island's own config source (window.PBX_CONFIG) and
      *  read the SIP connection facts by key — the same keys the island
@@ -238,6 +291,31 @@ object SessionApi {
         return runCatching {
             client.newCall(request).execute().use { it.code == 204 }
         }.getOrDefault(false)
+    }
+
+    /** Switch the session onto another line the SAME login owns (the
+     *  server re-mints the session, rotates the CSRF token and deletes
+     *  the old row — the cookie jar keeps working because the cookie
+     *  NAME survives the re-mint). The caller owns the re-wire: the
+     *  old line's registration and push subscription are void the
+     *  moment the switch answers 2xx. */
+    fun switchLine(extension: String): SwitchVerdict {
+        val payload = JSONObject().put("extension", extension).toString()
+        val csrf = fetchCsrf() ?: return SwitchVerdict.NETWORK
+        val request =
+            authedBuilder("/api/session/switch")
+                .header("X-CSRF-Token", csrf)
+                .post(payload.toRequestBody(json))
+                .build()
+        return runCatching {
+            client.newCall(request).execute().use { response ->
+                val verdict = switchVerdictFromCode(response.code)
+                if (verdict != SwitchVerdict.SWITCHED) {
+                    Log.w(TAG, "line switch to $extension answered ${response.code} -> $verdict")
+                }
+                verdict
+            }
+        }.getOrDefault(SwitchVerdict.NETWORK)
     }
 
     private fun fetchCsrf(): String? {

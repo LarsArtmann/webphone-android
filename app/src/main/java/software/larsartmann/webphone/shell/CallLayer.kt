@@ -73,6 +73,15 @@ object CallLayer {
     @Volatile
     internal var wiringEnabled = true
 
+    /** The last identity the resume path resolved (null before the
+     *  first successful wire or after a shutdown): the line picker
+     *  renders the OWNED lines from it — the same object the SIP
+     *  engine registered with, never a second fetch that could
+     *  disagree with the live registration. */
+    @Volatile
+    internal var lastIdentity: SessionApi.SessionIdentity? = null
+        private set
+
     fun ensureWired(context: Context) {
         if (!wiringEnabled) return
         if (guard.current() != null) return
@@ -85,6 +94,7 @@ object CallLayer {
                     CallEngine.registrationWiringFailed()
                     return@launch
                 }
+            lastIdentity = identity
             val created =
                 SipEngine(
                     scope,
