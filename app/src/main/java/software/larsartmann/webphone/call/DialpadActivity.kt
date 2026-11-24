@@ -20,6 +20,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -492,7 +493,7 @@ class DialpadActivity : AppCompatActivity() {
                 ?.filter { it.isNotEmpty() }
                 .orEmpty()
         val updated = (listOf(number) + previous.filter { it != number }).take(RECENTS_LIMIT)
-        prefs.edit().putString(KEY_RECENTS, updated.joinToString("\n")).apply()
+        prefs.edit { putString(KEY_RECENTS, updated.joinToString("\n")) }
     }
 
     companion object {

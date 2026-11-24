@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import android.util.Log
+import androidx.core.content.edit
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -92,11 +93,10 @@ class NtfySubscriptionService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
-        prefs
-            .edit()
-            .putString(KEY_SERVER, server)
-            .putString(KEY_TOPIC, topic)
-            .apply()
+        prefs.edit {
+            putString(KEY_SERVER, server)
+            putString(KEY_TOPIC, topic)
+        }
         subscribe(server, topic)
         return START_STICKY
     }

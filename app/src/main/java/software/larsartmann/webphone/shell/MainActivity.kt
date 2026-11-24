@@ -2,10 +2,10 @@ package software.larsartmann.webphone.shell
 
 import android.Manifest
 import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.PowerManager
@@ -24,6 +24,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -394,7 +396,7 @@ class MainActivity : AppCompatActivity() {
      *  onCreate and onNewIntent are one-line delegates. */
     internal fun routeDeepLink(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
-        when (val target = deepLinkTarget(intent.data, Uri.parse(App.origin))) {
+        when (val target = deepLinkTarget(intent.data, App.origin.toUri())) {
             is DeepLinkTarget.ShellPath -> webSurface.loadUri(target.uri)
             is DeepLinkTarget.Dial -> {
                 val phase = CallEngine.state.value.phase
@@ -466,6 +468,13 @@ class MainActivity : AppCompatActivity() {
         maybeRequestBatteryExemption()
     }
 
+    // The direct exemption dialog needs the manifest permission
+    //  Android Lint's BatteryLife check flags (it is a Play Store
+    //  policy signal). This app ships on the sideload lane only — the
+    //  battery manager killing the wake socket is the #1 missed-ring
+    //  cause (AGENTS), so the ask stays; the settings deep-link below
+    //  remains the fallback for OEMs that broke the dialog.
+    @SuppressLint("BatteryLife")
     private fun maybeRequestBatteryExemption() {
         if (requestedBatteryExemption) return
         val power = getSystemService(PowerManager::class.java) ?: return
@@ -473,11 +482,11 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences(App.PREFS_SETTINGS, MODE_PRIVATE)
         if (prefs.getBoolean(KEY_BATTERY_ASKED, false)) return
         requestedBatteryExemption = true
-        prefs.edit().putBoolean(KEY_BATTERY_ASKED, true).apply()
+        prefs.edit { putBoolean(KEY_BATTERY_ASKED, true) }
         val direct =
             Intent(
                 Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                Uri.parse("package:$packageName"),
+                "package:$packageName".toUri(),
             )
         runCatching { startActivity(direct) }.onFailure {
             runCatching { startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
@@ -704,7 +713,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        backInvoker?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
+        // The invoker exists only from API 33 (onCreate's guard); the
+        // explicit version check keeps that invariant provable to
+        // Android Lint instead of asking it to trust a nullable field.
+        if (Build.VERSION.SDK_INT >= 33) {
+            backInvoker?.let { onBackInvokedDispatcher.unregisterOnBackInvokedCallback(it) }
+        }
         linePulse?.cancel()
         CallLayer.shutdown()
         if (::webSurface.isInitialized) webSurface.destroy()
@@ -716,6 +730,11 @@ class MainActivity : AppCompatActivity() {
     // island is the product's own navigation. The DEPRECATION suppress
     // covers the super.onBackPressed() call — the deliberate API 31/32
     // tail (predictive back owns 33+; the keep-decision is in AGENTS).
+    // GestureBackNavigation is suppressed for the same reason: this
+    // override IS the back path on API 31/32, where the platform still
+    // calls it; 33+ rides the OnBackInvokedCallback registered in
+    // onCreate and never reaches this method.
+    @SuppressLint("GestureBackNavigation")
     @Deprecated("Deprecated in Java")
     @Suppress("DEPRECATION")
     override fun onBackPressed() {

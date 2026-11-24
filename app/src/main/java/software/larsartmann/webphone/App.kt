@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.webkit.WebView
+import androidx.core.content.edit
 import software.larsartmann.webphone.call.WebRtcEngine
 
 /**
@@ -85,9 +86,7 @@ class App : Application() {
             origin = value
             context
                 .getSharedPreferences(PREFS_SETTINGS, MODE_PRIVATE)
-                .edit()
-                .putString(KEY_ORIGIN, value)
-                .apply()
+                .edit { putString(KEY_ORIGIN, value) }
         }
     }
 }

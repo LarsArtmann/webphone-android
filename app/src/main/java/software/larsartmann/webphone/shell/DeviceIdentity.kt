@@ -1,6 +1,7 @@
 package software.larsartmann.webphone.shell
 
 import android.content.Context
+import androidx.core.content.edit
 import java.security.SecureRandom
 import java.util.UUID
 import kotlin.random.asKotlinRandom
@@ -26,7 +27,7 @@ object DeviceIdentity {
         synchronized(this) {
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             prefs.getString(KEY_DEVICE_ID, null) ?: UUID.randomUUID().toString().also {
-                prefs.edit().putString(KEY_DEVICE_ID, it).apply()
+                prefs.edit { putString(KEY_DEVICE_ID, it) }
             }
         }
 
@@ -36,7 +37,7 @@ object DeviceIdentity {
             prefs.getString(KEY_NTFY_TOPIC, null) ?: generateTopic(
                 SecureRandom().asKotlinRandom(),
             ).also {
-                prefs.edit().putString(KEY_NTFY_TOPIC, it).apply()
+                prefs.edit { putString(KEY_NTFY_TOPIC, it) }
             }
         }
 }

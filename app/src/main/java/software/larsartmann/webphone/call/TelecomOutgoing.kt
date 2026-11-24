@@ -153,6 +153,11 @@ object TelecomOutgoing {
             ).setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
             .build()
 
+    /** The callbacks below only ever run after [place]'s `< 34` early
+     *  return, so the API-34 surface is safe here; the annotation makes
+     *  that fact provable to Android Lint instead of asking it to
+     *  follow the async hand-off. */
+    @RequiresApi(34)
     private fun onCallControlReady(
         appContext: Context,
         callControl: CallControl,

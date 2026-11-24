@@ -1,16 +1,19 @@
 package software.larsartmann.webphone.push
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.telecom.TelecomManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallActivity
@@ -213,6 +216,21 @@ object RingEvent {
     ) {
         val compat = NotificationManagerCompat.from(context)
         if (!compat.areNotificationsEnabled()) return
+        // POST_NOTIFICATIONS is a runtime grant from API 33: without it
+        // the post is dropped, so the refusal is named here where a
+        // silent ring can be diagnosed from logcat. Below 33 the
+        // manifest declaration is the whole grant and the check is
+        // skipped. Stated explicitly because Android Lint's
+        // MissingPermission cannot see through `runCatching` (which
+        // stays as the belt for every OTHER rejection).
+        if (
+            Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w("RingEvent", "notification $id skipped: POST_NOTIFICATIONS not granted")
+            return
+        }
         runCatching { compat.notify(id, notification) }
             .onFailure { Log.w("RingEvent", "notification $id rejected: ${it.message}") }
     }

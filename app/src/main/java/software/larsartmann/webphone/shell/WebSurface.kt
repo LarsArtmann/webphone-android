@@ -30,6 +30,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
+import androidx.core.view.isVisible
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import software.larsartmann.webphone.App
@@ -306,7 +308,13 @@ internal class WebSurface(
      * today's behavior (the login stays impossible) instead of
      * crashing. The verdict is LOGGED so a device train can read the
      * truth from logcat instead of guessing from a silent button.
+     *
+     * RequiresFeature is suppressed on purpose: the feature IS checked
+     * above, inside a `runCatching` because the check itself throws on
+     * a machine without a WebView provider (Robolectric) — a plain
+     * `if` would trade that graceful degradation for a crash.
      */
+    @SuppressLint("RequiresFeature")
     private fun optInToPasskeys(settings: WebSettings) {
         val supported =
             runCatching { WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION) }
@@ -414,7 +422,7 @@ internal class WebSurface(
             // verdict never allowed is by construction an unjudged
             // arrival (cross-origin POST) — the same trust argument as
             // [onCommittedNavigation].
-            onCommittedNavigation(Uri.parse(url))
+            onCommittedNavigation(url.toUri())
         }
 
         // The commit seam: every MAIN-FRAME commit passes HERE — including
@@ -428,7 +436,7 @@ internal class WebSurface(
             url: String?,
             isReload: Boolean,
         ) {
-            url?.let { onCommittedNavigation(Uri.parse(it)) }
+            url?.let { onCommittedNavigation(it.toUri()) }
         }
 
         override fun onPageFinished(
@@ -564,7 +572,7 @@ internal class WebSurface(
      *  foreign deep link is simply not loaded (the shell keeps its
      *  origin-root state). */
     fun loadUri(uri: Uri) {
-        if (navigationVerdict(uri, Uri.parse(App.origin)) !is NavigationVerdict.LoadInShell) return
+        if (navigationVerdict(uri, App.origin.toUri()) !is NavigationVerdict.LoadInShell) return
         if (offlineVisible()) showOffline()
         authDetour = null
         webView.loadUrl(uri.toString())
@@ -640,7 +648,7 @@ internal class WebSurface(
         offlineOverlay.visibility = View.GONE
     }
 
-    internal fun offlineVisible(): Boolean = offlineOverlay.visibility == android.view.View.VISIBLE
+    internal fun offlineVisible(): Boolean = offlineOverlay.isVisible
 
     /** Test seam: the overlay body as actually rendered (the origin
      *  named in the "can't reach X" sentence). */
@@ -667,7 +675,7 @@ internal class WebSurface(
         isServerRedirect: Boolean = false,
         isMainFrame: Boolean = true,
     ): Boolean {
-        val verdict = navigationVerdict(url, Uri.parse(App.origin), authDetour)
+        val verdict = navigationVerdict(url, App.origin.toUri(), authDetour)
         return when (verdict) {
             is NavigationVerdict.LoadInShell -> false
             is NavigationVerdict.HandOff -> {
@@ -718,7 +726,7 @@ internal class WebSurface(
         if (url == null) return
         val scheme = url.scheme?.lowercase() ?: return
         if (scheme != "http" && scheme != "https") return
-        val next = if (sameAuthority(url, Uri.parse(App.origin))) null else url
+        val next = if (sameAuthority(url, App.origin.toUri())) null else url
         if (next?.authority != authDetour?.authority) {
             Log.d(
                 TAG,
@@ -753,8 +761,8 @@ internal class WebSurface(
         contentDisposition: String?,
         mimeType: String?,
     ) {
-        val uri = Uri.parse(url)
-        if (navigationVerdict(uri, Uri.parse(App.origin)) is NavigationVerdict.HandOff) {
+        val uri = url.toUri()
+        if (navigationVerdict(uri, App.origin.toUri()) is NavigationVerdict.HandOff) {
             runCatching { activity.startActivity(Intent(Intent.ACTION_VIEW, uri)) }
                 .onFailure { Log.w(TAG, "no handler for download $url: ${it.message}") }
             return
@@ -792,12 +800,13 @@ internal class WebSurface(
                     values.getOrNull(1)?.takeIf { it.isNotBlank() } ?: values.getOrNull(2)?.trim()
                 }?.trim()
                 ?.orNullIfBlank()
-        val raw =
-            fromHeader ?: Uri
-                .parse(url)
+        val urlName =
+            url
+                .toUri()
                 .lastPathSegment
                 .orEmpty()
                 .substringAfterLast('/')
+        val raw = fromHeader ?: urlName
         val clean =
             buildString {
                 for (ch in raw) if (ch.code > 31 && ch !in FORBIDDEN_FILE_CHARS) append(ch)
