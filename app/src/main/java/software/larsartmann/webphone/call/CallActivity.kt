@@ -5,8 +5,6 @@ import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.GradientDrawable
-import android.media.AudioDeviceInfo
-import android.media.AudioManager
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.Gravity
@@ -352,10 +350,10 @@ class CallActivity : AppCompatActivity() {
         toggles.addView(
             togglePad(
                 R.drawable.ic_speaker,
-                active = speakerActive(),
+                active = SpeakerRoute.isActive(this),
                 label = getString(R.string.speaker),
             ) {
-                toggleSpeaker()
+                SpeakerRoute.toggle(this)
                 // The speaker is local audio state, not CallEngine
                 // state — no collector fires, so re-render for the
                 // lit/unlit feedback.
@@ -614,28 +612,4 @@ class CallActivity : AppCompatActivity() {
                 if (CallEngine.state.value.phase == CallEngine.Phase.ENDED && !isFinishing) finish()
             }
     }
-
-    /** Audio output routing: the speakerpiece ⇄ built-in speaker
-     *  switch rides AudioManager's communication-device API (API 31+
-     *  — no deprecated isSpeakerphoneOn). Audio FOCUS is NOT touched
-     *  here or in CallService: this is a self-managed Telecom call —
-     *  the system granted focus when the connection went active; a
-     *  second request would fight the very integration the platform
-     *  decision bought. */
-    private fun toggleSpeaker(): Boolean {
-        val audio = getSystemService(AudioManager::class.java) ?: return false
-        val speakingNow = audio.communicationDevice?.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-        val wanted =
-            if (speakingNow) {
-                AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-            } else {
-                AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-            }
-        val device = audio.availableCommunicationDevices.firstOrNull { it.type == wanted } ?: return false
-        return audio.setCommunicationDevice(device)
-    }
-
-    private fun speakerActive(): Boolean =
-        (getSystemService(AudioManager::class.java))?.communicationDevice?.type ==
-            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
 }
