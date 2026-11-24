@@ -11,6 +11,7 @@ import android.telecom.CallException
 import android.telecom.DisconnectCause
 import android.telecom.TelecomManager
 import android.util.Log
+import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -56,15 +57,7 @@ object TelecomOutgoing {
         if (Build.VERSION.SDK_INT < 34) return false
         val telecom = context.getSystemService(TelecomManager::class.java) ?: return false
         val appContext = context.applicationContext
-        val attributes =
-            CallAttributes
-                .Builder(
-                    CallConnectionService.accountHandle(appContext),
-                    CallAttributes.AUDIO_CALL,
-                    number,
-                    Uri.fromParts("webphone", number, null),
-                ).setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
-                .build()
+        val attributes = outgoingCallAttributes(appContext, number)
         generation += 1
         val gen = generation
         telecom.addCall(
@@ -136,6 +129,29 @@ object TelecomOutgoing {
         )
         return true
     }
+
+    /** The Telecom fact sheet of an outbound placement. The Builder's
+     *  second argument is the call DIRECTION (`DIRECTION_INCOMING` /
+     *  `DIRECTION_OUTGOING`, unchanged since API 34), not a call type:
+     *  the type constants share the small integers (`AUDIO_CALL` is 1,
+     *  exactly `DIRECTION_INCOMING`), so the wrong family compiles and
+     *  declares the outbound call an incoming one to Telecom (found by
+     *  Android Lint's WrongConstant, 2026-11-24). The call TYPE is the
+     *  Builder's separate `setCallType`; its default is left alone.
+     *  Pinned by `TelecomOutgoingAttributesTest`. */
+    @RequiresApi(34)
+    internal fun outgoingCallAttributes(
+        context: Context,
+        number: String,
+    ): CallAttributes =
+        CallAttributes
+            .Builder(
+                CallConnectionService.accountHandle(context),
+                CallAttributes.AUDIO_CALL,
+                number,
+                Uri.fromParts("webphone", number, null),
+            ).setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
+            .build()
 
     private fun onCallControlReady(
         appContext: Context,
