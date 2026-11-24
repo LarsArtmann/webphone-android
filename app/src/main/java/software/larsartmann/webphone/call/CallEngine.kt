@@ -338,13 +338,15 @@ object CallEngine : SipEngine.Listener {
 
     /** Call under [callLock]: close the media exactly once per call
      *  (double dispose is a native crash), drop the pending invite,
-     *  publish ENDED for the render beat. */
+     *  release the call's speaker route, publish ENDED for the render
+     *  beat. */
     private fun teardownLocked(endedBy: EndedBy) {
         callLive = false
         pendingInvite = null
         val dying = media
         media = null
         dying?.close()
+        SpeakerRoute.release()
         _state.value = CallState(Phase.ENDED, endedBy = endedBy)
     }
 
