@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.telecom.TelecomManager
 import android.util.Log
@@ -141,7 +142,13 @@ object RingEvent {
             )
         }.onFailure { Log.w("RingEvent", "CallStyle rejected: ${it.message}") }
         val notifications = context.getSystemService(NotificationManager::class.java) ?: return
-        if (notifications.canUseFullScreenIntent()) {
+        // `canUseFullScreenIntent()` exists only from API 34, where the
+        // grant became revocable. Below it the grant is install-time and
+        // unconditional, so the full-screen intent is simply set; the
+        // lookup itself would be a NoSuchMethodError in the ring path
+        // (found by Android Lint's NewApi, 2026-11-24; pinned at the API
+        // 31 floor by `RingEventApiFloorTest`).
+        if (Build.VERSION.SDK_INT < 34 || notifications.canUseFullScreenIntent()) {
             builder.setFullScreenIntent(fullScreen, true)
         }
         post(context, NOTIFICATION_ID_INCOMING, builder.build())

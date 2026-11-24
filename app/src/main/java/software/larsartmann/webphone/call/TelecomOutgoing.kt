@@ -147,7 +147,7 @@ object TelecomOutgoing {
         CallAttributes
             .Builder(
                 CallConnectionService.accountHandle(context),
-                CallAttributes.AUDIO_CALL,
+                CallAttributes.DIRECTION_OUTGOING,
                 number,
                 Uri.fromParts("webphone", number, null),
             ).setCallCapabilities(CallAttributes.SUPPORTS_SET_INACTIVE)
