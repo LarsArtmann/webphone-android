@@ -145,32 +145,32 @@
   and `e04f7c0` (the constant).
 - **Version audit, toolchain and fleet surface** (as of 2026-11-24):
 
-  | Component                     | Pinned  | Newest               | Verdict                        |
-  | ----------------------------- | ------- | -------------------- | ------------------------------ |
-  | Gradle wrapper                | 9.8.2   | 9.9.2 (2026-11-19)   | BEHIND (minor)                 |
-  | AGP                           | 9.5.1   | 9.5.2 (9.6.0-alpha06 is preview) | BEHIND (patch) |
-  | Kotlin (KGP)                  | 2.4.21  | 2.4.21 (2026-10-08)  | current                        |
-  | ktlint-gradle plugin          | 14.2.0  | 14.2.0 (2026-03-12)  | current                        |
-  | ktlint ENGINE (plugin default) | 1.5.0  | 1.8.0 (2025-11-14)   | BEHIND (3 minors), undocumented |
-  | Robolectric                   | 4.17    | 4.18.1 (2026-11-18)  | BEHIND (minor)                 |
-  | firebase-messaging            | 26.0.1  | 26.0.2               | BEHIND (patch)                 |
-  | lifecycle-runtime-ktx         | 2.11.0  | 2.11.1               | BEHIND (patch)                 |
-  | core-ktx / appcompat / webkit | 1.19.1 / 1.8.0 / 1.18.0 | no newer per lint's live lookup | current (lint only) |
-  | okhttp / coroutines / stream-webrtc-android | 5.5.1 / 1.11.0 / 1.3.10 | 1.11.0 (2026-05-08) and 1.3.10 (2025-09-11) confirmed by release | current; webrtc has had no upstream release for 14 months |
-  | actions/checkout              | v7.0.1  | v7.0.1               | current                        |
-  | actions/setup-java            | v6.2.0  | v6.3.0               | BEHIND                         |
-  | android-actions/setup-android | v4.0.4  | v4.0.4               | current                        |
-  | actions/upload-artifact       | v7.0.2  | v7.0.2               | current                        |
-  | dprint (CI pin)               | 0.64.3  | 0.65.0               | BEHIND                         |
-  | dprint-plugin-json            | 0.23.0  | 0.26.0               | BEHIND                         |
-  | dprint-plugin-markdown        | 0.22.1  | 0.29.0               | BEHIND                         |
-  | dprint-plugin-dockerfile      | 0.4.1   | 0.8.0                | BEHIND                         |
-  | pretty_yaml                   | v0.6.0  | v0.6.0               | current                        |
-  | JDK (devShell + CI)           | 21      | AGP 9.5 minimum is 17 | fine, not a lag               |
-  | build-tools                   | 36.0.0  | AGP 9.5 default 36.0.0 | matches AGP's default        |
-  | compileSdk                    | 37      | AGP 9.5 maximum API 37 | at AGP's ceiling              |
-  | targetSdk                     | 36      | 37                   | deliberate (TODO row exists)   |
-  | nixpkgs lock                  | rev f4a03c00 (2026-11-07) | not compared | 17 days old       |
+  | Component                                   | Pinned                    | Newest                                                           | Verdict                                                   |
+  | ------------------------------------------- | ------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------- |
+  | Gradle wrapper                              | 9.8.2                     | 9.9.2 (2026-11-19)                                               | BEHIND (minor)                                            |
+  | AGP                                         | 9.5.1                     | 9.5.2 (9.6.0-alpha06 is preview)                                 | BEHIND (patch)                                            |
+  | Kotlin (KGP)                                | 2.4.21                    | 2.4.21 (2026-10-08)                                              | current                                                   |
+  | ktlint-gradle plugin                        | 14.2.0                    | 14.2.0 (2026-03-12)                                              | current                                                   |
+  | ktlint ENGINE (plugin default)              | 1.5.0                     | 1.8.0 (2025-11-14)                                               | BEHIND (3 minors), undocumented                           |
+  | Robolectric                                 | 4.17                      | 4.18.1 (2026-11-18)                                              | BEHIND (minor)                                            |
+  | firebase-messaging                          | 26.0.1                    | 26.0.2                                                           | BEHIND (patch)                                            |
+  | lifecycle-runtime-ktx                       | 2.11.0                    | 2.11.1                                                           | BEHIND (patch)                                            |
+  | core-ktx / appcompat / webkit               | 1.19.1 / 1.8.0 / 1.18.0   | no newer per lint's live lookup                                  | current (lint only)                                       |
+  | okhttp / coroutines / stream-webrtc-android | 5.5.1 / 1.11.0 / 1.3.10   | 1.11.0 (2026-05-08) and 1.3.10 (2025-09-11) confirmed by release | current; webrtc has had no upstream release for 14 months |
+  | actions/checkout                            | v7.0.1                    | v7.0.1                                                           | current                                                   |
+  | actions/setup-java                          | v6.2.0                    | v6.3.0                                                           | BEHIND                                                    |
+  | android-actions/setup-android               | v4.0.4                    | v4.0.4                                                           | current                                                   |
+  | actions/upload-artifact                     | v7.0.2                    | v7.0.2                                                           | current                                                   |
+  | dprint (CI pin)                             | 0.64.3                    | 0.65.0                                                           | BEHIND                                                    |
+  | dprint-plugin-json                          | 0.23.0                    | 0.26.0                                                           | BEHIND                                                    |
+  | dprint-plugin-markdown                      | 0.22.1                    | 0.29.0                                                           | BEHIND                                                    |
+  | dprint-plugin-dockerfile                    | 0.4.1                     | 0.8.0                                                            | BEHIND                                                    |
+  | pretty_yaml                                 | v0.6.0                    | v0.6.0                                                           | current                                                   |
+  | JDK (devShell + CI)                         | 21                        | AGP 9.5 minimum is 17                                            | fine, not a lag                                           |
+  | build-tools                                 | 36.0.0                    | AGP 9.5 default 36.0.0                                           | matches AGP's default                                     |
+  | compileSdk                                  | 37                        | AGP 9.5 maximum API 37                                           | at AGP's ceiling                                          |
+  | targetSdk                                   | 36                        | 37                                                               | deliberate (TODO row exists)                              |
+  | nixpkgs lock                                | rev f4a03c00 (2026-11-07) | not compared                                                     | 17 days old                                               |
 
   AGP 9.5 compatibility (release-notes page, last updated 2026-11-05):
   minimum Gradle 9.6.0, JDK 17, SDK Build Tools 36.0.0, maximum API 37.
@@ -357,40 +357,40 @@ overruled.
 Ranked by impact. Category: Bug / Feature / Quality / Cleanup /
 Documentation / Process.
 
-| #   | Task                                                                                                                                                                              | Impact   | Effort   | Category       |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------- | -------------- |
-| 1   | Run `bash scripts/verify-gate.sh` on `e04f7c0` (refuses while another build runs) and record the verdict in this report's appendix                                  | Critical | S        | Quality        |
-| 2   | Re-run `:app:lintDebug`; confirm 10 → 8 errors, 34 warnings; paste the count into the TODO row                                                                                    | High     | S        | Quality        |
-| 3   | CHANGELOG `[Unreleased]` → `### Fixed`: the API 31-33 ring crash and the outbound call direction                                                                                 | High     | S        | Documentation  |
-| 4   | AGENTS gotchas: Android Lint ungated (and `./gradlew check` fails); `canUseFullScreenIntent()` is API 34; `CallAttributes.Builder` takes a direction; the suite's single-SDK blind spot; ktlint engine 1.5.0; detekt re-verified 2026-11-24 | High     | S        | Documentation  |
-| 5   | AGENTS: correct "Dependabot handles version bumps" and the "138 tests" header; TODO: correct the warning-freeze row's "count is zero" premise (one warning at `WebSurfacePolicyTest.kt:345`) | High     | S        | Documentation  |
-| 6   | Owner: squash `1b85f89` + `e04f7c0` into one hand-written commit (after the gate is green; nothing is pushed)                                                                       | High     | S        | Process        |
-| 7   | Wire `:app:lintDebug` into `ci.yml` + `scripts/verify-gate.sh`; errors fatal, warnings visible                                                                                     | Critical | M        | Quality        |
-| 8   | Resolve the 8 remaining lint errors with rationale: SDK guard in `MainActivity.onDestroy`; `@RequiresApi(34)` on `onCallControlReady`; explicit `SecurityException` handling at `RingEvent.post`; suppress `GestureBackNavigation` | High     | S        | Quality        |
-| 9   | `clearCommunicationDevice()` at call end, or suppress the warning with a written decision that the speaker route is meant to stick                                                  | Medium   | S        | Bug            |
-| 10  | Version batch A (as computed by Dependabot PR #10 + lifecycle): Gradle 9.9.2 wrapper, AGP 9.5.2, Robolectric 4.18.1, firebase-messaging 26.0.2, lifecycle 2.11.1, setup-java v6.3.0; full gate + emulator train | High     | M        | Quality        |
-| 11  | Pin the ktlint engine explicitly (1.8.0), run `ktlintFormat`, review what the three newer minors change                                                                          | Medium   | M        | Quality        |
-| 12  | `allWarningsAsErrors = true` after removing the one redundant cast in `WebSurfacePolicyTest.kt:345`                                                                                | Medium   | S        | Quality        |
-| 13  | HARVEST this §f into `TODO_LIST.md` / `ROADMAP.md`; add the `docs/status/README.md` index row; run `docs-gates run` (cadence is already red, 16 live reports before this one)         | High     | S        | Documentation  |
-| 14  | Device train: place an outbound call and check BT/watch now report it as outgoing (the direction fix is unverified on hardware)                                                     | High     | M        | Bug            |
-| 15  | Release the two fixes: `bump patch` + `scripts/release.sh` once the gate is green                                                                                                  | High     | M        | Feature        |
-| 16  | Owner: settle the Dependabot flow (g1) and write the answer into AGENTS                                                                                                            | High     | S        | Process        |
-| 17  | API-floor pins for Telecom inbound, `DialpadActivity`, `CallActivity`, `WebSurface`, `MainActivity` at SDK 31                                                                       | High     | M        | Quality        |
-| 18  | Confirm the six lint-only "current" verdicts with raw `maven-metadata.xml` (core-ktx, appcompat, webkit, test core-ktx, okhttp, stream-webrtc-android)                             | Medium   | S        | Quality        |
-| 19  | Remove the 5 dead resources (`chrome_glass_pressed`, `chrome_on_glass_muted`, `ic_dialpad`, `line_busy`, `caller_avatar`) or wire them                                            | Low      | S        | Cleanup        |
-| 20  | Decide `UseKtx`: apply the 17 suggested extensions or disable the check with rationale                                                                                             | Low      | S        | Cleanup        |
-| 21  | Drop `viewBinding = true` (no `res/layout/`, zero binding imports) and `dataBindingMergeDependencyArtifactsDebug` from the task graph                                             | Low      | S        | Cleanup        |
-| 22  | Rename `mipmap-anydpi-v26` → `mipmap-anydpi` (`ObsoleteSdkInt`)                                                                                                                   | Low      | S        | Cleanup        |
-| 23  | Suppress with rationale: `OldTargetApi`, `BatteryLife`, `UnusedAttribute`                                                                                                          | Low      | S        | Cleanup        |
-| 24  | dprint: 0.64.3 → 0.65.0 and plugins json 0.26.0 / markdown 0.29.0 / dockerfile 0.8.0; expect a Markdown reflow; align CI and the local `nixpkgs#dprint`                              | Medium   | M        | Quality        |
-| 25  | `nix flake update` (nixpkgs locked 2026-11-07) and re-run the gate                                                                                                                 | Low      | S        | Cleanup        |
-| 26  | Run the dependency-analysis Gradle plugin (3.20.4) `projectHealth` once to confirm no unused or mis-scoped dependency                                                             | Low      | S        | Quality        |
-| 27  | Dependency CVE pass with OSV-Scanner (2.7.1) over a Gradle lockfile; note the prebuilt libwebrtc from 2025-09                                                                    | High     | M        | Quality        |
-| 28  | Evaluate architecture tests (ArchUnit 1.5.1 is mature; Konsist is at 1.0.0-beta.1) for the prose-only conventions: singleton engines, `CallEngine` the only call-state writer, `MainActivity` the only exported VIEW surface | Medium | M | Quality |
-| 29  | Keep detekt rejected; next re-check when a 2.0.0 beta or RC appears (ROADMAP row, date it)                                                                                         | Low      | S        | Documentation  |
-| 30  | targetSdk 36 → 37 (existing TODO row; lint's `OldTargetApi` will keep reminding)                                                                                                   | Medium   | M        | Feature        |
-| 31  | Close the buildflow dry-run findings: `SECURITY.md` response-time line; docs gate cadence                                                                                          | Medium   | S        | Documentation  |
-| 32  | After the gate and the commit: push to both remotes, `scripts/mirror-lag.sh` (owner policy)                                                                                        | Medium   | S        | Process        |
+| #  | Task                                                                                                                                                                                                                                        | Impact   | Effort | Category      |
+| -- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ------ | ------------- |
+| 1  | Run `bash scripts/verify-gate.sh` on `e04f7c0` (refuses while another build runs) and record the verdict in this report's appendix                                                                                                          | Critical | S      | Quality       |
+| 2  | Re-run `:app:lintDebug`; confirm 10 → 8 errors, 34 warnings; paste the count into the TODO row                                                                                                                                              | High     | S      | Quality       |
+| 3  | CHANGELOG `[Unreleased]` → `### Fixed`: the API 31-33 ring crash and the outbound call direction                                                                                                                                            | High     | S      | Documentation |
+| 4  | AGENTS gotchas: Android Lint ungated (and `./gradlew check` fails); `canUseFullScreenIntent()` is API 34; `CallAttributes.Builder` takes a direction; the suite's single-SDK blind spot; ktlint engine 1.5.0; detekt re-verified 2026-11-24 | High     | S      | Documentation |
+| 5  | AGENTS: correct "Dependabot handles version bumps" and the "138 tests" header; TODO: correct the warning-freeze row's "count is zero" premise (one warning at `WebSurfacePolicyTest.kt:345`)                                                | High     | S      | Documentation |
+| 6  | Owner: squash `1b85f89` + `e04f7c0` into one hand-written commit (after the gate is green; nothing is pushed)                                                                                                                               | High     | S      | Process       |
+| 7  | Wire `:app:lintDebug` into `ci.yml` + `scripts/verify-gate.sh`; errors fatal, warnings visible                                                                                                                                              | Critical | M      | Quality       |
+| 8  | Resolve the 8 remaining lint errors with rationale: SDK guard in `MainActivity.onDestroy`; `@RequiresApi(34)` on `onCallControlReady`; explicit `SecurityException` handling at `RingEvent.post`; suppress `GestureBackNavigation`          | High     | S      | Quality       |
+| 9  | `clearCommunicationDevice()` at call end, or suppress the warning with a written decision that the speaker route is meant to stick                                                                                                          | Medium   | S      | Bug           |
+| 10 | Version batch A (as computed by Dependabot PR #10 + lifecycle): Gradle 9.9.2 wrapper, AGP 9.5.2, Robolectric 4.18.1, firebase-messaging 26.0.2, lifecycle 2.11.1, setup-java v6.3.0; full gate + emulator train                             | High     | M      | Quality       |
+| 11 | Pin the ktlint engine explicitly (1.8.0), run `ktlintFormat`, review what the three newer minors change                                                                                                                                     | Medium   | M      | Quality       |
+| 12 | `allWarningsAsErrors = true` after removing the one redundant cast in `WebSurfacePolicyTest.kt:345`                                                                                                                                         | Medium   | S      | Quality       |
+| 13 | HARVEST this §f into `TODO_LIST.md` / `ROADMAP.md`; add the `docs/status/README.md` index row; run `docs-gates run` (cadence is already red, 16 live reports before this one)                                                               | High     | S      | Documentation |
+| 14 | Device train: place an outbound call and check BT/watch now report it as outgoing (the direction fix is unverified on hardware)                                                                                                             | High     | M      | Bug           |
+| 15 | Release the two fixes: `bump patch` + `scripts/release.sh` once the gate is green                                                                                                                                                           | High     | M      | Feature       |
+| 16 | Owner: settle the Dependabot flow (g1) and write the answer into AGENTS                                                                                                                                                                     | High     | S      | Process       |
+| 17 | API-floor pins for Telecom inbound, `DialpadActivity`, `CallActivity`, `WebSurface`, `MainActivity` at SDK 31                                                                                                                               | High     | M      | Quality       |
+| 18 | Confirm the six lint-only "current" verdicts with raw `maven-metadata.xml` (core-ktx, appcompat, webkit, test core-ktx, okhttp, stream-webrtc-android)                                                                                      | Medium   | S      | Quality       |
+| 19 | Remove the 5 dead resources (`chrome_glass_pressed`, `chrome_on_glass_muted`, `ic_dialpad`, `line_busy`, `caller_avatar`) or wire them                                                                                                      | Low      | S      | Cleanup       |
+| 20 | Decide `UseKtx`: apply the 17 suggested extensions or disable the check with rationale                                                                                                                                                      | Low      | S      | Cleanup       |
+| 21 | Drop `viewBinding = true` (no `res/layout/`, zero binding imports) and `dataBindingMergeDependencyArtifactsDebug` from the task graph                                                                                                       | Low      | S      | Cleanup       |
+| 22 | Rename `mipmap-anydpi-v26` → `mipmap-anydpi` (`ObsoleteSdkInt`)                                                                                                                                                                             | Low      | S      | Cleanup       |
+| 23 | Suppress with rationale: `OldTargetApi`, `BatteryLife`, `UnusedAttribute`                                                                                                                                                                   | Low      | S      | Cleanup       |
+| 24 | dprint: 0.64.3 → 0.65.0 and plugins json 0.26.0 / markdown 0.29.0 / dockerfile 0.8.0; expect a Markdown reflow; align CI and the local `nixpkgs#dprint`                                                                                     | Medium   | M      | Quality       |
+| 25 | `nix flake update` (nixpkgs locked 2026-11-07) and re-run the gate                                                                                                                                                                          | Low      | S      | Cleanup       |
+| 26 | Run the dependency-analysis Gradle plugin (3.20.4) `projectHealth` once to confirm no unused or mis-scoped dependency                                                                                                                       | Low      | S      | Quality       |
+| 27 | Dependency CVE pass with OSV-Scanner (2.7.1) over a Gradle lockfile; note the prebuilt libwebrtc from 2025-09                                                                                                                               | High     | M      | Quality       |
+| 28 | Evaluate architecture tests (ArchUnit 1.5.1 is mature; Konsist is at 1.0.0-beta.1) for the prose-only conventions: singleton engines, `CallEngine` the only call-state writer, `MainActivity` the only exported VIEW surface                | Medium   | M      | Quality       |
+| 29 | Keep detekt rejected; next re-check when a 2.0.0 beta or RC appears (ROADMAP row, date it)                                                                                                                                                  | Low      | S      | Documentation |
+| 30 | targetSdk 36 → 37 (existing TODO row; lint's `OldTargetApi` will keep reminding)                                                                                                                                                            | Medium   | M      | Feature       |
+| 31 | Close the buildflow dry-run findings: `SECURITY.md` response-time line; docs gate cadence                                                                                                                                                   | Medium   | S      | Documentation |
+| 32 | After the gate and the commit: push to both remotes, `scripts/mirror-lag.sh` (owner policy)                                                                                                                                                 | Medium   | S      | Process       |
 
 Items 10, 14, 15, 16 and 30 need an owner decision or a device before an
 agent can start; the rest are agent-executable once the owner says go.
