@@ -71,6 +71,10 @@ class CallActivity : AppCompatActivity() {
 
         avatarView =
             TextView(this).apply {
+                // The initial is decoration: the party's name sits right
+                // beneath it, so a screen reader must not stop on a
+                // stray letter before it reaches the name.
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
                 styleText(
                     40f,
                     ContextCompat.getColor(this@CallActivity, R.color.call_avatar_fg),

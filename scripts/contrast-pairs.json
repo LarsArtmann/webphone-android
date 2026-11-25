@@ -26,13 +26,6 @@
       "note": "floating chrome text over any page"
     },
     {
-      "fg": "chrome_on_glass_muted",
-      "bg": "chrome_glass",
-      "over": ["wp_background", "wp_surface"],
-      "min": 4.5,
-      "note": "floating chrome secondary text"
-    },
-    {
       "fg": "chrome_dot_on",
       "bg": "chrome_glass",
       "over": ["wp_background", "wp_surface"],
