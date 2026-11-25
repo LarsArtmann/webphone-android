@@ -25,7 +25,8 @@
          UnusedAttribute finding): on 31/32 the attribute is inert and
          MainActivity.onBackPressed stays the back path, on 33+ it
          silences that override in favour of the registered
-         OnBackInvokedCallback. tools:targetApi states the intent. -->
+         OnBackInvokedCallback. tools:targetApi states the intent:
+         tiramisu is API 33, the first release that honours it. -->
     <application
         android:name=".App"
         android:label="@string/app_name"
@@ -33,7 +34,7 @@
         android:theme="@style/Theme.WebPhone"
         android:usesCleartextTraffic="false"
         android:enableOnBackInvokedCallback="true"
-        tools:targetApi="s">
+        tools:targetApi="tiramisu">
 
         <!-- uiMode is deliberately NOT in configChanges on any
              surface: a day/night switch must recreate the activity so
