@@ -70,7 +70,7 @@ object RingEvent {
             // missed-call note, never a second ring that can't be
             // answered (F095/F096).
             CallLayer.ensureWired(context)
-            notifyMissedCall(context, from)
+            notifyMissedCall(context, from, context.getString(R.string.line_busy))
             return
         }
         if (CallEngine.registration.value.failure == CallEngine.RegistrationFailure.AUTH_REJECTED) {
@@ -172,9 +172,15 @@ object RingEvent {
         }
     }
 
+    /** The missed-call note. [reason] names why the call never rang
+     *  when THIS device refused it (a busy line); an unanswered ring
+     *  carries none, the caller simply gave up. Its notification id is
+     *  its own (1005): it once shared 1004 with the sign-in-expired
+     *  notice, so whichever came second silently replaced the other. */
     private fun notifyMissedCall(
         context: Context,
         from: String,
+        reason: String? = null,
     ) {
         val contentIntent =
             PendingIntent.getActivity(
@@ -184,12 +190,18 @@ object RingEvent {
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
+        val text =
+            if (reason == null) {
+                from
+            } else {
+                context.getString(R.string.missed_call_reason, from, reason)
+            }
         val builder =
             NotificationCompat
                 .Builder(context, App.CHANNEL_CALLS)
                 .setSmallIcon(android.R.drawable.sym_call_missed)
                 .setContentTitle(context.getString(R.string.missed_call))
-                .setContentText(from)
+                .setContentText(text)
                 .setContentIntent(contentIntent)
                 .setCategory(Notification.CATEGORY_MISSED_CALL)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -215,7 +227,15 @@ object RingEvent {
         notification: Notification,
     ) {
         val compat = NotificationManagerCompat.from(context)
-        if (!compat.areNotificationsEnabled()) return
+        // Both refusals are NAMED: a ring that reaches Telecom but shows
+        // nothing is the undiagnosable no-ring failure otherwise. On API
+        // 33+ a missing grant makes areNotificationsEnabled() false too,
+        // so the permission branch below is the belt for a platform that
+        // reports "enabled" anyway (and the check Android Lint can see).
+        if (!compat.areNotificationsEnabled()) {
+            Log.w("RingEvent", "notification $id skipped: notifications are disabled")
+            return
+        }
         // POST_NOTIFICATIONS is a runtime grant from API 33: without it
         // the post is dropped, so the refusal is named here where a
         // silent ring can be diagnosed from logcat. Below 33 the
@@ -236,5 +256,5 @@ object RingEvent {
     }
 
     private const val NOTIFICATION_ID_INCOMING = 1001
-    private const val NOTIFICATION_ID_MISSED = 1004
+    private const val NOTIFICATION_ID_MISSED = 1005
 }

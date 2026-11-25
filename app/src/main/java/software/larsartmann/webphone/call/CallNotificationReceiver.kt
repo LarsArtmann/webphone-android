@@ -20,7 +20,9 @@ class CallNotificationReceiver : BroadcastReceiver() {
                 CallEngine.answer()
                 CallService.start(context)
             }
+
             ACTION_DECLINE -> CallEngine.decline()
+
             ACTION_HANGUP -> {
                 CallEngine.hangUp()
                 CallService.stop(context)

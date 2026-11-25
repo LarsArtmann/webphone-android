@@ -82,6 +82,12 @@ htmlcov/
 
 .kotlin/
 
+# The Gradle wrapper jar is a TRACKED file. A global `*.jar` ignore kept
+# it out of every clone, so `./gradlew` died on any fresh checkout with
+# "Unable to access jarfile gradle/wrapper/gradle-wrapper.jar" (CI
+# included, found 2026-11-25). A repo rule outranks the global one.
+!gradle/wrapper/gradle-wrapper.jar
+
 # Session scratch evidence (emulator shots, logcats, probes) — findings live in docs/
 work/
 photos/

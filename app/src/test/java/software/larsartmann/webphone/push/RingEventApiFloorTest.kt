@@ -4,10 +4,12 @@ import android.Manifest
 import android.app.Application
 import android.app.NotificationManager
 import androidx.test.core.app.ApplicationProvider
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import software.larsartmann.webphone.shell.CallLayer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -25,6 +27,14 @@ import kotlin.test.assertNotNull
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [31])
 class RingEventApiFloorTest {
+    /** Hermeticity: the ring asks the call layer to wire itself, whose
+     *  production default resumes the session over real HTTP against
+     *  the live stack. A JVM test must never reach the origin. */
+    @Before
+    fun hermeticCallLayer() {
+        CallLayer.wiringEnabled = false
+    }
+
     @Test
     fun `ring posts the full-screen heads-up on the API 31 floor`() {
         val app = ApplicationProvider.getApplicationContext<Application>()

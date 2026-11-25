@@ -678,6 +678,7 @@ internal class WebSurface(
         val verdict = navigationVerdict(url, App.origin.toUri(), authDetour)
         return when (verdict) {
             is NavigationVerdict.LoadInShell -> false
+
             is NavigationVerdict.HandOff -> {
                 val scheme = url.scheme?.lowercase()
                 if (isServerRedirect &&

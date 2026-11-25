@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.webkit.WebResourceRequest
-import android.webkit.WebViewClient
 import androidx.test.core.app.ActivityScenario
 import org.junit.Before
 import org.junit.runner.RunWith
@@ -342,7 +341,7 @@ class WebSurfacePolicyTest {
             scenario.onActivity { activity ->
                 App.origin = origin
                 val surface = activity.webSurface
-                val client = surface.currentWebView().webViewClient as WebViewClient
+                val client = surface.currentWebView().webViewClient
 
                 // POLICY (W111): the proxy's 502 and the origin's styled
                 // 404 are the origin's own error contract — pages render,

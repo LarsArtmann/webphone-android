@@ -186,11 +186,13 @@ object TelecomOutgoing {
                                 appContext.mainExecutor,
                                 failure("setActive"),
                             )
+
                         CallEngine.Phase.HELD ->
                             callControl.setInactive(
                                 appContext.mainExecutor,
                                 failure("setInactive"),
                             )
+
                         CallEngine.Phase.ENDED -> {
                             callControl.disconnect(
                                 DisconnectCause(
@@ -205,6 +207,7 @@ object TelecomOutgoing {
                             )
                             if (gen == generation) cleanup() else coroutineContext[Job]?.cancel()
                         }
+
                         else -> Unit
                     }
                 }

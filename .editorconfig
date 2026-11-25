@@ -22,3 +22,10 @@ indent_size = 2
 # style; pinned explicitly so the warning never returns).
 ktlint_code_style = ktlint_official
 max_line_length = 120
+# Engine 1.8.0 braces every branch of a `when` as soon as one branch
+# has a braced or multiline body. In a `when` used as a STATEMENT that
+# turns `-> Unit` into `{ Unit }`, which the compiler reports as an
+# unused expression (five sites here), so the rule's output cannot be
+# compiled warning-free. The compact arrows stay; the rule is the one
+# deliberate exception to the official style.
+ktlint_standard_when-entry-bracing = disabled

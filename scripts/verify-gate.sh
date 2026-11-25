@@ -5,8 +5,14 @@
 # a second checkout's build poisons timings and locks), then runs every
 # gate the AGENTS "Build and verify" section demands, in order, loudly:
 #
-#   assembleDebug -> testDebugUnitTest -> ktlintCheck -> 16 KB zipalign
-#   -> abi-check -> contrast-check -> dprint check
+#   assembleDebug -> testDebugUnitTest -> ktlintCheck -> Android Lint
+#   -> 16 KB zipalign -> abi-check -> contrast-check -> dprint check
+#
+# Android Lint (since 2026-11-25): errors AND warnings fail the gate.
+# The version checks are demoted to informational in app/build.gradle.kts
+# and the step prints them as a version-lag report instead, so an
+# upstream release never turns this gate red (Dependabot cannot carry
+# the signal here, the push mirror deletes its branches).
 #
 # Each Gradle step is time-bounded by `timeout` (the outer belt over the
 # in-build test fence): a wedged run fails HERE instead of hiding.
@@ -38,16 +44,24 @@ fi
 
 apk="app/build/outputs/apk/debug/app-debug.apk"
 
-step "1/7 assembleDebug"
+step "1/8 assembleDebug"
 timeout 900 nix develop -c ./gradlew assembleDebug --console=plain
 
-step "2/7 testDebugUnitTest (wedge-fenced)"
+step "2/8 testDebugUnitTest (wedge-fenced)"
 timeout 1500 nix develop -c ./gradlew testDebugUnitTest --console=plain
 
-step "3/7 ktlintCheck + KGP parity"
+step "3/8 ktlintCheck + KGP parity"
 timeout 600 nix develop -c ./gradlew ktlintCheck kgpParityCheck --console=plain
 
-step "4/7 16 KB page alignment (build-tools 36 zipalign)"
+step "4/8 Android Lint (errors and warnings fatal) + version-lag report"
+# Lint's own task fails on any error and, through warningsAsErrors in
+# app/build.gradle.kts, on any warning. The lag report then reprints the
+# informational version findings and refuses a report that still holds
+# an error or a warning (belt over abortOnError).
+timeout 900 nix develop -c ./gradlew :app:lintDebug --console=plain
+python3 scripts/lint-lag-report.py
+
+step "5/8 16 KB page alignment (build-tools 36 zipalign)"
 # ANDROID_HOME exists only INSIDE the nix devShell — resolve it through
 # the same environment the Gradle steps run in.
 sdk_home="$(nix develop -c printenv ANDROID_HOME)"
@@ -63,21 +77,21 @@ test -f "$apk" || {
 }
 "$zipalign" -c -P 16 4 "$apk"
 
-step "5/7 ABI completeness (the APK stays universal)"
+step "6/8 ABI completeness (the APK stays universal)"
 # One APK serves every device class; a dependency swap or stray
 # abiFilters would shrink lib/ silently — refuse that here, at the
 # exact artifact that ships.
 python3 scripts/abi-check.py "$apk"
 
-step "6/7 contrast-check (both modes, WCAG gate)"
+step "7/8 contrast-check (both modes, WCAG gate)"
 if [ "${SKIP_CONTRAST:-0}" = "1" ]; then
     echo "skipped (SKIP_CONTRAST=1) — only legitimate when no token changed"
 else
     python3 scripts/contrast-check.py
 fi
 
-step "7/7 dprint check (markdown/yaml/json formatting)"
+step "8/8 dprint check (markdown/yaml/json formatting)"
 nix run nixpkgs#dprint -- check
 
 step "GATE GREEN"
-echo "assembleDebug + tests + ktlint + zipalign + abi + contrast + dprint: all green."
+echo "assembleDebug + tests + ktlint + lint + zipalign + abi + contrast + dprint: all green."

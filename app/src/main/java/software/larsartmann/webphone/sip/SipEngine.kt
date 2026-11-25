@@ -561,12 +561,14 @@ class SipEngine(
     private fun receiveRequest(message: SipMessage) {
         when (message.method) {
             "INVITE" -> receiveInvite(message)
+
             "BYE" -> {
                 respond(message, 200)
                 val callId = message.callId()
                 callLegs.remove(callId)
                 listener?.onCallEnded(callId)
             }
+
             "NOTIFY" -> {
                 // sipfrag body carries the REFER verdict
                 // ("Content-Type: message/sipfrag;version=2.0").
@@ -579,9 +581,13 @@ class SipEngine(
                     listener?.onTransferVerdict(message.callId(), sipfrag.removePrefix("SIP/2.0").trim())
                 }
             }
+
             "INFO" -> respond(message, 200)
+
             "OPTIONS" -> respond(message, 200)
+
             "ACK" -> Unit
+
             else -> respond(message, 200)
         }
     }
@@ -687,14 +693,17 @@ class SipEngine(
                             )
                         register(authorization)
                     }
+
                     200 -> {
                         registerAuthChallenges = 0
                         setRegistration(RegistrationState.REGISTERED)
                         scheduleRefresh()
                         startSilenceWatchdog()
                     }
+
                     else -> setRegistration(RegistrationState.OFFLINE)
                 }
+
             // INVITE ladder: ring → answer → ACK; a digest challenge
             // re-INVITEs with credentials; other finals tear down.
             cseq?.second == "INVITE" -> {
@@ -708,6 +717,7 @@ class SipEngine(
                         }
                         listener?.onCallProgress(callId, ringing = true)
                     }
+
                     message.statusCode == 200 -> {
                         leg?.confirmed = true
                         if (leg != null) {
@@ -718,6 +728,7 @@ class SipEngine(
                         ack(callId, toHeaderOverride = message.header("To"))
                         listener?.onCallEstablished(callId, message.body)
                     }
+
                     message.statusCode == 401 || message.statusCode == 407 -> {
                         // PBXs that challenge the INVITE (not just
                         // REGISTER) — answer with credentials, same
@@ -727,6 +738,7 @@ class SipEngine(
                             reinviteWithAuth(leg, message, message.statusCode)
                         }
                     }
+
                     message.statusCode >= 300 -> {
                         // A UAC must ACK non-2xx finals too (RFC 3261
                         // §17.1.1.2) — the 487 after our CANCEL is the

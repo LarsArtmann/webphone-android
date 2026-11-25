@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -27,6 +28,16 @@ import kotlin.test.assertNotNull
  */
 @RunWith(RobolectricTestRunner::class)
 class CallLayerSessionDeadTest {
+    /** Hermeticity: the teardown's best-effort deregistration is a
+     *  real CSRF fetch plus a DELETE against the live stack. A JVM
+     *  test must never reach the origin: a 2026-11-25 probe caught a
+     *  Robolectric run leaving for the stack with the default seams
+     *  ("GET /api/session answered 401" 613 ms after a wire). */
+    @Before
+    fun hermeticDeregistration() {
+        CallLayer.deregisterPushDevice = { false }
+    }
+
     @Test
     fun `a dead session notifies, stands the lane down, and reports session_dead`() {
         val appContext = ApplicationProvider.getApplicationContext<Context>()

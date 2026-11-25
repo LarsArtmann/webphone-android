@@ -66,34 +66,45 @@ internal fun linePillText(
         context.getString(
             when {
                 info.status == CallEngine.Registration.REGISTERED -> R.string.registration_registered
+
                 info.status == CallEngine.Registration.CONNECTING -> R.string.registration_connecting
+
                 // The cause matters: "the PBX refused you" and "no
                 // route to the PBX" ask for different fixes.
                 info.failure == CallEngine.RegistrationFailure.AUTH_REJECTED -> R.string.registration_auth_rejected
+
                 else -> R.string.registration_off
             },
         )
     return when (wake) {
         WakeLaneState.UNKNOWN -> registration to null
+
         WakeLaneState.STARTING ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_starting)) to null
+
         WakeLaneState.ARMED ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_on)) to null
+
         WakeLaneState.REFUSED_SEAM_OFF ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
                 context.getString(R.string.wake_reason_refused_seam_off)
+
         WakeLaneState.REFUSED_INVALID ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
                 context.getString(R.string.wake_reason_refused_invalid)
+
         WakeLaneState.REFUSED_AUTH ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
                 context.getString(R.string.wake_reason_refused_auth)
+
         WakeLaneState.REFUSED_OTHER ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
                 context.getString(R.string.wake_reason_refused_other)
+
         WakeLaneState.SESSION_DEAD ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
                 context.getString(R.string.wake_reason_session_dead)
+
         WakeLaneState.DISCONNECTED ->
             context.getString(R.string.line_and_wake, registration, context.getString(R.string.wake_off)) to
                 context.getString(R.string.wake_reason_disconnected)
@@ -398,6 +409,7 @@ class MainActivity : AppCompatActivity() {
         if (intent?.action != Intent.ACTION_VIEW) return
         when (val target = deepLinkTarget(intent.data, App.origin.toUri())) {
             is DeepLinkTarget.ShellPath -> webSurface.loadUri(target.uri)
+
             is DeepLinkTarget.Dial -> {
                 val phase = CallEngine.state.value.phase
                 if (phase != CallEngine.Phase.IDLE && phase != CallEngine.Phase.ENDED) {
@@ -413,6 +425,7 @@ class MainActivity : AppCompatActivity() {
                     startActivity(DialpadActivity.prefill(this, target.number))
                 }
             }
+
             DeepLinkTarget.None -> Unit
         }
     }

@@ -57,6 +57,26 @@ if (releasePropertiesFile.isFile && !releaseSigningReady) {
     )
 }
 
+// ktlint-gradle 14.x no longer ties the ruleset ENGINE to the plugin
+// version: left alone it runs whatever engine the plugin was released
+// with (1.5.0 for 14.2.0), so three minors of rules landed without ever
+// reaching this repo. The engine is a dependency like any other and is
+// pinned in the version catalog; bump it there, then run `ktlintFormat`
+// and review the diff.
+ktlint {
+    version.set(libs.versions.ktlintEngine.get())
+}
+
+// Every compiler warning is a build failure, in main AND test sources:
+// a warning that is allowed to stay is a warning everyone learns to
+// skip. A justified warning is suppressed at its site, with the reason,
+// where a reviewer can disagree with it.
+kotlin {
+    compilerOptions {
+        allWarningsAsErrors.set(true)
+    }
+}
+
 android {
     namespace = "software.larsartmann.webphone"
     compileSdk = 37
@@ -71,6 +91,32 @@ android {
         targetSdk = 36
         versionCode = computedVersionCode
         versionName = versionNameValue
+    }
+
+    // Android Lint was never part of any gate until 2026-11-25, and in
+    // its first gated pass it found two real defects (an API-34-only
+    // call in the ring path, an outbound call declared with the wrong
+    // direction constant). A warning is a defect that has not shipped
+    // yet, so warnings fail exactly like errors. A deliberate exception
+    // is written here, next to its reason, never silenced elsewhere.
+    lint {
+        warningsAsErrors = true
+        // Version drift is a REPORT, not a failure: a new upstream
+        // release says nothing about whether the bump is safe, and a
+        // red gate on someone else's release day blocks unrelated work
+        // (Dependabot cannot carry this signal: the Forgejo-to-GitHub
+        // push mirror deletes its branches). The gate prints every hint
+        // of these checks as its version-lag report instead
+        // (scripts/lint-lag-report.py).
+        informational +=
+            setOf(
+                "GradleDependency",
+                "AndroidGradlePluginVersion",
+                "NewerVersionAvailable",
+                // targetSdk stays 36 on purpose until an API 37 train has
+                // run (TODO_LIST); the hint keeps that decision visible.
+                "OldTargetApi",
+            )
     }
 
     signingConfigs {

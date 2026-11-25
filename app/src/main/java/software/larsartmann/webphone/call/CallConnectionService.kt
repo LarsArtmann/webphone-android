@@ -65,7 +65,9 @@ class CallConnectionService : ConnectionService() {
                         lastPhase = state.phase
                         when (state.phase) {
                             CallEngine.Phase.ACTIVE -> setActive()
+
                             CallEngine.Phase.HELD -> setOnHold()
+
                             CallEngine.Phase.ENDED ->
                                 terminate(
                                     when (state.endedBy) {
@@ -74,6 +76,7 @@ class CallConnectionService : ConnectionService() {
                                         else -> DisconnectCause.REMOTE
                                     },
                                 )
+
                             else -> Unit
                         }
                     }

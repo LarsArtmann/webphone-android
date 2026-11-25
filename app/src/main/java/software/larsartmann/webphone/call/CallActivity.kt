@@ -215,15 +215,20 @@ class CallActivity : AppCompatActivity() {
         statusView.text =
             when (state.phase) {
                 CallEngine.Phase.IDLE -> ""
+
                 CallEngine.Phase.DIALLING -> getString(R.string.dialing)
+
                 CallEngine.Phase.RINGING_IN -> getString(R.string.incoming_call)
+
                 CallEngine.Phase.ACTIVE ->
                     if (state.muted) {
                         getString(R.string.status_muted)
                     } else {
                         getString(R.string.status_active)
                     }
+
                 CallEngine.Phase.HELD -> getString(R.string.hold)
+
                 CallEngine.Phase.ENDED -> getString(R.string.status_ended)
             }
         if (state.remoteParty.isNotEmpty()) {

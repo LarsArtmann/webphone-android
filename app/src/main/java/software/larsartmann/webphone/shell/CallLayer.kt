@@ -56,7 +56,10 @@ object CallLayer {
     internal var deregisterPushDevice: (Context) -> Boolean = { SessionApi.deregisterPushDevice(it) }
 
     /** Notification id 1001-1003 are the ring/FGS/ntfy lane's own
-     *  surfaces (App conventions); the dead-session notice is 1004. */
+     *  surfaces and 1005 is the missed-call note (App conventions);
+     *  the dead-session notice is 1004, a slot of its own: it once
+     *  shared the number with the missed-call note, so one notice
+     *  silently replaced the other (pinned in RingEventRouteTest). */
     private const val SESSION_DEAD_NOTIFICATION_ID = 1004
 
     /**
@@ -180,6 +183,7 @@ object CallLayer {
             WakeLane.reportProbe()
             when (probe) {
                 SessionApi.SessionProbe.ALIVE, SessionApi.SessionProbe.UNREACHABLE -> Unit
+
                 SessionApi.SessionProbe.DEAD -> {
                     onSessionDead(appContext)
                     break

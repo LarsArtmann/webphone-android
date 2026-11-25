@@ -26,11 +26,13 @@ class SettingsActivityTest {
     private fun views(root: View?): List<android.view.View> =
         when (root) {
             null -> emptyList()
+
             is ViewGroup ->
                 buildList {
                     add(root)
                     for (i in 0 until root.childCount) addAll(views(root.getChildAt(i)))
                 }
+
             else -> listOf(root)
         }
 

@@ -49,12 +49,14 @@ class DialpadActivityTest {
     private fun firstEditText(view: View): EditText =
         when (view) {
             is EditText -> view
+
             is ViewGroup ->
                 (0 until view.childCount)
                     .asSequence()
                     .map { firstEditText(view.getChildAt(it)) }
                     .firstOrNull()
                     ?: error("no EditText found in the dialer tree")
+
             else -> error("no EditText found in the dialer tree")
         }
 }

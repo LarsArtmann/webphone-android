@@ -220,10 +220,12 @@ object CallEngine : SipEngine.Listener {
                     declineLocked()
                     return
                 }
+
                 Phase.DIALLING -> {
                     cancelledLocally = true
                     sip?.cancel(_state.value.callId)
                 }
+
                 else -> {
                     val callId = _state.value.callId
                     if (callId.isNotEmpty()) sip?.bye(callId)
@@ -276,8 +278,10 @@ object CallEngine : SipEngine.Listener {
             when (state) {
                 SipEngine.RegistrationState.REGISTERED ->
                     RegistrationInfo(Registration.REGISTERED)
+
                 SipEngine.RegistrationState.AUTH_REJECTED ->
                     RegistrationInfo(Registration.OFF, RegistrationFailure.AUTH_REJECTED)
+
                 SipEngine.RegistrationState.OFFLINE ->
                     RegistrationInfo(Registration.OFF, RegistrationFailure.OFFLINE)
             }

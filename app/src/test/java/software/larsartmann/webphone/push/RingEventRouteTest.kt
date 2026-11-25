@@ -10,6 +10,7 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowLog
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.push.RingEvent.EXTRA_CALL_ID
@@ -190,6 +191,54 @@ class RingEventRouteTest {
         } finally {
             CallEngine.cancelRinging()
         }
+    }
+
+    /** A ring that cannot post must still REACH Telecom and must SAY
+     *  why nothing appeared. The ring notification is the surface the
+     *  user sees, so "notifications are disabled for this app" was a
+     *  silent no-ring cause (a logcat-only failure is the undiagnosable
+     *  kind, the wake-lane lesson). */
+    @Test
+    fun `a ring that cannot post still reaches Telecom and names the refusal in the log`() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        shadowOf(app).grantPermissions(Manifest.permission.MANAGE_OWN_CALLS)
+        val manager = app.getSystemService(NotificationManager::class.java)
+        shadowOf(manager).setNotificationsEnabled(false)
+
+        RingEvent.route(app, "ring", "Alice", "call-1")
+
+        val telecom = app.getSystemService(Context.TELECOM_SERVICE) as TelecomManager
+        assertEquals(
+            1,
+            shadowOf(telecom).allIncomingCalls.size,
+            "the Telecom ring must not depend on the notification",
+        )
+        assertTrue(shadowOf(manager).allNotifications.isEmpty(), "nothing can be posted")
+        val lines = ShadowLog.getLogsForTag("RingEvent").map { it.msg }
+        assertTrue(
+            lines.any { it.contains("skipped: notifications are disabled") },
+            "logcat must name the refusal, got: $lines",
+        )
+    }
+
+    /** API 33+ without the POST_NOTIFICATIONS grant: the explicit
+     *  permission check (the one Android Lint's MissingPermission can
+     *  see) must skip the post, never throw, and name the grant. */
+    @Test
+    fun `a ring without the notification grant on API 33 and up posts nothing and names the grant in the log`() {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        shadowOf(app).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)
+        shadowOf(app).grantPermissions(Manifest.permission.MANAGE_OWN_CALLS)
+
+        RingEvent.route(app, "ring", "Alice", "call-1")
+
+        val manager = app.getSystemService(NotificationManager::class.java)
+        assertTrue(shadowOf(manager).allNotifications.isEmpty(), "nothing can be posted")
+        val lines = ShadowLog.getLogsForTag("RingEvent").map { it.msg }
+        assertTrue(
+            lines.any { it.contains("POST_NOTIFICATIONS not granted") },
+            "logcat must name the missing grant, got: $lines",
+        )
     }
 
     /** W150 pin: `ring_end` for an already-ANSWERED call is a silent
