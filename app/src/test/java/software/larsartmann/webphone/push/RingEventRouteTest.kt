@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.telecom.TelecomManager
 import androidx.test.core.app.ApplicationProvider
+import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -13,6 +14,7 @@ import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.push.RingEvent.EXTRA_CALL_ID
 import software.larsartmann.webphone.push.RingEvent.EXTRA_FROM
+import software.larsartmann.webphone.shell.CallLayer
 import software.larsartmann.webphone.sip.SipEngine
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -27,6 +29,19 @@ import kotlin.test.assertTrue
  */
 @RunWith(RobolectricTestRunner::class)
 class RingEventRouteTest {
+    /** Hermeticity: every `ring` below asks the call layer to wire
+     *  itself, whose production default resumes the session over real
+     *  HTTP against the live stack, and the coexistence pin drives the
+     *  dead-session teardown, whose best-effort deregistration would
+     *  DELETE against it. A JVM test must never reach the origin: both
+     *  seams are closed for the whole class (the sandbox is per-class,
+     *  so the flip cannot leak). */
+    @Before
+    fun hermeticCallLayer() {
+        CallLayer.wiringEnabled = false
+        CallLayer.deregisterPushDevice = { false }
+    }
+
     private fun grantedApp(): Application {
         val app = ApplicationProvider.getApplicationContext<Application>()
         shadowOf(app).grantPermissions(
@@ -125,6 +140,52 @@ class RingEventRouteTest {
             assertEquals(
                 app.getString(R.string.missed_call),
                 notifications[0].extras.getString(android.app.Notification.EXTRA_TITLE),
+            )
+            // The note must SAY why the call never rang: a bare
+            // "Missed call / Bob" reads as a call nobody picked up.
+            assertEquals(
+                app.getString(R.string.missed_call_reason, "Bob", app.getString(R.string.line_busy)),
+                notifications[0].extras.getString(android.app.Notification.EXTRA_TEXT),
+            )
+        } finally {
+            CallEngine.cancelRinging()
+        }
+    }
+
+    /** Two unrelated notices must never share a notification slot. The
+     *  missed-call note and the sign-in-expired notice both posted
+     *  under id 1004, so whichever came second silently replaced the
+     *  other: a missed call vanished under "Ringing paused", or the
+     *  sign-in call-to-action vanished under a missed call (found
+     *  while reading for the 2026-11-25 lint pass). */
+    @Test
+    fun `a missed-call note and the sign-in-expired notice coexist`() {
+        val app = grantedApp()
+        try {
+            CallEngine.onIncomingCall(
+                SipEngine.IncomingInvite(
+                    callId = "live",
+                    fromUser = "100",
+                    fromDisplay = "Alice",
+                    sdp = "v=0",
+                    respondWith = { _, _ -> },
+                ),
+            )
+            RingEvent.route(app, "ring", "Bob", "call-2")
+            CallLayer.onSessionDead(app)
+
+            val titles =
+                shadowOf(app.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                    .allNotifications
+                    .map { it.extras.getString(android.app.Notification.EXTRA_TITLE) }
+                    .toSet()
+            assertEquals(
+                setOf(
+                    app.getString(R.string.missed_call),
+                    app.getString(R.string.session_expired_title),
+                ),
+                titles,
+                "one notice must not replace the other",
             )
         } finally {
             CallEngine.cancelRinging()

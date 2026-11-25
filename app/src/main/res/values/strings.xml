@@ -28,6 +28,7 @@
     <string name="registration_off">Not connected</string>
     <string name="registration_auth_rejected">Sign-in rejected</string>
     <string name="missed_call">Missed call</string>
+    <string name="missed_call_reason">%1$s · %2$s</string>
     <string name="status_active_duration">%1$s · %2$d:%3$02d</string>
     <string name="state_on">on</string>
     <string name="line_busy">Line busy, call declined automatically</string>
