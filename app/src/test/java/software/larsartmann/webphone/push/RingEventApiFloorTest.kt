@@ -32,6 +32,7 @@ class RingEventApiFloorTest {
      *  the live stack. A JVM test must never reach the origin. */
     @Before
     fun hermeticCallLayer() {
+        CallLayer.wiringEnabled = false
     }
 
     @Test
