@@ -88,12 +88,12 @@ neither USB nor wireless debugging.
 
 ### Install once, update forever (Obtainium)
 
-1. In Forgejo create an access token (Settings → Applications,
-   `read:repository`). In Obtainium add the app with the URL
+1. In Obtainium add the app with the URL
    `https://forgejo.home.lan/lars/webphone-android`, tap **Override
    Source** and pick **Forgejo (Codeberg)** (that source only
-   auto-detects `codeberg.org`), then paste the token — the repo is
-   private.
+   auto-detects `codeberg.org`). The repo is public, so no token is
+   needed; if the forge is ever made private again, create a
+   `read:repository` token (Settings → Applications) and paste it.
 2. Enable the per-app option **"Allow insecure HTTP requests"**. The
    forge serves a certificate from the internal `dnsblockd` CA, which is
    not in Android's system trust store; without the toggle every check
@@ -111,6 +111,14 @@ neither USB nor wireless debugging.
 6. Kill the app and take an inbound call to prove the ntfy
    ring-while-closed lane — with the app set to battery "Unrestricted"
    (OEM battery killers are the #1 missed-ring cause).
+
+**How an update is found.** Obtainium reads the forge's releases and
+takes each release's tag (minus the `v`) as the version; the installed
+app reports `version.txt`. A release whose tag equals the installed
+version reads as up to date, and Android refuses an APK whose
+`versionCode` is not higher than the installed one, so an update is
+always: a new `version.txt`, a changelog section, a matching tag and an
+attached APK — `scripts/release.sh` produces all four together.
 
 ### Cut a release
 

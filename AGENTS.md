@@ -682,6 +682,23 @@ tracked in TODO_LIST.
     Multi-host IdPs would need a different allowance (operator question
     stands). Keep this shape — it is what makes "same-origin only" and
     "OIDC works" true at the same time.
+- **M050 emulator verdict (2026-11-27, API 36 AVD, live Pocket ID)**:
+  the detour round-trip works and the CLEAR path is on record: warm
+  shell → deep-link `begin` → logcat `auth detour blessed via redirect:
+  auth.larsartmann.cloud` → the consent page renders in-shell (no
+  Chrome task) → BACK → `auth detour cleared (back on origin:
+  https://pbx.artmann.tech/login)`. Two harness facts for the next run:
+  (1) `uiautomator dump` does NOT expose WebView nodes (only the native
+  chrome pill and buttons) — take the Cancel bounds from a screenshot,
+  1080x2400: Cancel is at about (300, 1500); (2) Pocket ID's Cancel
+  does NOT return to the origin — it opens the IdP's own passkey page,
+  so only BACK reaches the origin; a COLD deep-link into `begin` has no
+  origin history entry, so BACK leaves the app instead (harness-only
+  path: the real login starts from the island's card inside a warm
+  shell). The release smoke leaves a release-keyed install on the AVD:
+  both emulator scripts now uninstall-and-retry once on
+  `INSTALL_FAILED_UPDATE_INCOMPATIBLE` (the 2026-11-27 smoke run found
+  the debug install dying on it).
 - **The IdP is passkey-ONLY and the WebView must opt into WebAuthn
   (2026-11-11, the "OAuth broken / fingerprint re-login" diagnosis)**:
   Pocket ID supports ONLY passwordless sign-in — the "Authenticate"
