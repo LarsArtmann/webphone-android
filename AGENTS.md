@@ -555,6 +555,18 @@ tracked in TODO_LIST.
   `.editorconfig` (it produces `{ Unit }` branches that the
   warnings-as-errors compiler rejects); `blank-line-between-when-
   conditions` is on.
+- **`forkEvery = 1` is free (measured 2026-11-27, 230 cases)**: the
+  suite took 170 s with a fresh JVM per class and 181 s in one JVM, so
+  the wedge-proof fence stays; never trade it for a "speed-up".
+- **Pin the devShells against store GC**: `bash scripts/pin-devshells.sh`
+  links `result-devshell` and `result-emulator` (gitignored), whose
+  closures are the JDK + SDK + emulator + system image. Without a root a
+  GC collects them and the next session re-downloads for minutes.
+  Re-run after `nix flake update`.
+- **`scripts/evidence-lint.py` (gate step 9)**: every report time,
+  `docs/status/…` path and plan id a TODO_LIST row cites must exist
+  (status AND planning trees, live or archived). Fix the cite, never
+  widen the lint.
 - **The gate is the LAST action after the last edit (burned twice on
   2026-11-27)**: a green run on an earlier tree proves nothing about the
   final one. Re-run `scripts/verify-gate.sh` WHOLE after the final
