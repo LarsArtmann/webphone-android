@@ -225,8 +225,10 @@ class RingEventRouteTest {
 
     /** API 33+ without the POST_NOTIFICATIONS grant: the explicit
      *  permission check (the one Android Lint's MissingPermission can
-     *  see) must skip the post, never throw, and name the grant. */
+     *  see) must skip the post, never throw, and name the grant. The
+     *  permission exists from API 33 only, so the pin stays on 34. */
     @Test
+    @Config(sdk = [34])
     fun `a ring without the notification grant on API 33 and up posts nothing and names the grant in the log`() {
         val app = ApplicationProvider.getApplicationContext<Application>()
         shadowOf(app).denyPermissions(Manifest.permission.POST_NOTIFICATIONS)

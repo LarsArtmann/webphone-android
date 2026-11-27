@@ -19,6 +19,13 @@ Raw ideas:
 - Doze/battery-manager variance in the ntfy lane (accepted trade today;
   revisit if rings go missing in the field)
 - Audio-focus and audio-routing polish on the WebRTC leg
+- Telecom-owned audio routing on the API 34+ outbound path
+  (`CallControl.requestCallEndpointChange`): evaluated 2026-11-25, NOT
+  taken. The speaker is driven through `AudioManager` today and the
+  `addCall` endpoint callbacks are no-ops; moving the route under
+  Telecom cannot be verified on the JVM (Robolectric has no Telecom
+  endpoint state). Trigger: a device report of the speaker or
+  Bluetooth route disagreeing with the system call UI on API 34+
 - Baseline profiles for startup + the call path (deferred 2026-10-25:
   measure a real device first — see Decisions)
 - R8 full-mode sanity + baseline-profile check under AGP 9 (only
@@ -175,12 +182,30 @@ revisit trigger — a decision without one is a grudge.
   strings are already extractor-safe (positional args, no string
   concatenation in layouts). Revisit when there is a second user who
   wants it.
+- **Dependency version drift is visible, not fatal (2026-11-25).**
+  Android Lint's four drift checks are informational; the gate prints
+  them as a version-lag report (`scripts/lint-lag-report.py`) and stays
+  green. Dependabot has never opened a PR here, so the report is the
+  live signal. Revisit if drift is ignored for two quarters or an
+  owner wants it fatal.
+- **Konsist is rejected (2026-11-25).** Latest is `1.0.0-beta.1`; the
+  one rule this repo wanted (tests never reach a wired path without
+  their seam) ships as a dependency-free source guard,
+  `TestHermeticityGuardTest`. Revisit at a stable 1.0 and a second
+  rule worth a dependency.
 
 ## Open questions
 
 Unresolved questions route here until an answer turns them into bounded work
 (TODO_LIST) or non-goals.
 
+- **Speaker default (2026-11-25):** the loudspeaker is no longer forced
+  on for calls; audio follows the platform default route. Keep that, or
+  force speaker on for the first calls until the device train confirms
+  the earpiece route is audible on the Edge 60?
+- **targetSdk 37:** the toolchain compiles against 37 and lint's
+  `OldTargetApi` is informational on purpose. Move targetSdk to 37
+  before or after the API 37 emulator train?
 - **Live-stack access (the device-train blocker):** which test extension
   (+ account, if login needs one) may the app use against the operator's
   stack, and is the stack reachable? Everything self-serve is done.

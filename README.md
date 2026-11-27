@@ -58,6 +58,8 @@ nix develop -c ./gradlew assembleDebug      # debug APK (debug-signed, installab
 nix develop -c ./gradlew assembleRelease    # minified + resource-shrunk (R8); signed when a release key exists
 nix develop -c ./gradlew testDebugUnitTest  # protocol + Robolectric tests
 nix develop -c ./gradlew ktlintCheck        # Kotlin style gate
+nix develop -c ./gradlew :app:lintDebug     # Android Lint (errors and warnings both fatal)
+bash scripts/verify-gate.sh       # the whole gate in one command (8 steps)
 nix develop .#emulator -c bash scripts/emulator-train.sh   # self-serve device smoke
 ```
 
@@ -71,8 +73,8 @@ The FCM lane activates when `app/google-services.json` exists (drop
 in + add the google-services plugin); the ntfy lane works with zero
 Google dependencies.
 
-Set the stack origin in the app's Settings screen (persisted; first
-run prompts for it).
+The stack origin defaults to the operator's live stack; point the
+app elsewhere in its Settings screen (persisted, `https://` only).
 
 ## Distribution and updates
 
