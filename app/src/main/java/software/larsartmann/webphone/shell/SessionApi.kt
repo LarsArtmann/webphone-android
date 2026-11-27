@@ -141,7 +141,8 @@ object SessionApi {
      *  account owns MORE than one — a single-line deployment renders
      *  byte-identically to a build without the picker (the handover
      *  pack's hide-when-single contract). Pure (pinned). */
-    internal fun pickerLines(identity: SessionIdentity): List<SessionLine> = identity.lines.takeIf { it.size > 1 } ?: emptyList()
+    internal fun pickerLines(identity: SessionIdentity): List<SessionLine> =
+        identity.lines.takeIf { it.size > 1 } ?: emptyList()
 
     /** The picker's toast per switch verdict. Pure (pinned) — the
      *  honest class reaches the user verbatim instead of one Boolean. */

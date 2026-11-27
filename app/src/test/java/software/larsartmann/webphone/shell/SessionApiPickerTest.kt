@@ -15,14 +15,16 @@ import kotlin.test.assertTrue
 class SessionApiPickerTest {
     private fun line(ext: String) = SessionApi.SessionLine(extension = ext, did = "")
 
-    private fun identity(ext: String, lines: List<SessionApi.SessionLine>) =
-        SessionApi.SessionIdentity(
-            extension = ext,
-            lines = lines,
-            sipDomain = "pbx.test",
-            sipPassword = "pw",
-            websocketUrl = "wss://pbx.test/sip",
-        )
+    private fun identity(
+        ext: String,
+        lines: List<SessionApi.SessionLine>,
+    ) = SessionApi.SessionIdentity(
+        extension = ext,
+        lines = lines,
+        sipDomain = "pbx.test",
+        sipPassword = "pw",
+        websocketUrl = "wss://pbx.test/sip",
+    )
 
     @Test
     fun `a single-line account renders no picker`() {

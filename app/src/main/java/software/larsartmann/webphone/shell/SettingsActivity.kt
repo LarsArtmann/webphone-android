@@ -224,7 +224,12 @@ class SettingsActivity : AppCompatActivity() {
                             runCatching { lineSwitcher(line.extension) }
                                 .getOrDefault(SessionApi.SwitchVerdict.NETWORK)
                         runOnUiThread {
-                            Toast.makeText(this@SettingsActivity, SessionApi.switchMessage(verdict), Toast.LENGTH_LONG).show()
+                            Toast
+                                .makeText(
+                                    this@SettingsActivity,
+                                    SessionApi.switchMessage(verdict),
+                                    Toast.LENGTH_LONG,
+                                ).show()
                             if (verdict == SessionApi.SwitchVerdict.SWITCHED) {
                                 // The old line's registration and push
                                 // subscription are void — same teardown
