@@ -119,8 +119,7 @@ session:
    AGENTS.md token-scope guidance was wrong until today and I initially minted to
    that wrong spec. The repo's own memory lied; the preflight caught it. Fixed at
    report time (a7).
-3. **A fake credential sat in real infrastructure.** `secrets.yaml:forgejo_token
-   = CHANGE_ME` would have silently failed any consumer that trusted sops
+3. **A fake credential sat in real infrastructure.** `secrets.yaml:forgejo_token = CHANGE_ME` would have silently failed any consumer that trusted sops
    presence as credential existence (and DID mislead me for one probe).
 4. **History hygiene nick, not broken**: the session's main AGENTS.md change is
    entombed in a `chore: auto-commit 3 changed file(s)` blob message because a

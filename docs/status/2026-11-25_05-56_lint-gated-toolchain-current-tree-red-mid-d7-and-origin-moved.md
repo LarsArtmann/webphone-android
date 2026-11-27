@@ -83,8 +83,7 @@
 > - d7 pins before the fix: `--tests '*CallServiceTest' --tests
 >   '*CallActivityTest'` → exit 1, "6 tests completed, 4 failed"
 >   (`/tmp/webphone-d7-red.log`).
-> - Git facts at report time: `git rev-parse origin/main github/main HEAD`
->   = `f72e24b`, `e0787d9`, `ef1a53b`; `git rev-list --count
+> - Git facts at report time: `git rev-parse origin/main github/main HEAD` = `f72e24b`, `e0787d9`, `ef1a53b`; `git rev-list --count
 >   origin/main..HEAD` = 3; `git diff --stat e0787d9..HEAD` = 45 files,
 >   +1947 / −183; `@Test` annotations under `app/src/test` = 163; working
 >   tree clean at 05:56.
