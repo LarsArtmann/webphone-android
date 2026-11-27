@@ -60,7 +60,7 @@ if [ "$MODE" = "release" ]; then
                 -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
                 -keyalg RSA -keysize 2048 -validity 10000
         fi
-        fi
+        "$SDK/build-tools/35.0.0/apksigner" sign --ks "$KS" \
             --ks-pass pass:android --key-pass pass:android \
             --out "$SIGNED" "$ALIGNED"
         APK="$SIGNED"

@@ -63,6 +63,11 @@ Raw ideas:
 - GitHub releases as a second mirror: `gh` is on the box but its token is
   currently invalid, and the mirror PAT lacks `workflow` scope — one
   Obtainium source is enough while the forge works
+- Release-mode UX and endpoint (harvested 2026-11-27 from the 10-28
+  release-lane report): the app version in Settings, a check-for-update
+  deep link into Obtainium, Obtainium setup screenshots in the README,
+  and a publicly-trusted forge endpoint (auth included) so updates work
+  off the home LAN/VPN
 
 ### 4. Auth surface
 
@@ -252,6 +257,15 @@ Unresolved questions route here until an answer turns them into bounded work
   Keep that, or auto-retry / return to the island home instead? Decides
   whether M050 is a verification pass or a design change. (Server-side
   twin: the IdP cancel/error redirect-target question above.)
+
+- **Release automation:** should `scripts/release.sh` auto-bump and
+  auto-cut the CHANGELOG after a publish (no hand step left to forget),
+  or stay explicit so a human reads each release?
+- **Task vocabulary:** do J-/M-IDs (the archived plans' labels) become
+  the canonical task vocabulary for TODO rows, CHANGELOG entries and
+  reports, or keep prose rows that cite IDs only as evidence?
+- **CHANGELOG for CI-only bumps:** do dependency bumps that Dependabot
+  or an agent makes get a CHANGELOG line, or stay commit-only?
 
 ## Non-goals
 
