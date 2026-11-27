@@ -49,6 +49,9 @@ timeout 900 nix develop -c ./gradlew assembleDebug --console=plain
 
 step "2/8 testDebugUnitTest (wedge-fenced)"
 timeout 1500 nix develop -c ./gradlew testDebugUnitTest --console=plain
+# Test-count honesty: every @Test in source must appear as an executed
+# JUnit case, and the XML is the only count the gate may quote.
+python3 scripts/test-count-check.py
 
 step "3/8 ktlintCheck + KGP parity"
 timeout 600 nix develop -c ./gradlew ktlintCheck kgpParityCheck --console=plain
@@ -92,6 +95,22 @@ fi
 
 step "8/8 dprint check (markdown/yaml/json formatting)"
 nix run nixpkgs#dprint -- check
+
+step "9/9 script lint (bash -n, py_compile, shellcheck)"
+# The release lane and the gate itself are shell: a syntax slip must
+# fail HERE, not at the first `bash scripts/release.sh` on a phone day.
+for script in scripts/*.sh gradlew; do bash -n "$script"; done
+python3 -m py_compile scripts/*.py
+if command -v shellcheck >/dev/null 2>&1; then
+    shellcheck scripts/*.sh
+else
+    echo "WARNING: shellcheck not on PATH — shell lint skipped (the nix devShell carries it)"
+fi
+
+sha="$(git rev-parse --short HEAD)"
+dirty="$(git status --porcelain | wc -l)"
+printf 'last gate: GREEN at %s on %s (%s uncommitted path(s) on top of it)\n' \
+    "$sha" "$(date '+%Y-%m-%d %H:%M %Z')" "$dirty" >.gate-last-green
 
 step "GATE GREEN"
 echo "assembleDebug + tests + ktlint + lint + zipalign + abi + contrast + dprint: all green."

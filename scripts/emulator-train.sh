@@ -76,8 +76,8 @@ fi
 
 if [ ! -f "$AVD_HOME/$AVD_NAME.avd/config.ini" ]; then
     echo "no | creating AVD $AVD_NAME (system-images;android-36;google_apis;x86_64)"
-    timeout 300 bash -c 'echo no | avdmanager create avd \
-        -n "$0" -k "system-images;android-36;google_apis;x86_64" -d pixel_6' "$AVD_NAME"
+    timeout 300 bash -c "echo no | avdmanager create avd \
+        -n '$AVD_NAME' -k 'system-images;android-36;google_apis;x86_64' -d pixel_6"
 fi
 
 echo "== booting emulator (headless) =="
