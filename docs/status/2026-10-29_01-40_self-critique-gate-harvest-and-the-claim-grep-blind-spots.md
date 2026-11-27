@@ -43,13 +43,13 @@ pass over that work, and it found two things the execution pass missed).
    ~~dropping one is exactly the "read from memory" failure class; the fix~~
    ~~is mechanical: when summarizing a set of commits, diff the summary~~
    ~~against `git show --stat` of each.~~
-2. **The claim-drift discipline has a hole I only suspected until now.**
+2. **The claim-drift discipline has a hole I only suspected until now.** **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
    The compileSdk fix happened because I VIEWED that AGENTS section, not
    because any procedure looked for it. This critique turned luck into a
    step (mechanical grep over ALL living docs — including README and
    FEATURES, which I had not re-checked this window — plus `scripts/`
    prose, per the 94-label lesson). The grep ran clean, but clean-by-luck
-   is not clean-by-procedure. **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"** **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
+   is not clean-by-procedure. **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
 3. ~~**The multi-file doc window invited daemon blob #2** (carried from the~~ done — contained — the verified fold/amend remedy is a standing AGENTS.md bullet "Daemon-blob remedy (2026-10-28)"
    ~~23:30 report §d): four docs written across sequential tool calls; the~~
    ~~daemon committed three of them mid-unit. Prevention sharpened to~~
