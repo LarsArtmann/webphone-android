@@ -14,7 +14,7 @@
 #   scripts/release.sh --init-key            # ONE-TIME: signing key + properties
 #   scripts/release.sh bump patch|minor|major
 #   scripts/release.sh --doctor              # preflight only, publishes nothing
-#   scripts/release.sh [--dry-run] [--notes FILE]
+#   scripts/release.sh [--dry-run] [--prerelease] [--notes FILE]
 #
 # The gate is the full verification set the repo already trusts:
 # assembleRelease + testDebugUnitTest + ktlintCheck, then the 16 KB
@@ -47,6 +47,7 @@ PYTHON="${PYTHON:-python3}"
 
 MODE="release"
 DRY_RUN=0
+PRERELEASE=0
 NOTES_FILE=""
 BUMP=""
 
@@ -216,6 +217,25 @@ preflight() {
         die "tag $tag already exists locally — bump version.txt (scripts/release.sh bump patch)"
     fi
 
+    # Android installs only a strictly higher versionCode, so a version
+    # that sorts at or below ANY existing release tag can never reach a
+    # phone, whatever Obtainium says. Every v* tag counts, including
+    # ones only on the forge.
+    local newest_tag newest_code code
+    code="$(version_code)"
+    newest_tag="$(git tag --list 'v[0-9]*' --sort=-v:refname | head -1)"
+    if git remote get-url origin >/dev/null 2>&1; then
+        git "${GIT_SSH_QUIET[@]}" fetch --quiet --tags origin 2>/dev/null || true
+        remote_newest="$(git ls-remote --tags origin 'v[0-9]*' 2>/dev/null |
+            sed 's|.*refs/tags/||; s/\^{}//' | grep -v '\^' | sort -V | tail -1)"
+        [ -z "$remote_newest" ] || newest_tag="$(printf '%s\n%s\n' "$newest_tag" "$remote_newest" | sort -V | tail -1)"
+    fi
+    if [ -n "$newest_tag" ]; then
+        newest_code="$("${0%/*}/version-code.sh" "${newest_tag#v}")"
+        [ "$code" -gt "$newest_code" ] ||
+            die "versionCode $code ($version) does not exceed $newest_code ($newest_tag) — run 'scripts/release.sh bump patch'"
+    fi
+
     if git remote get-url origin >/dev/null 2>&1; then
         git "${GIT_SSH_QUIET[@]}" fetch --quiet origin main || die "cannot fetch origin (network / SSH agent?)"
         head_tags="$(git "${GIT_SSH_QUIET[@]}" ls-remote --tags origin "refs/tags/$tag" || true)"
@@ -266,6 +286,27 @@ gate() {
 
     note "signature verification"
     "$build_tools/apksigner" verify --print-certs "$apk" | sed -n '1,8p'
+
+    # The signed APK must carry the key the properties name. A debug or
+    # stale key would produce an APK Android refuses to install over the
+    # released one — better to stop here than on the phone.
+    local props_ks props_alias props_pass apk_cert keystore_cert
+    props_ks="$(sed -n 's/^storeFile=//p' "$PROPS")"
+    props_alias="$(sed -n 's/^keyAlias=//p' "$PROPS")"
+    props_pass="$(sed -n 's/^storePassword=//p' "$PROPS")"
+    [ -f "$props_ks" ] || die "signing keystore missing: $props_ks"
+    apk_cert="$("$build_tools/apksigner" verify --print-certs "$apk" |
+        awk -F': ' '/Signer #1 certificate SHA-256 digest/ { print tolower($2) }')"
+    keystore_cert="$(keytool -list -v -keystore "$props_ks" -storepass "$props_pass" -alias "$props_alias" 2>/dev/null |
+        awk '/SHA256:/ { print tolower($2); exit }')"
+    [ -n "$apk_cert" ] && [ -n "$keystore_cert" ] || die "could not read the signing certificates for the comparison"
+    [ "$apk_cert" = "$keystore_cert" ] ||
+        die "the APK is signed by $apk_cert but $props_ks holds $keystore_cert — the build did not use the release key"
+
+    if command -v shellcheck >/dev/null 2>&1; then
+        note "script lint (shellcheck)"
+        shellcheck scripts/*.sh
+    fi
 
     note "contrast gate (WCAG token pairs)"
     "$PYTHON" scripts/contrast-check.py
@@ -336,6 +377,7 @@ while [ $# -gt 0 ]; do
     --init-key) MODE="init-key" ;;
     --doctor) MODE="doctor" ;;
     --dry-run) DRY_RUN=1 ;;
+    --prerelease) PRERELEASE=1 ;;
     --notes)
         shift
         NOTES_FILE="${1:?--notes needs a file}"
@@ -356,7 +398,10 @@ done
 
 insecure_args=()
 if [ "${FORGEJO_INSECURE:-0}" = "1" ]; then
-    insecure_args=(--insecure)
+    insecure_args+=(--insecure)
+fi
+if [ "$PRERELEASE" = "1" ]; then
+    insecure_args+=(--prerelease)
 fi
 
 case "$MODE" in

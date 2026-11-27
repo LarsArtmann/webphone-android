@@ -33,6 +33,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   resume-resolved identity for the picker; the switch verdicts are a
   pure classifier pinned by `SessionApiSwitchVerdictTest`.
 
+- The build gate checks that every test in source actually executed
+  (`scripts/test-count-check.py`, also in CI), lints its own shell and
+  Python scripts, and writes `.gate-last-green` (commit, date, number
+  of uncommitted paths) after a green run.
+- Every Robolectric test class now runs on API 31 and 34, the
+  minimum and the Telecom `addCall` floor (230 JUnit cases, up from
+  187); the one exception is the `addCall` attribute sheet, which is
+  34-only by contract.
+- `scripts/meta-prove.sh` proves a pin in a throwaway copy of the tree,
+  so the auto-commit daemon can no longer sweep a deliberately broken
+  line into history.
+- An opt-in pre-push hook (`.githooks/pre-push`) runs the whole gate
+  before a push.
+- The emulator train, smoke and verify scripts time-bound every
+  device call and always write a log file
+  (`app/build/reports/emulator/`).
+
 ### Fixed
 
 - A call that ends while no call screen is open no longer leaves the
@@ -60,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - The missed-call note for a busy line now says the line was busy.
 - The loudspeaker is no longer forced on for calls: audio follows the
   platform's default route.
-- Toolchain: Gradle 9.9.2, Android Gradle Plugin 9.5.2, Robolectric
+- Toolchain: Gradle 9.9.2, Android Gradle Plugin 9.5.3, Robolectric
   4.18.1, ktlint engine 1.8.0 (pinned in the version catalog).
 - Unused resources removed (two pressed-state chrome drawables, a
   dialpad icon, two strings); the launcher icon folder renamed from

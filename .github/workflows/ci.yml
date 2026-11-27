@@ -39,6 +39,11 @@ jobs:
       - name: Unit tests (protocol + wiring)
         run: ./gradlew testDebugUnitTest
 
+      # Every @Test in source must appear as an executed JUnit case;
+      # the XML is the only count CI may quote.
+      - name: Test-count honesty
+        run: python3 scripts/test-count-check.py
+
       # Kotlin style gate (official style, .editorconfig). Failure
       # blocks merge; `./gradlew ktlintFormat` fixes mechanically.
       - name: Kotlin style gate (ktlint)
@@ -105,3 +110,10 @@ jobs:
 
       - name: Formatting gate (dprint)
         run: npx --yes dprint@0.64.3 check
+
+      # The gate and the release lane are shell/python: a syntax slip
+      # fails here, not on a release day.
+      - name: Script lint (bash -n, py_compile)
+        run: |
+          for script in scripts/*.sh gradlew; do bash -n "$script"; done
+          python3 -m py_compile scripts/*.py
