@@ -12,7 +12,7 @@ silently replaces.
 **Status: v0.1 scaffold, first runtime smoke done.** Load-bearing code is
 implemented but untested against LIVE infrastructure (the README
 "honesty contract" section lists the markers). There IS now: a JVM test
-source set (138 tests: protocol unit tests + Robolectric smoke + the
+source set (164 tests: protocol unit tests + Robolectric smoke + the
 deep-link/auth-detour surface + the wake-lane/session-watch verdicts,
 ktlint-gated) and a CI workflow
 (mirrored to GitHub 2026-10-25; the `push`/`pull_request`/
@@ -116,11 +116,12 @@ nix develop -c ./gradlew ktlintCheck        # Kotlin style gate (official style,
 
 The verification gate after every code change: `assembleDebug` green +
 `zipalign -c -P 16 4` on the debug APK + `testDebugUnitTest` green +
-`ktlintCheck` green (CI runs all four; `ktlintFormat` fixes
-mechanically). The one-command form is
-`bash scripts/verify-gate.sh` — it refuses to start while another
-Gradle process is alive, then runs assemble + tests + ktlint + the
-KGP-parity check + the 16 KB
+`ktlintCheck` green + Android Lint green (errors AND warnings fatal,
+CI runs all five; `ktlintFormat` fixes mechanically). The one-command
+form is `bash scripts/verify-gate.sh` (eight steps) — it refuses to
+start while another Gradle process is alive, then runs assemble +
+tests + ktlint + the KGP-parity check + Android Lint with the
+version-lag report (`scripts/lint-lag-report.py`) + the 16 KB
 zipalign + abi + contrast + `dprint check` in order, each Gradle step
 time-bounded so a wedged build fails loudly (it is the gate, wrapped;
 run its steps by hand only when debugging one of them). After any
@@ -197,7 +198,12 @@ nix develop .#emulator -c bash scripts/emulator-smoke.sh   # keeps the emulator 
   `FAIL_ON_PROJECT_REPOS` — never add repositories to `app/build.gradle.kts`
   (the root `buildscript {}` block is the sanctioned exception — see
   the KGP pin gotcha below).
-- Dependabot handles version bumps.
+- Version bumps: `gradle/libs.versions.toml` is the only place. Dependabot
+  has never opened a PR on this repo (root cause in the 2026-11-25 00:42
+  report); the gate's version-lag report is the live drift signal —
+  drift is printed, never fatal. Toolchain as of 2026-11-25: Gradle
+  9.9.2, AGP 9.5.2, Robolectric 4.18.1, ktlint-gradle 14.2.0 with the
+  engine pinned to 1.8.0 (catalog key `ktlintEngine`).
 
 ## Architecture
 
@@ -391,7 +397,7 @@ tracked in TODO_LIST.
 - `POST_NOTIFICATIONS` is requested in context — once registration
   proves the session works — not on a cold launch (API 33+).
 - **AGP 9 built-in Kotlin** (since the 2026-10-28 toolchain jump:
-  Gradle 9.8.2 + AGP 9.4.1 + Kotlin 2.4.21): the
+  Gradle 9.9.2 + AGP 9.5.2 + Kotlin 2.4.21): the
   `org.jetbrains.kotlin.android` plugin is GONE from both plugin
   blocks (incompatible with built-in Kotlin) and `android.kotlinOptions{}`
   no longer exists (jvmTarget follows `compileOptions.targetCompatibility`).
@@ -507,6 +513,42 @@ tracked in TODO_LIST.
   `write:user` (the release token is `write:repository,read:user` — 403
   proven 2026-11-11).
 
+- **The call service ends WITH the call (2026-11-25)**: `CallService`
+  collects `CallEngine.state` (started AFTER `startForeground`, and it
+  skips the state present at start, which is the previous call's ENDED)
+  and retires on the transition into ENDED. There is no stop intent
+  and no `CallService.stop`; the screen and the notification receiver
+  only call `CallEngine.hangUp()`. Never reintroduce a UI-driven
+  stop: a stop path that hangs up, sent for a call that was already
+  over, could kill the next call in its cradle. `CallEngine.hangUp()`
+  on an idle or ended line is a no-op (it used to re-publish ENDED as
+  locally ended).
+- **`gradle/wrapper/gradle-wrapper.jar` is tracked (2026-11-25)**: the
+  global `*.jar` ignore had kept it out of the repo, so a fresh clone
+  could not run `./gradlew`. The repo `.gitignore` negates it; its
+  SHA-256 must equal the `distributionSha256Sum`-era wrapper checksum
+  of the Gradle version in `gradle-wrapper.properties`.
+- **JVM tests never touch the network**: any Robolectric test that
+  launches `MainActivity` or `CallService`/`RingEvent` must flip the
+  `CallLayer.wiringEnabled = false` (or `deregisterPushDevice`) seam in
+  `@Before`; three test classes phoned the live stack's
+  `/api/session` until 2026-11-25.
+- **Lint config is in `app/build.gradle.kts`**: `warningsAsErrors =
+  true`; the four version-drift checks (`GradleDependency`,
+  `AndroidGradlePluginVersion`, `NewerVersionAvailable`,
+  `OldTargetApi`) are informational and surface as the gate's
+  version-lag report. `checkTestSources` stays off (86 `UseKtx`
+  findings otherwise). After a resource-folder `git mv`, a stale
+  merge can be cached: if a resource "is not found" or vanishes from
+  the APK, run `:app:merge<Variant>Resources --rerun-tasks`. In the
+  RELEASE APK resources are renamed by R8 (the launcher icon is
+  `res/E4.xml`, not `mipmap/...`), so check the icon through
+  `aapt2 dump badging`, not `unzip -l`.
+- **ktlint engine 1.8.0**: `when-entry-bracing` is disabled in
+  `.editorconfig` (it produces `{ Unit }` branches that the
+  warnings-as-errors compiler rejects); `blank-line-between-when-
+  conditions` is on.
+
 ## Conventions
 
 - Prose-heavy KDoc explaining WHY (decisions, tradeoffs, cross-repo
@@ -523,7 +565,7 @@ tracked in TODO_LIST.
   tap-through into the shell needs a real content intent) are created
   in `App.onCreate`.
 - UI is programmatic in v0.1 (`CallActivity` builds views in code);
-  viewBinding is enabled. `minSdk = 31`, `targetSdk = 36`,
+  view binding is OFF (no layout uses it). `minSdk = 31`, `targetSdk = 36`,
   `compileSdk = 37` (the 2026-10-28 toolchain jump moved compileSdk;
   targetSdk deliberately stays 36 until a device train validates
   Android 17 behavior changes).

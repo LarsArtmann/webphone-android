@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Android Lint is part of the build gate with warnings fatal
+  (`lint {}` in `app/build.gradle.kts`), and its version-drift findings
+  print as a version-lag report
+  (`scripts/lint-lag-report.py`, also run in CI). The Kotlin compiler
+  treats every warning as an error, in main and test sources.
 - Owned-lines picker + line switching (webphone's `lines[]` wire,
   2026-11-21): the session identity decodes the typed
   `lines[{extension,did}]` list (the active line first; an answer
@@ -27,6 +32,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   switching lines"). `CallLayer.lastIdentity` exposes the
   resume-resolved identity for the picker; the switch verdicts are a
   pure classifier pinned by `SessionApiSwitchVerdictTest`.
+
+### Fixed
+
+- A call that ends while no call screen is open no longer leaves the
+  call service (a microphone-typed foreground service with its
+  notification) running: the service now ends with the call by itself,
+  and a hang-up for a call that is already over no longer rewrites
+  who ended it.
+- The incoming-ring notification crashed the app on Android 12 to 13
+  (API 31 to 33), where it now uses the plain heads-up path.
+- Outbound calls showed the wrong call direction to the system.
+- The speaker route was not released when a call ended on some API
+  levels.
+- The missed-call notification replaced, and was replaced by, the
+  sign-in-expired notice (the two shared one notification id).
+- The JVM test suite no longer contacts the live stack from three
+  test classes.
+- `gradle/wrapper/gradle-wrapper.jar` was untracked (a global
+  `*.jar` ignore), so a fresh clone could not run `./gradlew`.
+
+### Changed
+
+- The missed-call note for a busy line now says the line was busy.
+- The loudspeaker is no longer forced on for calls: audio follows the
+  platform's default route.
+- Toolchain: Gradle 9.9.2, Android Gradle Plugin 9.5.2, Robolectric
+  4.18.1, ktlint engine 1.8.0 (pinned in the version catalog).
+- Unused resources removed (two pressed-state chrome drawables, a
+  dialpad icon, two strings); the launcher icon folder renamed from
+  `mipmap-anydpi-v26` to `mipmap-anydpi`; view binding is off
+  (no layout uses it).
 
 ## [0.2.2] - 2026-11-11
 
