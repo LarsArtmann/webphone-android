@@ -22,8 +22,6 @@ touched, +1314/−37 lines. No Kotlin source changed.
 
 <!-- check-rows:ledger -->
 
-<!-- check-rows:ledger -->
-
 | Check                                                   | Result                                                                                                                                           |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `./gradlew assembleRelease`                             | green; emits `app-release.apk` (45,845,640 B) signed with the new key                                                                            |
@@ -70,7 +68,7 @@ touched, +1314/−37 lines. No Kotlin source changed.
 | ~~2~~ | ~~**Upload code path** (`upload_asset`, multipart framing, `Content-Length`, the `attachment` field name, idempotent replace)~~ done — FEATURES.md:110 — the asset upload ran for real on v0.2.1 and was verified anonymously | ~~Zero real execution. Only the pre-flight GET path is proven (401 case). A local `http.server` mock was possible and skipped.~~                                                                                                            |
 | 3     | Version → artifact consistency                                                                                                                                                                                                | Proven for the current tree; **not automated**. Nothing stops a future tag from disagreeing with `version.txt` except preflight.                                                                                                            |
 | 4     | Post-publish version discipline                                                                                                                                                                                               | Documented ("after a publish run `bump patch`") but not automated — the tree currently claims `0.2.0`, exactly the version about to be published.                                                                                           |
-| 5     | App-Link signing story (R18) **→ TODO_LIST.md 'Cross-repo: serve /.well-known/assetlinks.json from the stack' (R18)**                                                                                                         | The release fingerprint is printed by `--init-key` and `scripts/assetlinks.sh <keystore>` accepts it, but I never generated the release-key `assetlinks.json`, and TODO_LIST R18 still frames the fingerprint as "the install signing key". |
+| 5     | App-Link signing story (R18) **→ TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)**                                                                                                         | The release fingerprint is printed by `--init-key` and `scripts/assetlinks.sh <keystore>` accepts it, but I never generated the release-key `assetlinks.json`, and TODO_LIST R18 still frames the fingerprint as "the install signing key". |
 | 6     | CI coverage of the new lane                                                                                                                                                                                                   | CI builds debug only: it never runs `assembleRelease`, never validates `version.txt`/CHANGELOG pairing, never syntax-checks the two new scripts.                                                                                            |
 | ~~7~~ | ~~`testDebugUnitTest` in the release gate~~ done — TODO_LIST.md:18 — the suite has re-executed since (97-test gate) on a changed Kotlin tree                                                                                  | ~~Passed, but as UP-TO-DATE (no Kotlin touched); a real end-to-end gate run has not re-executed the 94 tests.~~                                                                                                                             |
 
@@ -78,11 +76,11 @@ touched, +1314/−37 lines. No Kotlin source changed.
 
 | # | Item                                                                                                                                                                                  | Why it matters                                                           |
 | - | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| 1 | The phone side: Obtainium install, `read:repository` token, "Allow insecure HTTP requests", first install **→ TODO_LIST.md 'Connect the phone to Obtainium' (BLOCKED, owner device)** | This is the half the user actually asked for ("no more wireless debug"). |
-| 2 | A publicly-reachable update endpoint (mobile-data updates) **→ ROADMAP.md §3 Distribution raw idea 'A public update endpoint'**                                                       | Today updates only work on the home LAN or the NetBird VPN.              |
-| 3 | GitHub mirror parity for releases/tags **→ ROADMAP.md §3 Distribution raw idea 'GitHub releases as a second mirror'**                                                                 | The mirror has no releases; Obtainium has no fallback source.            |
-| 4 | GitHub Actions billing fix (owner) — CI still cannot start jobs on the mirror **→ TODO_LIST.md 'Owner: fix GitHub Actions billing'**                                                  | Releases are unrelated, but the guard rails are still dark.              |
-| 5 | `assetlinks.json` served from the stack with the RELEASE fingerprint **→ TODO_LIST.md 'Cross-repo: serve /.well-known/assetlinks.json from the stack' (R18)**                         | App Links verification (R18) and no-choice dialer/https intake.          |
+| 1 | The phone side: Obtainium install, `read:repository` token, "Allow insecure HTTP requests", first install **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)** | This is the half the user actually asked for ("no more wireless debug"). |
+| 2 | A publicly-reachable update endpoint (mobile-data updates) **→ ROADMAP.md §3 Distribution raw idea "A public update endpoint"**                                                       | Today updates only work on the home LAN or the NetBird VPN.              |
+| 3 | GitHub mirror parity for releases/tags **→ ROADMAP.md §3 Distribution raw idea "GitHub releases as a second mirror"**                                                                 | The mirror has no releases; Obtainium has no fallback source.            |
+| 4 | GitHub Actions billing fix (owner) — CI still cannot start jobs on the mirror **→ TODO_LIST.md "Owner: fix GitHub Actions billing"**                                                  | Releases are unrelated, but the guard rails are still dark.              |
+| 5 | `assetlinks.json` served from the stack with the RELEASE fingerprint **→ TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)**                         | App Links verification (R18) and no-choice dialer/https intake.          |
 | 6 | Signing-key backup verification (a human/offline action, but nothing tracks it)                                                                                                       | Losing the key = every device must uninstall.                            |
 
 ## d) TOTALLY FUCKED UP
@@ -105,19 +103,19 @@ touched, +1314/−37 lines. No Kotlin source changed.
    re-read the one script that consumes it.
 2. Retiring the now-wrong AGENTS gotcha while adding the new ones.
    ~~3. Actually exercising the upload code (mock server, or a scratch forge repo).~~ done — the upload ran for real on v0.2.1 (FEATURES.md:110)
-   ~~3. Actually exercising the upload code (mock server, or a scratch forge repo).~~ done — the upload ran for real on v0.2.1 (FEATURES.md:110)
+3. Proving the Obtainium **version-comparison** assumption (`v0.2.0` tag vs
    `0.2.0` installed). I could not read Obtainium's `standardizeVersion`
    (Sourcegraph returned nothing) and shipped on convention. If it does not
-   strip the `v`, the phone sees a permanently "new" version — the first **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)**
+   strip the `v`, the phone sees a permanently "new" version — the first
    symptom would be an update loop, and the fix is a one-line extraction
-   regex in Obtainium or a tag-scheme change.
-3. `version.txt` left pointing at the version being released (post-publish
+   regex in Obtainium or a tag-scheme change. **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)**
+4. `version.txt` left pointing at the version being released (post-publish
    bump is manual).
-   bump is manual).
+5. No `scripts/assetlinks.sh` run for the release key — a 30-second artifact
    that R18 needs anyway. **→ TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)**
-4. Nothing in CI guards the new files (`bash -n`, `py_compile`, version ↔
+6. Nothing in CI guards the new files (`bash -n`, `py_compile`, version ↔
    changelog pairing).
-5. Cleaning `work/release/0.2.0/` (44 MB of staged copy) after the dry runs.
+7. Cleaning `work/release/0.2.0/` (44 MB of staged copy) after the dry runs.
 
 **What could I have done better?**
 
@@ -229,17 +227,18 @@ touched, +1314/−37 lines. No Kotlin source changed.
 
 ## g) Three questions I cannot answer myself
 
-per-app "Allow insecure HTTP requests" toggle) acceptable as the permanent
-story, or should I build a publicly-trusted release endpoint (LE-cert vhost, **→ ROADMAP.md §3 Distribution raw idea "A public update endpoint"**
-or publishing the APK to the `pbx.artmann.tech` root) so updates also work
-on mobile data?
+1. **Update channel scope:** is Obtainium on the LAN/NetBird VPN (with the
+   per-app "Allow insecure HTTP requests" toggle) acceptable as the permanent
+   story, or should I build a publicly-trusted release endpoint (LE-cert vhost,
+   or publishing the APK to the `pbx.artmann.tech` root) so updates also work
+   on mobile data? **→ ROADMAP.md §3 Distribution raw idea "A public update endpoint"**
 2. **Release automation:** do you want `scripts/release.sh` to auto-bump
-`version.txt` and auto-cut the CHANGELOG heading after a successful publish
-(fewer gates, less ritual), or keep both as manual steps that a human
-confirms (current behaviour, harder to get wrong silently)?
-confirms (current behaviour, harder to get wrong silently)?
-(a second Obtainium source, and better off-site durability), or stay a **→ ROADMAP.md §3 Distribution raw idea "GitHub releases as a second mirror"**
-code-only mirror until the PAT/billing issues are fixed?
+   `version.txt` and auto-cut the CHANGELOG heading after a successful publish
+   (fewer gates, less ritual), or keep both as manual steps that a human
+   confirms (current behaviour, harder to get wrong silently)?
+3. **Mirror parity:** should the GitHub mirror carry the same tags/releases
+   (a second Obtainium source, and better off-site durability), or stay a
+   code-only mirror until the PAT/billing issues are fixed? **→ ROADMAP.md §3 Distribution raw idea "GitHub releases as a second mirror"**
 
 ---
 
