@@ -18,6 +18,13 @@
 # on the same server are never addressed.
 set -euo pipefail
 
+# Mandatory log file (see emulator-train.sh).
+LOG_DIR="app/build/reports/emulator"
+LOG="${EMULATOR_LOG:-$LOG_DIR/verify.log}"
+mkdir -p "$LOG_DIR"
+exec > >(tee -a "$LOG") 2>&1
+echo "== verify start $(date '+%Y-%m-%d %H:%M:%S') =="
+
 AVD_NAME="webphone-train"
 AVD_HOME="${ANDROID_AVD_HOME:-$PWD/.avd}"
 export ANDROID_AVD_HOME="$AVD_HOME"

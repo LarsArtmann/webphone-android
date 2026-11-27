@@ -16,6 +16,14 @@
 # The AVD lives in .avd/ (repo-local, gitignored). Requires /dev/kvm.
 set -euo pipefail
 
+# Mandatory log file: a wedged train leaves its evidence behind instead
+# of living only in a terminal that was piped through a buffering tail.
+LOG_DIR="app/build/reports/emulator"
+LOG="${EMULATOR_LOG:-$LOG_DIR/train.log}"
+mkdir -p "$LOG_DIR"
+exec > >(tee -a "$LOG") 2>&1
+echo "== train start $(date '+%Y-%m-%d %H:%M:%S') =="
+
 AVD_NAME="webphone-train"
 AVD_HOME="${ANDROID_AVD_HOME:-$PWD/.avd}"
 export ANDROID_AVD_HOME="$AVD_HOME"

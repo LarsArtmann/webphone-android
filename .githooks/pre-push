@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Opt-in pre-push hook: the gate runs BEFORE a push, not after a session.
+#
+# Enable once per checkout:  git config core.hooksPath .githooks
+# Bypass for a deliberate push:  git push --no-verify
+#
+# The auto-commit daemon commits whatever is on disk, so a pushed tree
+# is not necessarily a verified one. This hook makes "pushed" imply
+# "green" for whoever enables it. CI runs the same gate on the mirror.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+echo "pre-push: running scripts/verify-gate.sh (bypass: git push --no-verify)" >&2
+bash scripts/verify-gate.sh
