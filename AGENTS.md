@@ -558,6 +558,18 @@ tracked in TODO_LIST.
 - **`forkEvery = 1` is free (measured 2026-11-27, 230 cases)**: the
   suite took 170 s with a fresh JVM per class and 181 s in one JVM, so
   the wedge-proof fence stays; never trade it for a "speed-up".
+- **`scripts/device-deploy.sh` is the deploy dance** (emulator-proven
+  2026-11-27: fresh install, update, and the signer-mismatch stop): it
+  refuses to guess between devices (`--serial`), compares the APK's
+  signer with the INSTALLED build's and stops on mismatch (uninstalling
+  is a user decision), runs the gate unless `--skip-gate`, then
+  verifies the installed version through dumpsys, launches and scans
+  logcat for crashes. `scripts/ci-rehearsal.sh` runs every CI step in a
+  clean clone (green 2026-11-27).
+- **Train pixel evidence**: `scripts/emulator-train.sh` also cold-loads
+  the shell under airplane mode and writes
+  `work/verify/train-{pill,overlay}.png` (gitignored; `uiautomator`
+  cannot see WebView nodes, screenshots are the only pixel proof).
 - **Pin the devShells against store GC**: `bash scripts/pin-devshells.sh`
   links `result-devshell` and `result-emulator` (gitignored), whose
   closures are the JDK + SDK + emulator + system image. Without a root a

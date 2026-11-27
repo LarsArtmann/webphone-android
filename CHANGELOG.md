@@ -54,6 +54,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   rotation.
 - An opt-in pre-push hook (`.githooks/pre-push`) runs the whole gate
   before a push.
+- `scripts/ci-rehearsal.sh` runs every CI workflow step in a clean
+  clone without signing properties (CI itself has never executed).
+- `scripts/device-deploy.sh` codifies the device deploy: it stops on a
+  signer mismatch with the installed build, verifies the installed
+  version, launches, scans for crashes and saves a screenshot.
+- `scripts/test-forgejo-release.py` exercises the release client
+  against an in-process mock forge (gate and CI).
+- `scripts/pin-devshells.sh` keeps both devShells in the nix store with
+  GC roots.
+- The emulator train captures pixel evidence (the connection pill and
+  the offline overlay under airplane mode) into `work/verify/`.
 - The emulator train, smoke and verify scripts time-bound every
   device call and always write a log file
   (`app/build/reports/emulator/`).
