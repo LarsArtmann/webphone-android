@@ -9,6 +9,8 @@ name: CI
 on:
   push:
     branches: [main]
+    # A release tag is an update: CI checks it names the tree's version.
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -110,6 +112,20 @@ jobs:
 
       - name: Formatting gate (dprint)
         run: npx --yes dprint@0.64.3 check
+
+      # A tag is what Obtainium shows; version.txt is what the APK
+      # reports. A release whose two disagree reads as up-to-date on the
+      # phone forever.
+      - name: Release tag matches version.txt
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(tr -d '[:space:]' <version.txt)"
+          [ "$tag" = "$version" ] || {
+            echo "tag v$tag does not match version.txt ($version)" >&2
+            exit 1
+          }
+          echo "tag v$tag == version.txt"
 
       # The gate and the release lane are shell/python: a syntax slip
       # fails here, not on a release day.

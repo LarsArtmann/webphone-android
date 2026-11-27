@@ -82,10 +82,16 @@ read_version() {
     printf '%s\n' "$v"
 }
 
-version_code() {
+# version_code_of MAJOR.MINOR.PATCH — the Android versionCode formula
+# (also the build's: never reintroduce a literal in app/build.gradle.kts).
+version_code_of() {
     local major minor patch
-    IFS=. read -r major minor patch < <(read_version)
+    IFS=. read -r major minor patch <<<"$1"
     printf '%s' "$((major * 10000 + minor * 100 + patch))"
+}
+
+version_code() {
+    version_code_of "$(read_version)"
 }
 
 print_key_fingerprint() {
@@ -176,7 +182,7 @@ bump() {
 
 # --------------------------------------------------------------- preflight
 preflight() {
-    local version tag head_tags
+    local version tag head_tags remote_newest
 
     command -v git >/dev/null || die "git not found"
     command -v "$PYTHON" >/dev/null || die "python3 not found (needed for the Forgejo API client)"
@@ -226,12 +232,12 @@ preflight() {
     newest_tag="$(git tag --list 'v[0-9]*' --sort=-v:refname | head -1)"
     if git remote get-url origin >/dev/null 2>&1; then
         git "${GIT_SSH_QUIET[@]}" fetch --quiet --tags origin 2>/dev/null || true
-        remote_newest="$(git ls-remote --tags origin 'v[0-9]*' 2>/dev/null |
-            sed 's|.*refs/tags/||; s/\^{}//' | grep -v '\^' | sort -V | tail -1)"
+        remote_newest="$(git "${GIT_SSH_QUIET[@]}" ls-remote --tags origin 'v[0-9]*' 2>/dev/null |
+            sed 's|.*refs/tags/||' | grep -v '{}' | sort -V | tail -1)"
         [ -z "$remote_newest" ] || newest_tag="$(printf '%s\n%s\n' "$newest_tag" "$remote_newest" | sort -V | tail -1)"
     fi
     if [ -n "$newest_tag" ]; then
-        newest_code="$("${0%/*}/version-code.sh" "${newest_tag#v}")"
+        newest_code="$(version_code_of "${newest_tag#v}")"
         [ "$code" -gt "$newest_code" ] ||
             die "versionCode $code ($version) does not exceed $newest_code ($newest_tag) — run 'scripts/release.sh bump patch'"
     fi
@@ -295,10 +301,12 @@ gate() {
     props_alias="$(sed -n 's/^keyAlias=//p' "$PROPS")"
     props_pass="$(sed -n 's/^storePassword=//p' "$PROPS")"
     [ -f "$props_ks" ] || die "signing keystore missing: $props_ks"
+    # Both sides normalized to bare lowercase hex (keytool prints
+    # "SHA256: AA:BB:…", apksigner prints bare hex).
     apk_cert="$("$build_tools/apksigner" verify --print-certs "$apk" |
-        awk -F': ' '/Signer #1 certificate SHA-256 digest/ { print tolower($2) }')"
+        awk -F': ' '/Signer #1 certificate SHA-256 digest/ { print $2 }' | tr -d ':' | tr 'A-F' 'a-f')"
     keystore_cert="$(keytool -list -v -keystore "$props_ks" -storepass "$props_pass" -alias "$props_alias" 2>/dev/null |
-        awk '/SHA256:/ { print tolower($2); exit }')"
+        awk '/SHA256:/ { print $2; exit }' | tr -d ':' | tr 'A-F' 'a-f')"
     [ -n "$apk_cert" ] && [ -n "$keystore_cert" ] || die "could not read the signing certificates for the comparison"
     [ "$apk_cert" = "$keystore_cert" ] ||
         die "the APK is signed by $apk_cert but $props_ks holds $keystore_cert — the build did not use the release key"
