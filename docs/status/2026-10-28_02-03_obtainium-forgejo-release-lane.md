@@ -22,6 +22,8 @@ touched, +1314/−37 lines. No Kotlin source changed.
 
 <!-- check-rows:ledger -->
 
+<!-- check-rows:ledger -->
+
 | Check                                                   | Result                                                                                                                                           |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `./gradlew assembleRelease`                             | green; emits `app-release.apk` (45,845,640 B) signed with the new key                                                                            |
