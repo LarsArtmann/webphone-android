@@ -44,6 +44,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `scripts/meta-prove.sh` proves a pin in a throwaway copy of the tree,
   so the auto-commit daemon can no longer sweep a deliberately broken
   line into history.
+- The build gate verifies that every report and plan id a TODO row
+  cites exists (`scripts/evidence-lint.py`).
+- The release preflight refuses a versionCode that does not exceed the
+  newest published tag, the release gate refuses an APK whose signer is
+  not the configured keystore, `--prerelease` marks a forge release as
+  a pre-release, and CI refuses a `v*` tag that disagrees with
+  `version.txt`. `docs/KEY_ROTATION.md` documents key backup and
+  rotation.
 - An opt-in pre-push hook (`.githooks/pre-push`) runs the whole gate
   before a push.
 - The emulator train, smoke and verify scripts time-bound every

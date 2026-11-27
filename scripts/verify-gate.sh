@@ -106,6 +106,8 @@ if command -v shellcheck >/dev/null 2>&1; then
 else
     echo "WARNING: shellcheck not on PATH — shell lint skipped (the nix devShell carries it)"
 fi
+# Evidence links: every report/plan a TODO_LIST row cites must exist.
+python3 scripts/evidence-lint.py
 
 sha="$(git rev-parse --short HEAD)"
 dirty="$(git status --porcelain | wc -l)"
