@@ -6,6 +6,7 @@ import org.junit.After
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
 import software.larsartmann.webphone.sip.SipEngine
@@ -20,6 +21,7 @@ import kotlin.test.assertNull
  * "Robolectric activity tests NEVER use ActivityScenario").
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class CallActivityTest {
     @After
     fun resetEngine() {

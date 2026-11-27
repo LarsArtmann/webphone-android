@@ -11,6 +11,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.push.WakeLane
@@ -30,6 +31,7 @@ import kotlin.test.assertEquals
  *    notice on the visible account channel, ledger SESSION_DEAD.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class CallLayerWatchLoopTest {
     private val appContext = ApplicationProvider.getApplicationContext<Context>()
 

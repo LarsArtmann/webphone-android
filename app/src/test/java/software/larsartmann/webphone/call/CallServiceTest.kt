@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ServiceController
 import software.larsartmann.webphone.sip.SipEngine
@@ -28,6 +29,7 @@ import kotlin.test.assertTrue
  * device-train verification).
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class CallServiceTest {
     private fun answeredCall() {
         CallEngine.onIncomingCall(

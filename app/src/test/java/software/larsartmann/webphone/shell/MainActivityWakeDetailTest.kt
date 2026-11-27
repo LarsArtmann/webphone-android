@@ -10,6 +10,7 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.shadows.ShadowToast
 import software.larsartmann.webphone.R
@@ -34,6 +35,7 @@ import kotlin.test.assertTrue
  * CONTRACT (teardown verdict) without any wire leaving the JVM.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class MainActivityWakeDetailTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 

@@ -5,6 +5,7 @@ import android.telecom.CallAttributes
 import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -15,6 +16,7 @@ import kotlin.test.assertEquals
  * Telecom that the call the user just dialed is an incoming one.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class TelecomOutgoingAttributesTest {
     @Test
     fun `an outbound placement is declared outgoing, never incoming`() {

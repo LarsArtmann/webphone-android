@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.push.NtfySubscriptionService
@@ -27,6 +28,7 @@ import kotlin.test.assertNotNull
  * teardown, ledger SESSION_DEAD.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class CallLayerSessionDeadTest {
     /** Hermeticity: the teardown's best-effort deregistration is a
      *  real CSRF fetch plus a DELETE against the live stack. A JVM

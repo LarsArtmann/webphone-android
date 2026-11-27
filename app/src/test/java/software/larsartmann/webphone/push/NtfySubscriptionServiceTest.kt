@@ -10,6 +10,7 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import software.larsartmann.webphone.push.WakeLaneState
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -32,6 +33,7 @@ import kotlin.test.fail
  * Gradle worker, 2026-10-28).
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class NtfySubscriptionServiceTest {
     @Before
     fun resetTheLedger() {

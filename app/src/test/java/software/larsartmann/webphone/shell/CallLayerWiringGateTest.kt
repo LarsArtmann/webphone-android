@@ -3,6 +3,7 @@ package software.larsartmann.webphone.shell
 import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.push.WakeLane
 import software.larsartmann.webphone.push.WakeLaneState
@@ -27,6 +28,7 @@ import kotlin.test.assertTrue
  *   session resume, no socket.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class CallLayerWiringGateTest {
     @Test
     fun `wiring defaults to enabled despite the flipper classes`() {

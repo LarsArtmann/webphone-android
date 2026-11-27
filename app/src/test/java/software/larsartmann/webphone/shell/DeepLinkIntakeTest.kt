@@ -8,6 +8,7 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
 import software.larsartmann.webphone.App
@@ -38,6 +39,7 @@ import kotlin.test.assertNull
  * lose.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class DeepLinkIntakeTest {
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
