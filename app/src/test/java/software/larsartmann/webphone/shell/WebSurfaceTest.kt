@@ -6,6 +6,7 @@ import androidx.test.core.app.ActivityScenario
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
@@ -24,6 +25,7 @@ import kotlin.test.assertTrue
  * in a fresh WebView instead of dying with the renderer).
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class WebSurfaceTest {
     @Before
     fun keepTheShellUnwired() {

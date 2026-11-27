@@ -6,6 +6,7 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.push.WakeLane
 import software.larsartmann.webphone.push.WakeLaneState
@@ -22,6 +23,7 @@ import kotlin.test.assertTrue
  * contract itself is pinned in AttachGuardTest against a fake.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class MainActivityLaunchTest {
     @Before
     fun keepTheShellUnwired() {

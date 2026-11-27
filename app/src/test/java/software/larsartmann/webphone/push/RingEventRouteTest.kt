@@ -9,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowLog
 import software.larsartmann.webphone.R
@@ -29,6 +30,7 @@ import kotlin.test.assertTrue
  * here must fail before a device train does.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class RingEventRouteTest {
     /** Hermeticity: every `ring` below asks the call layer to wire
      *  itself, whose production default resumes the session over real

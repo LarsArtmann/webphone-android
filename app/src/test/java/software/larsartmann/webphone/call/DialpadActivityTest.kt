@@ -7,6 +7,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -18,6 +19,7 @@ import kotlin.test.assertNull
  * registration (dialer honesty is pinned in the UI state, not here).
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class DialpadActivityTest {
     @Test
     fun `the prefill intent seeds the number with the cursor at the end`() {
