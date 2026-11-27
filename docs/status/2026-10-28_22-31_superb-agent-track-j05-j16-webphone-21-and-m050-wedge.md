@@ -46,65 +46,65 @@ committed** — 7 real commits on top of `befe000`, nothing pushed yet
 
 ## d) TOTALLY FUCKED UP (own mistakes, all repaired or contained)
 
-1. **The over-broad squash (worst of the day).** When the daemon blobbed
-   my J12-J15 files, I `git reset --soft origin/main` — but origin was
-   FIVE real commits behind (J05-J11 were never pushed). The squash
-   folded five logical commits into one. CAUGHT (the `17 files changed`
-   stat gave it away) and repaired properly: soft-reset to the true
-   pre-batch HEAD, reconstructed J07/J08/J11 with `git commit-tree`
-   (exact same trees, correct messages), re-committed the batch. Nothing
-   was lost; nothing had been pushed. Root cause: muscle-memory
-   "reset to origin" without checking how far ahead HEAD was.
-2. **A vacuous test shipped for ~20 minutes.** The first stop-leak pin
-   relied on the websocket close handshake's onFailure arriving inside
-   a 2.5 s window under Robolectric — it never does (seconds-late), so
-   the test PASSED even with the fix deliberately broken. The meta-test
-   (break the fix, expect red) caught it; the redesign drives
-   `scheduleReconnect` directly and now fails in ~1 s when broken. The
-   lesson (a green test proves nothing until you watch it fail) is old;
-   the discipline of ALWAYS meta-testing a new wedge-pin is now policy.
-3. **The emulator smoke wedged unseen for ~7 h.** I piped the long-running
-   script through `tail` — the EXACT trap recorded in AGENTS ("stream
-   to a log file, tail buffers until exit"). Zero output for hours, a
-   qemu process eating CPU all day, and M050 got nothing done. Killed
-   at 22:28. My own recorded gotcha, violated the same day.
-4. **Edit-tool misfire** in the wire test: an intended brace-fix deleted
-   the `runTest {` line instead (wrong old_string). Caught on the next
-   view, repaired in the following edit; compile gate confirmed.
-5. **A garbage line injected by a scripted edit** (`shadow.com.robolectric.Shadows.shadowOf`
-   — nonsense from a sloppy python replace) landed in the ntfy test and
-   was caught on re-view before it could compile.
-6. **Wrong claim in a commit message**: J16's message said "95 tests";
-   the true count is 97. Amended BEFORE the push (remotes lagged) — no
-   permanent damage, but the count was read from memory, not the XML.
-7. **Two 404 API guesses** for the ktlint plugin repo name
-   (`ktlint-plugin`, `ktlint-idea`) before resolving via web search.
-   Small, but guessing URLs is on the banned list.
-8. **The daemon blobbed me FIVE times today** — the amend remedy worked
-   every time, but the PREVENTION side (hand-commit finished units
-   immediately, small windows) was underused; every blob was my
-   invitation.
+1. ~~**The over-broad squash (worst of the day).** When the daemon blobbed~~ done — repaired with zero loss (git commit-tree); recorded as AGENTS.md:889 'Daemon-blob remedy'
+   ~~my J12-J15 files, I `git reset --soft origin/main` — but origin was~~
+   ~~FIVE real commits behind (J05-J11 were never pushed). The squash~~
+   ~~folded five logical commits into one. CAUGHT (the `17 files changed`~~
+   ~~stat gave it away) and repaired properly: soft-reset to the true~~
+   ~~pre-batch HEAD, reconstructed J07/J08/J11 with `git commit-tree`~~
+   ~~(exact same trees, correct messages), re-committed the batch. Nothing~~
+   ~~was lost; nothing had been pushed. Root cause: muscle-memory~~
+   ~~"reset to origin" without checking how far ahead HEAD was.~~
+2. ~~**A vacuous test shipped for ~20 minutes.** The first stop-leak pin~~ done — redesigned in dd2fb12 (fails in ~1 s when broken); lesson at AGENTS.md:900
+   ~~relied on the websocket close handshake's onFailure arriving inside~~
+   ~~a 2.5 s window under Robolectric — it never does (seconds-late), so~~
+   ~~the test PASSED even with the fix deliberately broken. The meta-test~~
+   ~~(break the fix, expect red) caught it; the redesign drives~~
+   ~~`scheduleReconnect` directly and now fails in ~1 s when broken. The~~
+   ~~lesson (a green test proves nothing until you watch it fail) is old;~~
+   ~~the discipline of ALWAYS meta-testing a new wedge-pin is now policy.~~
+3. ~~**The emulator smoke wedged unseen for ~7 h.** I piped the long-running~~ done — contained (killed 22:28); hardening → TODO_LIST.md:33
+   ~~script through `tail` — the EXACT trap recorded in AGENTS ("stream~~
+   ~~to a log file, tail buffers until exit"). Zero output for hours, a~~
+   ~~qemu process eating CPU all day, and M050 got nothing done. Killed~~
+   ~~at 22:28. My own recorded gotcha, violated the same day.~~
+4. ~~**Edit-tool misfire** in the wire test: an intended brace-fix deleted~~ done — repaired in the following edit; compile gate green (97e6929)
+   ~~the `runTest {` line instead (wrong old_string). Caught on the next~~
+   ~~view, repaired in the following edit; compile gate confirmed.~~
+5. ~~**A garbage line injected by a scripted edit** (`shadow.com.robolectric.Shadows.shadowOf`~~ done — caught before compile; no 'shadow.com.robolectric' line in app/src/test (rg)
+   ~~— nonsense from a sloppy python replace) landed in the ntfy test and~~
+   ~~was caught on re-view before it could compile.~~
+6. ~~**Wrong claim in a commit message**: J16's message said "95 tests";~~ done — amended before the push; dd2fb12 message reads '97 tests'
+   ~~the true count is 97. Amended BEFORE the push (remotes lagged) — no~~
+   ~~permanent damage, but the count was read from memory, not the XML.~~
+7. ~~**Two 404 API guesses** for the ktlint plugin repo name~~ done — contained — no repo artifact left behind (nothing to repair); self-reported only
+   ~~(`ktlint-plugin`, `ktlint-idea`) before resolving via web search.~~
+   ~~Small, but guessing URLs is on the banned list.~~
+8. ~~**The daemon blobbed me FIVE times today** — the amend remedy worked~~ done — every blob repaired; prevention policy at AGENTS.md:899
+   ~~every time, but the PREVENTION side (hand-commit finished units~~
+   ~~immediately, small windows) was underused; every blob was my~~
+   ~~invitation.~~
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Verify-gate the COMMIT, not the session**: the full wrapper should
+1. **Verify-gate the COMMIT, not the session**: the full wrapper should **→ TODO_LIST.md:35 'Pre-push hook (opt-in) running verify-gate.sh — gate the COMMIT'**
    run once per logical unit (it is ~5 min up-to-date-cached), so the
    "final tree never saw the whole gate" class cannot exist.
-2. **Meta-test every new test that pins a fix**: one red-run per pin,
-   mandatory (cost: ~1 min; caught a vacuous pin today).
-3. **Never pipe long-running scripts through tail** — the gotcha is
-   recorded; enforce it by habit: `> /tmp/x.log 2>&1 &` + `tail -f` on
-   demand, or run_in_background with log-file reads.
-4. **Before ANY `git reset`, print `git rev-list --count origin/main..HEAD`**
-   — the number would have stopped the over-broad squash instantly.
-5. **Hand-commit the moment a unit is finished** — five daemon blobs in
-   one day means my commit cadence is slower than the daemon's.
-6. **Robolectric + real-socket tests**: close-handshake latency under
-   the looper is seconds-scale and non-deterministic — drive seams
-   directly instead of waiting on network events.
-7. **Test-count claims must come from the XML, not memory** (same
+2. ~~**Meta-test every new test that pins a fix**: one red-run per pin,~~ done — AGENTS.md:900 'A new test that pins a fix is VACUOUS until meta-proven'
+   ~~mandatory (cost: ~1 min; caught a vacuous pin today).~~
+3. ~~**Never pipe long-running scripts through tail** — the gotcha is~~ done — AGENTS.md:440 already records the tail-buffering trap; script hardening → TODO_LIST.md:33
+   ~~recorded; enforce it by habit: `> /tmp/x.log 2>&1 &` + `tail -f` on~~
+   ~~demand, or run_in_background with log-file reads.~~
+4. ~~**Before ANY `git reset`, print `git rev-list --count origin/main..HEAD`**~~ done — AGENTS.md:894 'Before ANY reset … print git rev-list --count origin/main..HEAD'
+   ~~— the number would have stopped the over-broad squash instantly.~~
+5. ~~**Hand-commit the moment a unit is finished** — five daemon blobs in~~ done — AGENTS.md:899 'hand-commit finished units immediately so the daemon never gets the chance'
+   ~~one day means my commit cadence is slower than the daemon's.~~
+6. ~~**Robolectric + real-socket tests**: close-handshake latency under~~ done — AGENTS.md:905 'Drive test seams directly; never wait on network events under Robolectric'
+   ~~the looper is seconds-scale and non-deterministic — drive seams~~
+   ~~directly instead of waiting on network events.~~
+7. **Test-count claims must come from the XML, not memory** (same **→ TODO_LIST.md:37 'Test-count honesty as a gate step'**
    discipline as the coverage cross-check lesson from the last report).
-8. **Emulator hygiene**: the smoke script should `timeout`-bound its
+8. **Emulator hygiene**: the smoke script should `timeout`-bound its **→ TODO_LIST.md:33 'Emulator smoke/train script hardening'**
    boot + install phases itself, so a wedged script self-reports
    instead of parking a qemu for 7 h.
 
@@ -145,18 +145,18 @@ committed** — 7 real commits on top of `befe000`, nothing pushed yet
 
 ## g) QUESTIONS FOR THE OPERATOR (cannot self-answer)
 
-1. **Daemon policy**: the auto-commit daemon blobbed me five times
+1. **Daemon policy**: the auto-commit daemon blobbed me five times **→ TODO_LIST.md:95 'Operator: answer the three §g questions' + ROADMAP.md Open questions 'Auto-commit daemon policy'**
    today; the amend remedy worked every time (and once bit me via the
    over-broad squash). Do you want the daemon DISABLED or paced for
    this repo while agent sessions run (a SystemNix knob), or is the
    amend remedy + faster hand-commit cadence the accepted steady state?
-2. **Release-first?**: `version.txt` still claims 0.2.0 while the
+2. **Release-first?**: `version.txt` still claims 0.2.0 while the **→ TODO_LIST.md:95 'Operator: answer the three §g questions' + ROADMAP.md Open questions 'Release-first for v0.2.0'**
    release lane is unpublished and M021-M053 just landed as code. Do
    you want the first release cut (M032/M033, needs the Forgejo token)
    to happen BEFORE further code accumulates — so Obtainium's first
    update cycle starts from a real baseline — or is more agent-track
    work fine to pile onto 0.2.0?
-3. **M050's expected end-state**: when the consent Cancel fires and the
+3. **M050's expected end-state**: when the consent Cancel fires and the **→ TODO_LIST.md:95 'Operator: answer the three §g questions' + ROADMAP.md Open questions 'M050's Android end-state'**
    IdP errors back to the origin, the CURRENT design commits the
    origin, clears the detour, and shows the IdP's error page in-shell.
    Do you want that (error page rendered in the shell, detour cleared),

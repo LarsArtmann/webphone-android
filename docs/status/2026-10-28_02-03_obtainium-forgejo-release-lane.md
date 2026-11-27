@@ -102,20 +102,20 @@ touched, +1314/−37 lines. No Kotlin source changed.
 1. The emulator train (`--release`) — I changed the artifact layout and never
    re-read the one script that consumes it.
 2. Retiring the now-wrong AGENTS gotcha while adding the new ones.
-~~3. Actually exercising the upload code (mock server, or a scratch forge repo).~~ done — the upload ran for real on v0.2.1 (FEATURES.md:110)
-~~4. Proving the Obtainium **version-comparison** assumption (`v0.2.0` tag vs~~ **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)**
+   ~~3. Actually exercising the upload code (mock server, or a scratch forge repo).~~ done — the upload ran for real on v0.2.1 (FEATURES.md:110)
+   ~~3. Actually exercising the upload code (mock server, or a scratch forge repo).~~ done — the upload ran for real on v0.2.1 (FEATURES.md:110)
    `0.2.0` installed). I could not read Obtainium's `standardizeVersion`
    (Sourcegraph returned nothing) and shipped on convention. If it does not
-   strip the `v`, the phone sees a permanently "new" version — the first
+   strip the `v`, the phone sees a permanently "new" version — the first **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)**
    symptom would be an update loop, and the fix is a one-line extraction
    regex in Obtainium or a tag-scheme change.
-5. `version.txt` left pointing at the version being released (post-publish
+3. `version.txt` left pointing at the version being released (post-publish
    bump is manual).
-~~6. No `scripts/assetlinks.sh` run for the release key — a 30-second artifact~~ **→ TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)**
-   that R18 needs anyway.
-7. Nothing in CI guards the new files (`bash -n`, `py_compile`, version ↔
+   bump is manual).
+   that R18 needs anyway. **→ TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)**
+4. Nothing in CI guards the new files (`bash -n`, `py_compile`, version ↔
    changelog pairing).
-8. Cleaning `work/release/0.2.0/` (44 MB of staged copy) after the dry runs.
+5. Cleaning `work/release/0.2.0/` (44 MB of staged copy) after the dry runs.
 
 **What could I have done better?**
 
@@ -129,15 +129,15 @@ touched, +1314/−37 lines. No Kotlin source changed.
 3. **Never mix "make the artifact signed" with "keep the old artifact path
    assumptions alive"** — I should have grepped every consumer of
    `app-release-unsigned.apk` in the same edit.
-~~4. **Use a scratch repo for a real end-to-end publish.** Forgejo has~~ done — a real publish happened instead: v0.2.1, 2026-11-11 (FEATURES.md:110)
+   ~~4. **Use a scratch repo for a real end-to-end publish.** Forgejo has~~ done — a real publish happened instead: v0.2.1, 2026-11-11 (FEATURES.md:110)
    push-to-create over SSH; a throwaway repo + a token would have proven the
    upload for real. Blocked only by token creation (UI/API with credentials).
-5. **Configuration-cache hygiene**: reading env + file existence at
+4. **Configuration-cache hygiene**: reading env + file existence at
    configuration time (`app/build.gradle.kts:39-56`) is exactly the pattern
    that can produce a stale signed/unsigned decision. Either use
    `providers.*` inputs or document `--no-configuration-cache` for signing
    troubleshooting. I did neither.
-6. **Make the script testable** from the start (`release.sh` is one 390-line
+5. **Make the script testable** from the start (`release.sh` is one 390-line
    file with `set -euo pipefail` and no seam) — that is why two of its bugs
    needed tracing instead of a test.
 
@@ -211,34 +211,33 @@ touched, +1314/−37 lines. No Kotlin source changed.
 37. Add a flake check for the release key's presence in `--doctor` only (never fail a plain build).
 38. ~~Document the attachment `allowed_types` risk + the exact SystemNix knob (`attachment.MAX_SIZE`, and `.apk` in `ALLOWED_TYPES` if ever enforced).~~ done — AGENTS.md:486-493 (Forgejo facts that bite the upload: MAX_SIZE knob + allowed_types risk)
 39. Add a `scripts/release.sh --notes` example to the README (custom notes path).
-~~40. Record in AGENTS that the forge is Forgejo 15.0.10 and that `--check` output is the fastest health probe.~~ done — AGENTS.md:486-487 (forge version 15.0.10 + the --check probe recorded)
+    ~~40. Record in AGENTS that the forge is Forgejo 15.0.10 and that `--check` output is the fastest health probe.~~ done — AGENTS.md:486-487 (forge version 15.0.10 + the --check probe recorded)
     ~~41. Add a status-report/README link so the next session finds this report.~~ done — docs/status/README.md live index links this report
-41. Consider making `version.txt` the tag source of truth in CI (`git describe --tags` sanity check).
-42. Evaluate whether `bump` should also open a CHANGELOG stub section automatically.
-43. ~~Reconsider `versionCode` layout if `patch` ever reaches 100 (currently a hard error — good, but document the escalation).~~ done — app/build.gradle.kts:26-28 (hard check with the overflow message naming the layout)
-44. Add a second signature check: verify the APK's signer equals `release.properties`' expected cert (keystore vs artifact, the AGENTS lesson).
-45. Keep `work/dryrun*.log` out of the repo tree or delete after a run.
-46. Add `shellcheck` to the devShell so `release.sh` gets a real linter (not just `bash -n`).
-47. Add a `docs/` note on how Obtainium resolves versions (tag vs title) next to the setup steps.
-48. Reconcile the two "status" narratives: README's "v0.1 scaffold" header vs the 0.2.0 version now in `version.txt`. **→ TODO_LIST.md "Reconcile the v0.1 scaffold status line"**
-49. Sweep the remaining `app-release-unsigned.apk` references (`README.md:61`, `AGENTS.md:220`, `AGENTS.md:335`) so every mention states the conditional correctly.
+40. Consider making `version.txt` the tag source of truth in CI (`git describe --tags` sanity check).
+41. Evaluate whether `bump` should also open a CHANGELOG stub section automatically.
+42. ~~Reconsider `versionCode` layout if `patch` ever reaches 100 (currently a hard error — good, but document the escalation).~~ done — app/build.gradle.kts:26-28 (hard check with the overflow message naming the layout)
+43. Add a second signature check: verify the APK's signer equals `release.properties`' expected cert (keystore vs artifact, the AGENTS lesson).
+44. Keep `work/dryrun*.log` out of the repo tree or delete after a run.
+45. Add `shellcheck` to the devShell so `release.sh` gets a real linter (not just `bash -n`).
+46. Add a `docs/` note on how Obtainium resolves versions (tag vs title) next to the setup steps.
+47. Reconcile the two "status" narratives: README's "v0.1 scaffold" header vs the 0.2.0 version now in `version.txt`. **→ TODO_LIST.md "Reconcile the v0.1 scaffold status line"**
+48. Sweep the remaining `app-release-unsigned.apk` references (`README.md:61`, `AGENTS.md:220`, `AGENTS.md:335`) so every mention states the conditional correctly.
 
 ---
 
 ## g) Three questions I cannot answer myself
 
-~~1. **Update channel scope:** is Obtainium on the LAN/NetBird VPN (with the~~ **→ ROADMAP.md §3 Distribution raw idea "A public update endpoint"**
-   per-app "Allow insecure HTTP requests" toggle) acceptable as the permanent
-   story, or should I build a publicly-trusted release endpoint (LE-cert vhost,
-   or publishing the APK to the `pbx.artmann.tech` root) so updates also work
-   on mobile data?
+per-app "Allow insecure HTTP requests" toggle) acceptable as the permanent
+story, or should I build a publicly-trusted release endpoint (LE-cert vhost, **→ ROADMAP.md §3 Distribution raw idea "A public update endpoint"**
+or publishing the APK to the `pbx.artmann.tech` root) so updates also work
+on mobile data?
 2. **Release automation:** do you want `scripts/release.sh` to auto-bump
-   `version.txt` and auto-cut the CHANGELOG heading after a successful publish
-   (fewer gates, less ritual), or keep both as manual steps that a human
-   confirms (current behaviour, harder to get wrong silently)?
-~~3. **Mirror parity:** should the GitHub mirror carry the same tags/releases~~ **→ ROADMAP.md §3 Distribution raw idea "GitHub releases as a second mirror"**
-   (a second Obtainium source, and better off-site durability), or stay a
-   code-only mirror until the PAT/billing issues are fixed?
+`version.txt` and auto-cut the CHANGELOG heading after a successful publish
+(fewer gates, less ritual), or keep both as manual steps that a human
+confirms (current behaviour, harder to get wrong silently)?
+confirms (current behaviour, harder to get wrong silently)?
+(a second Obtainium source, and better off-site durability), or stay a **→ ROADMAP.md §3 Distribution raw idea "GitHub releases as a second mirror"**
+code-only mirror until the PAT/billing issues are fixed?
 
 ---
 
