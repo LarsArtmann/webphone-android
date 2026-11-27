@@ -904,11 +904,13 @@ tracked in TODO_LIST.
 - dprint formats Markdown tables BETWEEN edits — re-view any `.md`
   file before `edit`/`multiedit` or exact matches fail. Run
   `nix run nixpkgs#dprint -- fmt` on touched `.md`/`.yml` files before
-  finishing (CI runs `dprint check`). CAVEAT (found 2026-11-11): the
-  EXPLICIT-FILE form (`fmt CHANGELOG.md`) no-ops with "No files found
-  to format with the specified plugins" while the bare `fmt`/`check`
-  forms work — format with the bare form and verify with `-- check`,
-  never trust the explicit-file form's silence.
+  finishing (CI runs `dprint check`). The EXPLICIT-FILE form on an
+  EXCLUDED file (`fmt CHANGELOG.md` — `**/CHANGELOG.md` is in
+  `dprint.json` `excludes`) exits 14 with "No files found to format":
+  that is the exclude, not a dprint bug (root-caused 2026-11-27; the
+  2026-11-11 "anomaly" was exactly this file). An explicit non-excluded
+  file formats fine; a non-zero exit from the explicit form means
+  "nothing matched", never "already formatted" — verify with `check`.
 - **BuildFlow's nix-fmt roundtrip needs a `formatter` output (2026-11-11,
   the first green run)**: buildflow copies the flake to a `/tmp` tree and
   runs `nix fmt` there, which invokes the formatter BARE. Plain `nixfmt`
