@@ -7,11 +7,11 @@
 #   nix develop .#emulator -c bash scripts/emulator-train.sh
 #   nix develop .#emulator -c bash scripts/emulator-train.sh --release
 #
-# --release is the release SMOKE mode: the unsigned release artifact
-# is aligned and signed with the DEBUG key (never a real signature —
-# a real release signing config is a deliberate future step, see
-# AGENTS.md) so R8/shrinker output gets booted on a device before any
-# real release exists.
+# --release is the release SMOKE mode: the release-keyed artifact
+# (app-release.apk, present when the release key is configured) boots
+# as-is, so R8/shrinker output is proven on a device. Without the key
+# the unsigned artifact is aligned and smoke-signed with the DEBUG key
+# instead (never a publishable signature).
 #
 # The AVD lives in .avd/ (repo-local, gitignored). Requires /dev/kvm.
 set -euo pipefail
@@ -40,26 +40,32 @@ if [ ! -d "$IMG_DIR" ]; then
 fi
 
 if [ "$MODE" = "release" ]; then
+    RELEASE_SIGNED="app/build/outputs/apk/release/app-release.apk"
     UNSIGNED="app/build/outputs/apk/release/app-release-unsigned.apk"
-    [ -f "$UNSIGNED" ] || {
-        echo "release APK missing: $UNSIGNED (run ./gradlew assembleRelease first)" >&2
+    [ -f "$RELEASE_SIGNED" ] || [ -f "$UNSIGNED" ] || {
+        echo "release APK missing: $RELEASE_SIGNED (run ./gradlew assembleRelease first)" >&2
         exit 1
     }
-    ALIGNED="app/build/outputs/apk/release/app-release-smoke-aligned.apk"
-    SIGNED="app/build/outputs/apk/release/app-release-smoke.apk"
-    "$SDK/build-tools/35.0.0/zipalign" -f -P 16 4 "$UNSIGNED" "$ALIGNED"
-    KS="${HOME}/.android/debug.keystore"
-    if [ ! -f "$KS" ]; then
-        echo "== generating a local debug keystore (smoke-signing only) =="
-        keytool -genkeypair -keystore "$KS" -storepass android -keypass android \
-            -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
-            -keyalg RSA -keysize 2048 -validity 10000
+    if [ -f "$RELEASE_SIGNED" ]; then
+        APK="$RELEASE_SIGNED"
+        SHOT="webphone-release-smoke.png"
+    else
+        ALIGNED="app/build/outputs/apk/release/app-release-smoke-aligned.apk"
+        SIGNED="app/build/outputs/apk/release/app-release-smoke.apk"
+        "$SDK/build-tools/35.0.0/zipalign" -f -P 16 4 "$UNSIGNED" "$ALIGNED"
+        KS="${HOME}/.android/debug.keystore"
+        if [ ! -f "$KS" ]; then
+            echo "== generating a local debug keystore (smoke-signing only) =="
+            keytool -genkeypair -keystore "$KS" -storepass android -keypass android \
+                -alias androiddebugkey -dname "CN=Android Debug,O=Android,C=US" \
+                -keyalg RSA -keysize 2048 -validity 10000
+        fi
+        fi
+            --ks-pass pass:android --key-pass pass:android \
+            --out "$SIGNED" "$ALIGNED"
+        APK="$SIGNED"
+        SHOT="webphone-release-smoke.png"
     fi
-    "$SDK/build-tools/35.0.0/apksigner" sign --ks "$KS" \
-        --ks-pass pass:android --key-pass pass:android \
-        --out "$SIGNED" "$ALIGNED"
-    APK="$SIGNED"
-    SHOT="webphone-release-smoke.png"
     echo "== release smoke APK: $APK =="
 fi
 

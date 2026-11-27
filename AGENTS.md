@@ -316,10 +316,11 @@ tracked in TODO_LIST.
   `super.onBackPressed()` on purpose (predictive back owns 33+); the
   override carries `@Suppress("DEPRECATION")` — that warning stays
   suppressed, not fixed, until minSdk 34.
-- **No release signing config**: `assembleRelease` emits
-  `app-release-unsigned.apk` — NOT installable on any device. The only
-  sideload/MVP artifact is the debug APK (auto debug-signed). Adding a
-  signing config is a deliberate future step, not an accident to fix.
+- **Release signing is opt-in by file presence**: `assembleRelease`
+  emits `app-release.apk` when `~/.config/webphone-android/release.
+  properties` exists (the release lane below) and
+  `app-release-unsigned.apk` otherwise, which no device installs. CI
+  and fresh checkouts build unsigned on purpose.
 - **Stack origin**: persisted in Settings (`webphone-settings` prefs;
   `SettingsActivity` validates `https://` and tears the call layer
   down on save). The shipped default is the operator's live stack

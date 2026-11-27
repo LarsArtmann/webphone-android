@@ -66,7 +66,7 @@ nix develop .#emulator -c bash scripts/emulator-train.sh   # self-serve device s
 Release signing reads `~/.config/webphone-android/release.properties`
 (written once by `scripts/release.sh --init-key`; the keystore lives next
 to it, never in the repo). Without that file `assembleRelease` still
-builds — it just emits `app-release-unsigned.apk`, which no device will
+builds, but emits `app-release-unsigned.apk`, which no device will
 install; that is what keeps CI and fresh checkouts green.
 
 The FCM lane activates when `app/google-services.json` exists (drop
