@@ -197,8 +197,7 @@ Everything below is on `main`, unpushed past `f72e24b`, and green in the
   `assembleDebug` and the full suite are green on the result.
 - **The ktlint engine is pinned and current: 1.8.0** (was the plugin's
   default 1.5.0), in the version catalog as `ktlintEngine`. 1.8.0's
-  `blank-line-between-when-conditions` rule added 44 blank lines across
-  10 files; `ktlintCheck` is green.
+  `blank-line-between-when-conditions` rule added roughly 50 blank lines across 11 files; `ktlintCheck` is green.
 - **Android Lint is in the gate, with warnings fatal.** `app/build.gradle.kts`
   has a `lint {}` block: `warningsAsErrors = true`, and the four
   version-ish checks (`GradleDependency`,
@@ -219,9 +218,7 @@ Everything below is on `main`, unpushed past `f72e24b`, and green in the
   floor.
 - **The ktlint rule `when-entry-bracing` is disabled, with its reason in
   `.editorconfig`.** See (d4): it was tried first.
-- **Open rows of the 00:42 report closed by this session:** 1, 2 (for the
-  tree at that time), 4, 9, 10, 11, 12, 21 of the 23:33 list's lint part,
-  the `ci.yml` half of 3.
+- **Open rows of the 00:42 report closed by this session:** 1, 4, 10, 11, 12, half of 3 (the `ci.yml` half) and half of 9. NOT done: 29 (drop `viewBinding`).
 
 ## b) PARTIALLY DONE
 
@@ -266,7 +263,7 @@ Everything below is on `main`, unpushed past `f72e24b`, and green in the
 Carried from the 00:42 §f unless marked new. Priorities unchanged.
 
 - 8: HARVEST of the §f lists, `docs-gates run` (cadence was already red;
-  20 live reports now).
+  19 live reports now).
 - 13 (owner: drift policy and Dependabot), 14 (owner: speaker off), 15
   (device train), 16 (API 31 to 33 ring proof on an image), 17 (owner:
   push and release), 18 (owner: squash the daemon blobs).
@@ -279,7 +276,7 @@ Carried from the 00:42 §f unless marked new. Priorities unchanged.
   an API 37 train), 30 `git remote prune github`, 33 the pin-to-green
   script.
 - New: the release variant's merge state (see NOT verified); the positive
-  fresh-clone proof; the emulator train the toolchain jump asks for;
+  fresh-clone proof; the emulator train the toolchain jump asks for; 29: drop `viewBinding` (`app/build.gradle.kts`, one line, no layout uses it);
   `CallEngine.hangUp()` on an already ended call re-publishes `ENDED`
   with `endedBy = LOCAL` (noticed, untouched).
 
@@ -337,9 +334,8 @@ Carried from the 00:42 §f unless marked new. Priorities unchanged.
 **What I forgot.** (1) To write the fix before pausing (d1). (2) To
 re-check the remote refs after the first hour; I assumed they had not
 moved because I had not moved them (d2). (3) To delete the probe in the
-same command that created it (d3). (4) To run the release variant after
-the rename. (5) The 23:33 report's index row is still missing; this
-report's edit adds the 00:42 row and its own.
+same command that created it (d3). (4) To run the release variant after the rename. (5) To drop `viewBinding` (row 29). (6) The 23:33 report's
+index row is still missing; this report's edit adds the 00:42 row and its own.
 
 **What I could have done better.** (1) Treat "pin, red, fix, green" as
 one unit that is never split across a pause. (2) Read a new lint or
