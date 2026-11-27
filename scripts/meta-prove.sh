@@ -11,8 +11,9 @@
 # The two commands MUST be inverses. The restore runs on EVERY exit
 # (trap), so an interrupted run cannot leave a broken tree behind; the
 # script then re-runs the pin and refuses a GREEN-on-broken or
-# RED-on-restored verdict. A clean tree before and after is checked
-# through `git status --porcelain` when --paths names the touched files.
+# RED-on-restored verdict. The tree's content fingerprint (the named
+# paths, or the whole diff against HEAD) is compared before and after,
+# so a restore that does not put the bytes back stops the proof.
 set -euo pipefail
 
 tests=""
@@ -39,12 +40,12 @@ if pgrep -f 'Gradle[W]orkerMain' > /dev/null; then
   exit 1
 fi
 
-restored() {
+snapshot() {
   if [ -n "$paths" ]; then
     # shellcheck disable=SC2086  # several paths, split on purpose
-    git diff --quiet -- $paths
+    cat $paths | sha256sum
   else
-    git diff --quiet && git diff --cached --quiet
+    git diff HEAD | sha256sum
   fi
 }
 restore() { eval "$restore_cmd"; }
@@ -54,11 +55,7 @@ run_pin() {
   nix develop -c ./gradlew :app:testDebugUnitTest --tests "$tests" --console=plain -q > /dev/null 2>&1
 }
 
-if ! restored; then
-  echo "REFUSED: the tree is not clean for the paths under test; commit or stash first" >&2
-  exit 1
-fi
-
+before=$(snapshot)
 eval "$break_cmd"
 if run_pin; then
   echo "VACUOUS: the pin passes with the fix broken ($tests)" >&2
@@ -68,10 +65,8 @@ echo "RED on broken: ok"
 
 restore
 trap - EXIT INT TERM
-if ! restored; then
+if [ "$(snapshot)" != "$before" ]; then
   echo "RESTORE INCOMPLETE: the tree differs after --restore-cmd; fix by hand" >&2
-  # shellcheck disable=SC2086  # several paths, split on purpose
-  git diff --stat -- $paths >&2 || true
   exit 1
 fi
 if run_pin; then
