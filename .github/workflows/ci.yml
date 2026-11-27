@@ -129,6 +129,11 @@ jobs:
 
       # The gate and the release lane are shell/python: a syntax slip
       # fails here, not on a release day.
+      # The release lane's forge client against a mock forge: the
+      # publish path is exercised on every push, not on release day.
+      - name: Release client (mock forge)
+        run: python3 scripts/test-forgejo-release.py
+
       - name: Script lint (bash -n, py_compile)
         run: |
           for script in scripts/*.sh gradlew; do bash -n "$script"; done

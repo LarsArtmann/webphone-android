@@ -14,7 +14,11 @@
 #   scripts/release.sh --init-key            # ONE-TIME: signing key + properties
 #   scripts/release.sh bump patch|minor|major
 #   scripts/release.sh --doctor              # preflight only, publishes nothing
-#   scripts/release.sh [--dry-run] [--prerelease] [--notes FILE]
+#   scripts/release.sh [--dry-run] [--prerelease] [--notes FILE] [--post-publish]
+#
+# --post-publish runs `bump patch` right after a successful publish, so
+# the tree can never be left claiming a version that is already out
+# (Obtainium would read the next build as up to date).
 #
 # The gate is the full verification set the repo already trusts:
 # assembleRelease + testDebugUnitTest + ktlintCheck, then the 16 KB
@@ -48,6 +52,7 @@ PYTHON="${PYTHON:-python3}"
 MODE="release"
 DRY_RUN=0
 PRERELEASE=0
+POST_PUBLISH=0
 NOTES_FILE=""
 BUMP=""
 
@@ -386,6 +391,7 @@ while [ $# -gt 0 ]; do
     --doctor) MODE="doctor" ;;
     --dry-run) DRY_RUN=1 ;;
     --prerelease) PRERELEASE=1 ;;
+    --post-publish) POST_PUBLISH=1 ;;
     --notes)
         shift
         NOTES_FILE="${1:?--notes needs a file}"
@@ -443,5 +449,6 @@ release)
 		  - reachable only on the home LAN or the NetBird VPN
 		After that, every release here is an update prompt on the phone.
 	EOF
+    [ "$POST_PUBLISH" = "1" ] && bump patch
     ;;
 esac

@@ -106,6 +106,8 @@ if command -v shellcheck >/dev/null 2>&1; then
 else
     echo "WARNING: shellcheck not on PATH — shell lint skipped (the nix devShell carries it)"
 fi
+# The release lane's forge client, against an in-process mock forge.
+python3 scripts/test-forgejo-release.py
 # Evidence links: every report/plan a TODO_LIST row cites must exist.
 python3 scripts/evidence-lint.py
 
