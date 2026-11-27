@@ -25,7 +25,6 @@ class CallNotificationReceiver : BroadcastReceiver() {
 
             ACTION_HANGUP -> {
                 CallEngine.hangUp()
-                CallService.stop(context)
             }
         }
     }

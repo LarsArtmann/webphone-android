@@ -8,6 +8,13 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 import androidx.core.app.NotificationCompat
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
@@ -25,8 +32,25 @@ import software.larsartmann.webphone.R
  * party; posting is guarded — CallStyle demands an active Telecom
  * call at post time and the API 31-33 direct-dial path has none, so
  * the plain ongoing pill is the fallback, never a crash.
+ *
+ * The service ends WITH the call, by itself: it collects the engine's
+ * state and retires on the transition into ENDED, so a call that ends
+ * with no screen alive (a remote BYE after the user left the in-call
+ * UI) cannot leave a microphone-typed service running. Nobody sends
+ * it a stop intent; the screen only renders. The collector starts
+ * after `startForeground` (bringing the service down before that
+ * call crashes on Android 12+) and skips the state present at
+ * start, which is the PREVIOUS call's ENDED until the next dial
+ * overwrites it: only a transition retires.
  */
 class CallService : Service() {
+    private var lifetime: Job? = null
+
+    override fun onDestroy() {
+        lifetime?.cancel()
+        super.onDestroy()
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(
@@ -34,19 +58,23 @@ class CallService : Service() {
         flags: Int,
         startId: Int,
     ): Int {
-        if (intent?.action == ACTION_STOP) {
-            CallEngine.hangUp()
-            startForeground(NOTIFICATION_ID, plainNotification(), foregroundTypes())
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            stopSelf()
-            return START_STICKY
-        }
         val types = foregroundTypes()
         try {
             startForeground(NOTIFICATION_ID, styledNotification(), types)
         } catch (t: Throwable) {
             Log.w(TAG, "CallStyle notification rejected (${t.message}) — plain pill")
             startForeground(NOTIFICATION_ID, plainNotification(), types)
+        }
+        if (lifetime == null) {
+            lifetime =
+                CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).launch {
+                    CallEngine.state.drop(1).collect { state ->
+                        if (state.phase == CallEngine.Phase.ENDED) {
+                            stopForeground(STOP_FOREGROUND_REMOVE)
+                            stopSelf()
+                        }
+                    }
+                }
         }
         return START_STICKY
     }
@@ -96,16 +124,8 @@ class CallService : Service() {
     companion object {
         private const val TAG = "CallService"
         private const val NOTIFICATION_ID = 1002
-        private const val ACTION_STOP = "software.larsartmann.webphone.call.STOP"
-
         fun start(context: Context) {
             context.startForegroundService(Intent(context, CallService::class.java))
-        }
-
-        fun stop(context: Context) {
-            context.startService(
-                Intent(context, CallService::class.java).setAction(ACTION_STOP),
-            )
         }
     }
 }

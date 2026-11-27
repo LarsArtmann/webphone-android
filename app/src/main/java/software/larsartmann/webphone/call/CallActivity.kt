@@ -249,7 +249,6 @@ class CallActivity : AppCompatActivity() {
             else -> Unit
         }
         if (state.phase == CallEngine.Phase.ENDED) {
-            CallService.stop(this)
             scheduleEndAutoFinish()
         }
     }
@@ -446,7 +445,6 @@ class CallActivity : AppCompatActivity() {
 
     private fun hangUpAndFinish() {
         CallEngine.hangUp()
-        CallService.stop(this)
         finish()
     }
 

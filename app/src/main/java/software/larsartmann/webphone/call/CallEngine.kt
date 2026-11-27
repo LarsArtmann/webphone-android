@@ -215,6 +215,7 @@ object CallEngine : SipEngine.Listener {
      *  200-OK the BYE of an unconfirmed dialog and keep ringing. */
     fun hangUp() {
         synchronized(callLock) {
+            if (_state.value.phase.acceptsNewCall) return
             when (_state.value.phase) {
                 Phase.RINGING_IN -> {
                     declineLocked()

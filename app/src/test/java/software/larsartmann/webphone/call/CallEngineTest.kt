@@ -106,6 +106,27 @@ class CallEngineTest {
             assertEquals(CallEngine.Phase.ENDED, CallEngine.state.value.phase)
         }
 
+    /** A hang-up for a call that is already over must change nothing:
+     *  it used to re-publish ENDED as locally ended, overwriting the
+     *  honest verdict of a call the remote party ended (noticed
+     *  2026-11-25). */
+    @Test
+    fun `hangUp on an already ended call keeps the remote party's verdict`() =
+        runTest {
+            val recorder = Recorder()
+            attachedEngine(recorder)
+            CallEngine.onIncomingCall(invite("in-5"))
+            CallEngine.onCallEstablished("in-5", remoteSdp = "v=0")
+            CallEngine.onCallEnded("in-5")
+            assertEquals(CallEngine.EndedBy.REMOTE, CallEngine.state.value.endedBy)
+            val framesBefore = recorder.frames.size
+
+            CallEngine.hangUp()
+
+            assertEquals(CallEngine.EndedBy.REMOTE, CallEngine.state.value.endedBy)
+            assertEquals(framesBefore, recorder.frames.size, "no wire frame for a finished call")
+        }
+
     @Test
     fun `a second inbound while one is live is refused with 486`() =
         runTest {
