@@ -170,4 +170,18 @@ sleep 8
 
 adb_ exec-out screencap -p >"$SHOT"
 echo "== screenshot: $SHOT =="
+mkdir -p work/verify
+cp "$SHOT" work/verify/train-pill.png
+
+# Pixel evidence (Robolectric pins text, not pixels): the offline
+# overlay, cold-loaded under airplane mode. Restored afterwards.
+echo "== offline overlay (airplane mode on) =="
+adb_ shell cmd connectivity airplane-mode enable
+sleep 3
+adb_ shell am force-stop software.larsartmann.webphone
+adb_ shell am start -W -n software.larsartmann.webphone/.shell.MainActivity >/dev/null
+sleep 8
+adb_ exec-out screencap -p >work/verify/train-overlay.png
+adb_ shell cmd connectivity airplane-mode disable
+echo "== evidence: work/verify/train-pill.png, work/verify/train-overlay.png =="
 adb_ logcat -d -t 200 | grep -Ei "webphone|SipEngine|SessionApi|RingEvent|NtfySubscription|FATAL" || true
