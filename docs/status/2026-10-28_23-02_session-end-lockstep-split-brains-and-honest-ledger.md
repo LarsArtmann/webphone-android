@@ -92,20 +92,20 @@ covers the close-out and what the close-out's cross-checking surfaced).
 2. **Verify-gate per logical unit, not per session** — the wrapper is **→ TODO_LIST.md Ready row "Pre-push hook (opt-in) running verify-gate.sh"**
    ~5 min up-to-date-cached; running it per unit means the
    "final tree never saw the whole gate" class (§b #1) cannot exist.
-3. **Claim-drift grep**: before finishing ANY commit that changes a
+   ~~3. **Claim-drift grep**: before finishing ANY commit that changes a~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"
    number or behavior claim (test count, trigger set, version,
    API level), grep the living docs (AGENTS, README, FEATURES,
    TODO_LIST, CHANGELOG) for the old value. Both of today's split
    brains were findable in one grep each.
-4. ~~**Keep the two new AGENTS disciplines visibly**: rev-list-count~~ done — both disciplines are in AGENTS.md (rev-list-count before ANY reset; a pin is VACUOUS until meta-proven)
+3. ~~**Keep the two new AGENTS disciplines visibly**: rev-list-count~~ done — both disciplines are in AGENTS.md (rev-list-count before ANY reset; a pin is VACUOUS until meta-proven)
    ~~before ANY reset (applied today, worked), meta-test every wedge-pin~~
    ~~(caught yesterday's vacuous design). They are recorded now — reread~~
    ~~them at session start.~~
-5. **Self-staling report prose**: when a report is KNOWN to be
+   ~~5. **Self-staling report prose**: when a report is KNOWN to be~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"
    superseded minutes later by the same session's own next step, say so
    inline instead of shipping a sentence that is false before the push
    output finishes printing.
-6. **The "v0.1 scaffold" status line** (README + AGENTS) vs `version.txt` **→ TODO_LIST.md Low Impact row "Reconcile the v0.1 scaffold status line" (ROADMAP Open question Release-first)**
+4. **The "v0.1 scaffold" status line** (README + AGENTS) vs `version.txt` **→ TODO_LIST.md Low Impact row "Reconcile the v0.1 scaffold status line" (ROADMAP Open question Release-first)**
    0.2.0: still unreconciled — deliberately, because writing it
    truthfully depends on the release-first answer (§g #2). Queued, not
    forgotten (the sibling report's §f #49 tracks it too).

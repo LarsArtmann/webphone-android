@@ -49,20 +49,20 @@ log, the test-suite state from the gate run itself.
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Per-FILE hand-commits during doc sweeps** (sharpened from the
-   per-unit rule — see §d #1).
-2. **The claim-drift grep must cover script prose, not just docs** — the
-   "94 tests" label lived in `scripts/verify-gate.sh`, which the `e4c8dff`
-   grep of AGENTS/README/FEATURES/TODO_LIST/CHANGELOG never sees. New
-   rule: grep `scripts/` too when a count or claim changes.
-   ~~3. **Counts never belong in prose labels** — the gate label now says~~ done at `5dbf61f`
-   "wedge-fenced", not "94 tests"; the count lives in the run itself.
+~~1. **Per-FILE hand-commits during doc sweeps** (sharpened from the~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"
+per-unit rule — see §d #1).
+~~2. **The claim-drift grep must cover script prose, not just docs** — the~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"
+"94 tests" label lived in `scripts/verify-gate.sh`, which the `e4c8dff`
+grep of AGENTS/README/FEATURES/TODO_LIST/CHANGELOG never sees. New
+rule: grep `scripts/` too when a count or claim changes.
+~~3. **Counts never belong in prose labels** — the gate label now says~~ done at `5dbf61f`
+"wedge-fenced", not "94 tests"; the count lives in the run itself.
 
 ## f) NEXT (ranked)
 
 ~~1. M050 re-run under the hardened harness (Ready row 1) — then fold the~~ **→ TODO_LIST.md Ready "M050 re-run with the hardened harness"**
 verdict into the AGENTS auth-detour gotcha.
-2. The cheap hardening rows: emulator script timeouts, warning-freeze
+~~2. The cheap hardening rows: emulator script timeouts, warning-freeze~~ r: TODO_LIST.md Ready rows (emulator script hardening, pre-push hook, forkEvery audit, test-count gate step); warning-freeze closed by allWarningsAsErrors in app/build.gradle.kts
 gate step, pre-push hook, `forkEvery` audit, test-count gate step.
 ~~3. Owner: the §g trio (now in ROADMAP Open questions) — daemon policy,~~ **→ ROADMAP.md Open questions "Auto-commit daemon policy" / "Release-first for v0.2.0" / "M050's Android end-state"; TODO_LIST.md High "Owner: answer the three §g questions" and "Owner: fix GitHub Actions billing"**
 release-first v0.2.0, M050 end-state; plus M001-M003 which unblock CI

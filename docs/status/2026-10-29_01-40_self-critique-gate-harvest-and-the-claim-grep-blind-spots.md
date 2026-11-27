@@ -22,10 +22,10 @@ pass over that work, and it found two things the execution pass missed).
 
 ## b) PARTIALLY DONE
 
-| # | Work                                                                                                                                                                                                                                                                                                                                                                                    | State                                                   |
-| - | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| 1 | **M050 re-run** — not this window by design (the operator scoped gate + harvest). The Ready row now carries the hardened-harness requirements inline (log-file output, time-bounded boot/install, `uiautomator` bounds, logcat-watch) so the 7 h wedge class cannot recur when it runs **→ TODO_LIST.md "M050 re-run with the hardened harness" (Ready)**                               | Ready row 1 in TODO_LIST; still the last open track row |
-| 2 | **The evidence trail for the gate runs lives in `/tmp`** — the reports cite log files that die at reboot. The GREEN claim is re-runnable in ~2 min cached, so this is a provenance nit, not a hole — but a one-line "last gate: GREEN at <commit>" marker file would make the claim durable **→ UNROUTED — no "last gate" marker or TODO/ROADMAP row as of 2026-11-27; same as §f #35** | §f #35                                                  |
+| #  | Work                                                                                                                                                                                                                                                                                                                                                      | State                                                                                                                                                                                                                                                                                                                                                                                   |
+| -- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1  | **M050 re-run** — not this window by design (the operator scoped gate + harvest). The Ready row now carries the hardened-harness requirements inline (log-file output, time-bounded boot/install, `uiautomator` bounds, logcat-watch) so the 7 h wedge class cannot recur when it runs **→ TODO_LIST.md "M050 re-run with the hardened harness" (Ready)** | Ready row 1 in TODO_LIST; still the last open track row                                                                                                                                                                                                                                                                                                                                 |
+| ~~ | 2                                                                                                                                                                                                                                                                                                                                                         | **The evidence trail for the gate runs lives in `/tmp`** — the reports cite log files that die at reboot. The GREEN claim is re-runnable in ~2 min cached, so this is a provenance nit, not a hole — but a one-line "last gate: GREEN at <commit>" marker file would make the claim durable **→ UNROUTED — no "last gate" marker or TODO/ROADMAP row as of 2026-11-27; same as §f #35** | §f #35 | ~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md" |
 
 ## c) NOT STARTED
 
@@ -56,14 +56,14 @@ pass over that work, and it found two things the execution pass missed).
    ~~per-FILE hand-commits during doc sweeps. Zero damage this time — the~~
    ~~fold + amend were verified — but the cadence, not the daemon, is the~~
    ~~root cause.~~
-4. **A tiny provenance loss in the M049 row conversion**: the old Ready
+   ~~4. **A tiny provenance loss in the M049 row conversion**: the old Ready~~ v: done — the TODO_LIST "Track webphone#21" row cites archived 00-20 §f3 again (2026-11-27)
    row cited `archived 00-20 §f30`; the replacement webphone#21 tracking
    row cites the draft + the issue + the two live reports but dropped the
    archived cite. Recoverable (the draft links the chain), but the
    convention is that every row stays self-contained. Noted, not
    re-edited — one cite in a Low row does not justify another tree
    churn today.
-5. ~~**Did I lie to you? No.** Every load-bearing claim was mechanically~~ done — no action — a statement of fact, every claim was verified in the window (43350c6)
+4. ~~**Did I lie to you? No.** Every load-bearing claim was mechanically~~ done — no action — a statement of fact, every claim was verified in the window (43350c6)
    ~~verified before it was made: the action-bump SHA against the GitHub~~
    ~~releases API, the SDK claims against `app/build.gradle.kts`, the gate~~
    ~~results from its own log, the lockstep from `rev-parse`, and this~~
@@ -71,23 +71,23 @@ pass over that work, and it found two things the execution pass missed).
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Summary-vs-source diff for every CHANGELOG/docs summary**: after
-   writing a summary of commits, walk `git show --stat` per commit and
-   check each file appears (or is deliberately excluded). The §d #1 gap
-   was invisible from inside the summary.
+~~1. **Summary-vs-source diff for every CHANGELOG/docs summary**: after~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"
+writing a summary of commits, walk `git show --stat` per commit and
+check each file appears (or is deliberately excluded). The §d #1 gap
+was invisible from inside the summary.
 2. **The claim-drift grep is a PROCEDURE, not an instinct**: when any **→ §f #36 — UNROUTED, no AGENTS bullet yet**
-   count/claim changes, grep ALL living docs AND `scripts/` prose for
-   the old value — mechanically, every time, not when a view happens to
-   land on the line. (Candidate for an AGENTS bullet — §f #36.)
-3. **Per-FILE hand-commits during doc sweeps** (sharpened from per-unit):
-   the daemon's sweep interval is shorter than a four-file writing pass.
+count/claim changes, grep ALL living docs AND `scripts/` prose for
+the old value — mechanically, every time, not when a view happens to
+land on the line. (Candidate for an AGENTS bullet — §f #36.)
+~~3. **Per-FILE hand-commits during doc sweeps** (sharpened from per-unit):~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"
+the daemon's sweep interval is shorter than a four-file writing pass.
 4. ~~**Counts never live in prose labels** — the gate label now says~~ done — scripts/verify-gate.sh step 2 label reads 'testDebugUnitTest (wedge-fenced)', no count in any step label
-   ~~"wedge-fenced"; the count lives in the run itself.~~
+~~"wedge-fenced"; the count lives in the run itself.~~
 5. **Evidence durability**: re-runnable claims (the gate) are fine **→ §f #35 — UNROUTED, no marker convention yet**
-   uncited; one-shot claims (this window's logs) should land in-repo or
-   carry their key numbers inline, as this report does.
+uncited; one-shot claims (this window's logs) should land in-repo or
+carry their key numbers inline, as this report does.
 6. ~~**Gate-per-unit held this window** — keep it: the second gate pass~~ done — standing practice — scripts/verify-gate.sh is the per-unit gate; nothing further to do
-   ~~(harvest tree, pre-commit) is what made the harvest commit boring.~~
+~~(harvest tree, pre-commit) is what made the harvest commit boring.~~
 
 ## f) NEXT (ranked, ≤ 50 — a brainstorm, not a commitment)
 
