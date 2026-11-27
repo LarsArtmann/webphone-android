@@ -61,7 +61,25 @@ for _ in $(seq 1 180); do
 done
 echo "== boot completed =="
 
-adb_ install -r "$APK"
+# A debug build cannot update a release-keyed install (or vice versa:
+# the --release smoke leaves one behind). The train AVD holds no data
+# worth keeping, so a signature mismatch uninstalls and retries once.
+install_apk() {
+    local apk="$1" out
+    if ! out="$(adb_ install -r "$apk" 2>&1)"; then
+        printf '%s\n' "$out"
+        case "$out" in
+        *INSTALL_FAILED_UPDATE_INCOMPATIBLE*)
+            echo "== signature mismatch with the installed build: uninstalling and retrying =="
+            adb_ uninstall software.larsartmann.webphone >/dev/null
+            adb_ install -r "$apk"
+            ;;
+        *) return 1 ;;
+        esac
+    fi
+}
+
+install_apk "$APK"
 adb_ logcat -c
 adb_ shell am start -W -n software.larsartmann.webphone/.shell.MainActivity || true
 sleep 6

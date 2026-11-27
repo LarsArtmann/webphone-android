@@ -130,6 +130,24 @@ adb_() {
 }
 adb_ root >/dev/null 2>&1 || true
 
+# A debug build cannot update a release-keyed install (or vice versa:
+# the --release smoke leaves one behind). The train AVD holds no data
+# worth keeping, so a signature mismatch uninstalls and retries once.
+install_apk() {
+    local apk="$1" out
+    if ! out="$(adb_ install -r "$apk" 2>&1)"; then
+        printf '%s\n' "$out"
+        case "$out" in
+        *INSTALL_FAILED_UPDATE_INCOMPATIBLE*)
+            echo "== signature mismatch with the installed build: uninstalling and retrying =="
+            adb_ uninstall software.larsartmann.webphone >/dev/null
+            adb_ install -r "$apk"
+            ;;
+        *) return 1 ;;
+        esac
+    fi
+}
+
 echo "== waiting for boot completion ($SERIAL) =="
 timeout 120 adb -s "$SERIAL" wait-for-device
 for _ in $(seq 1 180); do
@@ -144,14 +162,7 @@ done
     }
 
 echo "== installing $APK =="
-if [ "$MODE" = "release" ]; then
-    # The smoke APK is signed with a freshly generated debug keystore —
-    # any package already on the AVD (the gradle debug builds) has a
-    # different signature and the install dies with
-    # INSTALL_FAILED_UPDATE_INCOMPATIBLE. A smoke run needs no old data.
-    adb_ uninstall software.larsartmann.webphone >/dev/null 2>&1 || true
-fi
-adb_ install -r "$APK"
+install_apk "$APK"
 
 echo "== launching the shell =="
 adb_ shell am start -n software.larsartmann.webphone/.shell.MainActivity
