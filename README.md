@@ -59,7 +59,7 @@ nix develop -c ./gradlew assembleRelease    # minified + resource-shrunk (R8); s
 nix develop -c ./gradlew testDebugUnitTest  # protocol + Robolectric tests
 nix develop -c ./gradlew ktlintCheck        # Kotlin style gate
 nix develop -c ./gradlew :app:lintDebug     # Android Lint (errors and warnings both fatal)
-bash scripts/verify-gate.sh       # the whole gate in one command (8 steps)
+bash scripts/verify-gate.sh       # the whole gate in one command (9 steps; green writes `.gate-last-green`)
 nix develop .#emulator -c bash scripts/emulator-train.sh   # self-serve device smoke
 ```
 

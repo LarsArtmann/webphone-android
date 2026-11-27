@@ -12,7 +12,7 @@ silently replaces.
 **Status: v0.1 scaffold, first runtime smoke done.** Load-bearing code is
 implemented but untested against LIVE infrastructure (the README
 "honesty contract" section lists the markers). There IS now: a JVM test
-source set (164 tests: protocol unit tests + Robolectric smoke + the
+source set (165 `@Test`, 230 JUnit cases with the SDK-31/34 pins: protocol unit tests + Robolectric smoke + the
 deep-link/auth-detour surface + the wake-lane/session-watch verdicts,
 ktlint-gated) and a CI workflow
 (mirrored to GitHub 2026-10-25; the `push`/`pull_request`/
@@ -118,12 +118,18 @@ The verification gate after every code change: `assembleDebug` green +
 `zipalign -c -P 16 4` on the debug APK + `testDebugUnitTest` green +
 `ktlintCheck` green + Android Lint green (errors AND warnings fatal,
 CI runs all five; `ktlintFormat` fixes mechanically). The one-command
-form is `bash scripts/verify-gate.sh` (eight steps) — it refuses to
+form is `bash scripts/verify-gate.sh` (nine steps) — it refuses to
 start while another Gradle process is alive, then runs assemble +
 tests + ktlint + the KGP-parity check + Android Lint with the
 version-lag report (`scripts/lint-lag-report.py`) + the 16 KB
-zipalign + abi + contrast + `dprint check` in order, each Gradle step
-time-bounded so a wedged build fails loudly (it is the gate, wrapped;
+zipalign + contrast + `dprint check` + script lint (`bash -n`,
+`py_compile`, shellcheck) in order, each Gradle step time-bounded so a
+wedged build fails loudly. Step 2 also runs `scripts/test-count-check.py`
+(every `@Test` must appear as an executed JUnit case; the XML is the only
+count anyone may quote), and a green run rewrites
+`.gate-last-green` (`last gate: GREEN at <sha> <date> (<n> uncommitted
+paths)`) — read that file to know when the tree was last proven, never a
+session's memory (it is the gate, wrapped;
 run its steps by hand only when debugging one of them). After any
 toolchain or dependency jump, add the emulator
 train (`nix develop .#emulator -c bash scripts/emulator-train.sh`) — it
@@ -201,8 +207,8 @@ nix develop .#emulator -c bash scripts/emulator-smoke.sh   # keeps the emulator 
 - Version bumps: `gradle/libs.versions.toml` is the only place. Dependabot
   has never opened a PR on this repo (root cause in the 2026-11-25 00:42
   report); the gate's version-lag report is the live drift signal —
-  drift is printed, never fatal. Toolchain as of 2026-11-25: Gradle
-  9.9.2, AGP 9.5.2, Robolectric 4.18.1, ktlint-gradle 14.2.0 with the
+  drift is printed, never fatal. Toolchain as of 2026-11-27: Gradle
+  9.9.2, AGP 9.5.3, Robolectric 4.18.1, ktlint-gradle 14.2.0 with the
   engine pinned to 1.8.0 (catalog key `ktlintEngine`).
 
 ## Architecture
@@ -549,6 +555,40 @@ tracked in TODO_LIST.
   `.editorconfig` (it produces `{ Unit }` branches that the
   warnings-as-errors compiler rejects); `blank-line-between-when-
   conditions` is on.
+- **The gate is the LAST action after the last edit (burned twice on
+  2026-11-27)**: a green run on an earlier tree proves nothing about the
+  final one. Re-run `scripts/verify-gate.sh` WHOLE after the final
+  change, read `.gate-last-green`, and only then report.
+- **`scripts/meta-prove.sh` runs in a throwaway COPY of the tree**
+  (`rsync` to a mktemp dir, never the checkout): the auto-commit daemon
+  sweeps a deliberately broken line into history within minutes (commit
+  `7879ec6` is that accident). `--paths` is required (the fingerprint);
+  the two commands see the same relative paths, in the copy.
+- **SDK-floor pins: every Robolectric class carries
+  `@Config(sdk = [31, 34])`** (minSdk and the `addCall` floor; 230 cases
+  on 2026-11-27). The ONE exception is API-34-only code by contract:
+  `TelecomOutgoingAttributesTest` (`CallAttributes` throws on 31, which
+  is correct: 31-33 dial directly). The API-floor run found that one for
+  free; keep the pins when adding a class.
+- **Process rules (harvested from the 10-28/29 reports, 2026-11-27)**:
+  (1) the claim-drift grep covers `scripts/` and `docs/` too, and runs
+  before finishing any edit that changes a number (a count, a version, a
+  step total); (2) a summary-vs-source diff (`git show --stat` per
+  commit) before calling a batch done; (3) re-check `git status` +
+  `git log` after every daemon commit before touching the tree again;
+  (4) `docs-gates rows` over TODO_LIST after any structural table edit;
+  (5) diagnosis discipline: persist findings at discovery time, prefer
+  first-party docs over recall, never infer state that a command can
+  show.
+- **Pre-push gate is opt-in**: `.githooks/pre-push` runs the whole gate
+  before a push; enable with `git config core.hooksPath .githooks`,
+  bypass with `git push --no-verify`. The daemon commits whatever is on
+  disk, so "pushed" implies "green" only for whoever enables it.
+- **Emulator scripts are time-bounded and logged**: every `adb` call in
+  `scripts/emulator-{train,smoke,verify}.sh` rides `timeout` (default
+  `ADB_TIMEOUT=120`), and each run tees into
+  `app/build/reports/emulator/*.log` (override `EMULATOR_LOG`). A wedged
+  train fails and leaves its evidence instead of parking a qemu.
 
 ## Conventions
 

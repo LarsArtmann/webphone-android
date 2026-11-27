@@ -14,6 +14,10 @@ import kotlin.test.assertEquals
  * second argument is the call direction and the call-type constants
  * share its integers, so a wrong constant compiles cleanly and tells
  * Telecom that the call the user just dialed is an incoming one.
+ *
+ * Pinned to API 34 only: `CallAttributes` is the `TelecomManager.addCall`
+ * contract (34+); API 31-33 dial directly and never build one (the
+ * 2026-11-27 SDK-floor run proved the Builder throws on 31).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
