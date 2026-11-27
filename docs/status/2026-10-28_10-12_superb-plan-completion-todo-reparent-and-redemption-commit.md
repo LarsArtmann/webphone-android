@@ -148,7 +148,7 @@ with zero plan execution. Default next sessions to EXECUTION
 4. M024 shared test OkHttp dispatcher; migrate sockets
 ~~5. M025 gate run: 94+ green with fence armed~~ done at `97e6929` — CHANGELOG.md `[Unreleased]`: the J05-J16 track ran at the 97-test gate
 ~~6. M026 write `scripts/verify-gate.sh`~~ done at `fec6741` — `scripts/verify-gate.sh` exists (CHANGELOG.md `[Unreleased]` "scripts/verify-gate.sh (J06)")
-7. M027 wire wrapper into AGENTS + end-to-end run
+~~7. M027 wire wrapper into AGENTS + end-to-end run~~ done — AGENTS.md names `bash scripts/verify-gate.sh` as the one-command gate; first end-to-end green run recorded in `docs/status/2026-10-28_23-30_…md` row 2
 ~~8. M028 KGP↔catalog parity check task~~ done — root `kgpParityCheck` task (AGENTS.md "KGP-parity check", CHANGELOG.md `[Unreleased]` "KGP-pin parity gate (J07)")
 ~~9. M029 parity prove-it (scratch bump → fail → revert)~~ done — proven by scratch bump → red → revert → green (CHANGELOG.md `[Unreleased]` "KGP-pin parity gate (J07)")
 ~~10. M030 CI `assembleRelease` in verify job~~ done — `.github/workflows/ci.yml` runs `./gradlew assembleRelease` in the verify job (CHANGELOG.md `[Unreleased]` "CI release leg (J08)")
