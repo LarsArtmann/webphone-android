@@ -124,6 +124,7 @@ class CallService : Service() {
     companion object {
         private const val TAG = "CallService"
         private const val NOTIFICATION_ID = 1002
+
         fun start(context: Context) {
             context.startForegroundService(Intent(context, CallService::class.java))
         }

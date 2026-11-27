@@ -23,9 +23,7 @@ class CallNotificationReceiver : BroadcastReceiver() {
 
             ACTION_DECLINE -> CallEngine.decline()
 
-            ACTION_HANGUP -> {
-                CallEngine.hangUp()
-            }
+            ACTION_HANGUP -> CallEngine.hangUp()
         }
     }
 
