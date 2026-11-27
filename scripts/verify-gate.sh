@@ -44,19 +44,19 @@ fi
 
 apk="app/build/outputs/apk/debug/app-debug.apk"
 
-step "1/8 assembleDebug"
+step "1/9 assembleDebug"
 timeout 900 nix develop -c ./gradlew assembleDebug --console=plain
 
-step "2/8 testDebugUnitTest (wedge-fenced)"
+step "2/9 testDebugUnitTest (wedge-fenced)"
 timeout 1500 nix develop -c ./gradlew testDebugUnitTest --console=plain
 # Test-count honesty: every @Test in source must appear as an executed
 # JUnit case, and the XML is the only count the gate may quote.
 python3 scripts/test-count-check.py
 
-step "3/8 ktlintCheck + KGP parity"
+step "3/9 ktlintCheck + KGP parity"
 timeout 600 nix develop -c ./gradlew ktlintCheck kgpParityCheck --console=plain
 
-step "4/8 Android Lint (errors and warnings fatal) + version-lag report"
+step "4/9 Android Lint (errors and warnings fatal) + version-lag report"
 # Lint's own task fails on any error and, through warningsAsErrors in
 # app/build.gradle.kts, on any warning. The lag report then reprints the
 # informational version findings and refuses a report that still holds
@@ -64,7 +64,7 @@ step "4/8 Android Lint (errors and warnings fatal) + version-lag report"
 timeout 900 nix develop -c ./gradlew :app:lintDebug --console=plain
 python3 scripts/lint-lag-report.py
 
-step "5/8 16 KB page alignment (build-tools 36 zipalign)"
+step "5/9 16 KB page alignment (build-tools 36 zipalign)"
 # ANDROID_HOME exists only INSIDE the nix devShell — resolve it through
 # the same environment the Gradle steps run in.
 sdk_home="$(nix develop -c printenv ANDROID_HOME)"
@@ -80,20 +80,20 @@ test -f "$apk" || {
 }
 "$zipalign" -c -P 16 4 "$apk"
 
-step "6/8 ABI completeness (the APK stays universal)"
+step "6/9 ABI completeness (the APK stays universal)"
 # One APK serves every device class; a dependency swap or stray
 # abiFilters would shrink lib/ silently — refuse that here, at the
 # exact artifact that ships.
 python3 scripts/abi-check.py "$apk"
 
-step "7/8 contrast-check (both modes, WCAG gate)"
+step "7/9 contrast-check (both modes, WCAG gate)"
 if [ "${SKIP_CONTRAST:-0}" = "1" ]; then
     echo "skipped (SKIP_CONTRAST=1) — only legitimate when no token changed"
 else
     python3 scripts/contrast-check.py
 fi
 
-step "8/8 dprint check (markdown/yaml/json formatting)"
+step "8/9 dprint check (markdown/yaml/json formatting)"
 nix run nixpkgs#dprint -- check
 
 step "9/9 script lint (bash -n, py_compile, shellcheck)"
