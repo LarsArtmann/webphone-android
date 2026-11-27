@@ -12,6 +12,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import software.larsartmann.webphone.App
+import software.larsartmann.webphone.R
 
 /**
  * The origin's session seam, from the island's contract: the WebView
@@ -134,6 +135,23 @@ object SessionApi {
             code == 403 -> SwitchVerdict.NOT_MAPPED
             code == 404 -> SwitchVerdict.SEAM_OFF
             else -> SwitchVerdict.OTHER
+        }
+
+    /** The lines the Settings picker may offer: empty unless the
+     *  account owns MORE than one — a single-line deployment renders
+     *  byte-identically to a build without the picker (the handover
+     *  pack's hide-when-single contract). Pure (pinned). */
+    internal fun pickerLines(identity: SessionIdentity): List<SessionLine> = identity.lines.takeIf { it.size > 1 } ?: emptyList()
+
+    /** The picker's toast per switch verdict. Pure (pinned) — the
+     *  honest class reaches the user verbatim instead of one Boolean. */
+    internal fun switchMessage(verdict: SwitchVerdict): Int =
+        when (verdict) {
+            SwitchVerdict.SWITCHED -> R.string.settings_line_switched
+            SwitchVerdict.NOT_MAPPED -> R.string.settings_line_not_mapped
+            SwitchVerdict.SEAM_OFF -> R.string.settings_line_seam_off
+            SwitchVerdict.NETWORK -> R.string.settings_line_network
+            SwitchVerdict.OTHER -> R.string.settings_line_failed
         }
 
     /** Classify one /api/session answer. Pure (the classifier the

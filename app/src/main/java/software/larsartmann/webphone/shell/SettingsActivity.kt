@@ -27,8 +27,27 @@ import software.larsartmann.webphone.ui.withRipple
  * lane hang off it. Saving makes it live immediately: the call layer
  * tears down (old origin's session + registration are void) and the
  * next shell resume re-wires against the new origin.
+ *
+ * When the resumed identity carries MORE than one owned line, an
+ * "Active line" section renders under the origin field (the handover
+ * pack's picker contract): the active row is marked, the others switch
+ * through `/api/session/switch` — and the switch voids the old line's
+ * registration and push subscription exactly like an origin change
+ * (the shell's next resume re-wires onto the switched session).
  */
 class SettingsActivity : AppCompatActivity() {
+    companion object {
+        /** The seams the tests swap (set BEFORE launch, reset in each
+         *  test's finally — onCreate's loader thread reads them): the
+         *  identity fetch and the switch call default to the real
+         *  network seam. */
+        @Volatile
+        internal var identityLoader: () -> SessionApi.SessionIdentity? = { SessionApi.resumeSession() }
+
+        @Volatile
+        internal var lineSwitcher: (String) -> SessionApi.SwitchVerdict = { SessionApi.switchLine(it) }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -116,6 +135,16 @@ class SettingsActivity : AppCompatActivity() {
         }
         setContentView(root)
 
+        // The line picker loads off the main thread (resumeSession is
+        // blocking network); an unreachable origin renders no section —
+        // the origin field above stays the screen's whole job.
+        Thread {
+            val identity = runCatching { identityLoader() }.getOrNull()
+            if (identity != null) {
+                runOnUiThread { renderLinePicker(root, identity) }
+            }
+        }.start()
+
         save.setOnClickListener {
             val cleaned =
                 originInput.text
@@ -136,6 +165,83 @@ class SettingsActivity : AppCompatActivity() {
             }
             Toast.makeText(this, R.string.settings_saved, Toast.LENGTH_SHORT).show()
             finish()
+        }
+    }
+
+    /** Append the "Active line" section under the origin card. The
+     *  active row is marked (accent + medium, inert); the others are
+     *  switch actions. */
+    private fun renderLinePicker(
+        root: LinearLayout,
+        identity: SessionApi.SessionIdentity,
+    ) {
+        val lines = SessionApi.pickerLines(identity)
+        if (lines.isEmpty()) return
+        val sectionTitle =
+            TextView(this).apply {
+                text = getString(R.string.settings_line_section)
+                styleText(14f, themeColor(R.attr.wpOnSurfaceMuted))
+                layoutParams =
+                    LinearLayout
+                        .LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        ).apply { topMargin = dp(28) }
+            }
+        root.addView(sectionTitle)
+        var switching = false
+        for (line in lines) {
+            val active = line.extension == identity.extension
+            val row =
+                TextView(this).apply {
+                    text = line.label()
+                    styleText(16f, themeColor(if (active) R.attr.wpAccent else R.attr.wpOnSurface), medium = active)
+                    minHeight = dp(48)
+                    gravity = Gravity.CENTER_VERTICAL
+                    if (active) {
+                        isClickable = false
+                        isFocusable = false
+                    } else {
+                        background =
+                            roundedBackground(themeColor(R.attr.wpSurface), 12f).withRipple(this@SettingsActivity)
+                        setPadding(dp(16), dp(8), dp(16), dp(8))
+                        isClickable = true
+                        isFocusable = true
+                    }
+                    layoutParams =
+                        LinearLayout
+                            .LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                            ).apply { topMargin = dp(6) }
+                }
+            if (!active) {
+                row.setOnClickListener {
+                    if (switching) return@setOnClickListener
+                    switching = true
+                    Thread {
+                        val verdict =
+                            runCatching { lineSwitcher(line.extension) }
+                                .getOrDefault(SessionApi.SwitchVerdict.NETWORK)
+                        runOnUiThread {
+                            Toast.makeText(this@SettingsActivity, SessionApi.switchMessage(verdict), Toast.LENGTH_LONG).show()
+                            if (verdict == SessionApi.SwitchVerdict.SWITCHED) {
+                                // The old line's registration and push
+                                // subscription are void — same teardown
+                                // contract as an origin change; the
+                                // shell's next resume re-wires onto the
+                                // switched session.
+                                NtfySubscriptionService.stop(this@SettingsActivity)
+                                CallLayer.shutdown()
+                                finish()
+                            } else {
+                                switching = false
+                            }
+                        }
+                    }.start()
+                }
+            }
+            root.addView(row)
         }
     }
 }
