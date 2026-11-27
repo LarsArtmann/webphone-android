@@ -229,8 +229,14 @@ object SessionApi {
      *  island's default. Unreachable or unparsable answers null (the
      *  caller fails the resume honestly instead of registering
      *  nowhere). */
-    private fun fetchIslandConfig(): IslandConfig? {
-        val body = call("GET", "/config.js", null) ?: return null
+    private fun fetchIslandConfig(): IslandConfig? = call("GET", "/config.js", null)?.let { decodeIslandConfig(it) }
+
+    /** Decode the served config.js body (pure — the loopback live-check
+     * drives it against the LIVE bytes): the two regex reads the
+     * island's own boot performs. Absent path falls back to the
+     * island default; absent domain is null (the caller fails the
+     * resume honestly instead of registering nowhere). */
+    internal fun decodeIslandConfig(body: String): IslandConfig? {
         val domain = Regex("\"sipDomain\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1) ?: return null
         val path = Regex("\"websocketPath\"\\s*:\\s*\"([^\"]+)\"").find(body)?.groupValues?.get(1) ?: "/sip"
         return IslandConfig(sipDomain = domain, websocketPath = path)
