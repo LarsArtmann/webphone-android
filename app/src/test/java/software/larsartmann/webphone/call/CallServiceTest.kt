@@ -5,9 +5,9 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ServiceController
+import org.robolectric.annotation.Config
 import software.larsartmann.webphone.sip.SipEngine
 import kotlin.test.Test
 import kotlin.test.assertEquals

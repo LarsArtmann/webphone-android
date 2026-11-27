@@ -11,8 +11,8 @@ import org.junit.After
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.push.WakeLane
 import software.larsartmann.webphone.push.WakeLaneState

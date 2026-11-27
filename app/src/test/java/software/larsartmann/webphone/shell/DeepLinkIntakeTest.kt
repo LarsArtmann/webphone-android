@@ -8,9 +8,9 @@ import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
+import org.robolectric.annotation.Config
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.call.CallActivity
 import software.larsartmann.webphone.call.CallEngine
