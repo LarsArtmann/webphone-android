@@ -65,7 +65,7 @@ if [ -z "$SERIAL" ]; then
 fi
 adb_() { timeout 180 adb ${SERIAL:+-s "$SERIAL"} "$@"; }
 adb_ wait-for-device
-echo "== device: $(adb_ shell getprop ro.product.model | tr -d '\r') ($SERIAL) ==""
+echo "== device: $(adb_ shell getprop ro.product.model | tr -d '\r') ($SERIAL) =="
 
 [ -f "$APK" ] || {
     echo "APK missing: $APK (run assembleDebug first)" >&2
@@ -74,9 +74,10 @@ echo "== device: $(adb_ shell getprop ro.product.model | tr -d '\r') ($SERIAL) =
 
 echo "== signer cross-check =="
 apk_cert="$("$APKSIGNER" verify --print-certs "$APK" | awk -F': ' '/Signer #1 certificate SHA-256 digest/ { print $2 }')"
-installed="$(adb_ shell pm path "$PKG" 2>/dev/null | tr -d '\r' | sed -n 's/^package://p' | head -1)"
+# pm path exits non-zero for an unknown package: that is the fresh case.
+installed="$(adb_ shell pm path "$PKG" 2>/dev/null | tr -d '\r' | sed -n 's/^package://p' | head -1 || true)"
 if [ -n "$installed" ]; then
-    adb_ pull "$installed" /tmp/webphone-installed-base.apk >/dev/null
+    adb_ pull "$installed" /tmp/webphone-installed-base.apk >/dev/null 2>&1
     device_cert="$("$APKSIGNER" verify --print-certs /tmp/webphone-installed-base.apk |
         awk -F': ' '/Signer #1 certificate SHA-256 digest/ { print $2 }')"
     if [ "$apk_cert" != "$device_cert" ]; then
@@ -85,7 +86,7 @@ if [ -n "$installed" ]; then
         echo "and the APK is signed by" >&2
         echo "  $apk_cert" >&2
         echo "Android refuses a key change in place. To switch, uninstall first (this deletes" >&2
-        echo "the app's session and settings):  adb ${SERIAL:+-s "$SERIAL"} uninstall $PKG" >&2
+        echo "the app's session and settings):  adb ${SERIAL:+-s $SERIAL} uninstall $PKG" >&2
         exit 1
     fi
     echo "same signer as the installed build: ok"
