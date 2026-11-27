@@ -76,10 +76,8 @@ fi
 
 if [ ! -f "$AVD_HOME/$AVD_NAME.avd/config.ini" ]; then
     echo "no | creating AVD $AVD_NAME (system-images;android-36;google_apis;x86_64)"
-    echo no | avdmanager create avd \
-        -n "$AVD_NAME" \
-        -k "system-images;android-36;google_apis;x86_64" \
-        -d pixel_6
+    timeout 300 bash -c 'echo no | avdmanager create avd \
+        -n "$0" -k "system-images;android-36;google_apis;x86_64" -d pixel_6' "$AVD_NAME"
 fi
 
 echo "== booting emulator (headless) =="
@@ -102,7 +100,7 @@ adb start-server >/dev/null 2>&1 || {
 # moment any physical device shares the server (found by the
 # --release smoke run, 2026-10-25 — the operator's phone was attached).
 for _ in $(seq 1 60); do
-    SERIAL="$(adb devices | awk '/emulator-/ {print $1}' | head -1)"
+    SERIAL="$(timeout 30 adb devices | awk '/emulator-/ {print $1}' | head -1)"
     [ -n "$SERIAL" ] && break
     sleep 2
 done
@@ -110,18 +108,22 @@ done
     echo "emulator serial never appeared" >&2
     exit 1
 }
-COUNT="$(adb devices | grep -c 'emulator-')"
+COUNT="$(timeout 30 adb devices | grep -c 'emulator-')"
 [ "$COUNT" = "1" ] || {
     echo "expected exactly one emulator, found $COUNT — refuse to guess" >&2
     exit 1
 }
+# Every device call is time-bounded: a wedged adb (dead emulator, a
+# server killed by a foreign adb version) must fail the train instead
+# of parking a qemu for hours (23-02 §f26).
+ADB_TIMEOUT="${ADB_TIMEOUT:-120}"
 adb_() {
-    adb -s "$SERIAL" "$@"
+    timeout "$ADB_TIMEOUT" adb -s "$SERIAL" "$@"
 }
 adb_ root >/dev/null 2>&1 || true
 
 echo "== waiting for boot completion ($SERIAL) =="
-adb_ wait-for-device
+timeout 120 adb -s "$SERIAL" wait-for-device
 for _ in $(seq 1 180); do
     boot="$(adb_ shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
     [ "$boot" = "1" ] && break

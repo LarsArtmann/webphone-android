@@ -27,16 +27,19 @@ OUT="${2:-work/verify}"
 PKG=software.larsartmann.webphone
 mkdir -p "$OUT"
 
-adb_() { adb -s "$SERIAL" "$@"; }
+# Every device call is time-bounded (a wedged adb fails the run instead
+# of parking a qemu for hours).
+ADB_TIMEOUT="${ADB_TIMEOUT:-120}"
+adb_() { timeout "$ADB_TIMEOUT" adb -s "$SERIAL" "$@"; }
 
 adb start-server >/dev/null
-if ! adb devices 2>/dev/null | grep -q "emulator-"; then
+if ! timeout 30 adb devices 2>/dev/null | grep -q "emulator-"; then
     echo "== booting emulator (owned by this script) =="
     emulator -avd "$AVD_NAME" -no-window -no-audio -no-boot-anim -no-snapshot \
         -gpu swiftshader_indirect >"$OUT/emulator.log" 2>&1 &
 fi
 for _ in $(seq 1 60); do
-    SERIAL="$(adb devices 2>/dev/null | awk '/emulator-/ {print $1}' | head -1)"
+    SERIAL="$(timeout 30 adb devices 2>/dev/null | awk '/emulator-/ {print $1}' | head -1)"
     [ -n "$SERIAL" ] && break
     sleep 2
 done
@@ -51,7 +54,7 @@ done
 echo "== using $SERIAL =="
 
 adb_ root >/dev/null 2>&1 || true
-adb_ wait-for-device
+timeout 120 adb -s "$SERIAL" wait-for-device
 for _ in $(seq 1 180); do
     [ "$(adb_ shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
     sleep 2
