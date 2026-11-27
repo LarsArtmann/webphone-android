@@ -416,7 +416,7 @@ owner or a device.
    not in this repository.
 2. **The ktlint rule I switched off, `when-entry-bracing`: is compact or
    braced the style you want?** The rule is the official style's; it
-   makes `-> Unit` into `{ Unit }` in statement `when`s, which the
+   makes `-> Unit` into `{ Unit }` in statement `when` blocks, which the
    compiler then flags as an unused expression. I kept the compact
    arrows and wrote the reason into `.editorconfig`. That is a taste
    call with a real cost either way (five compiler warnings against
