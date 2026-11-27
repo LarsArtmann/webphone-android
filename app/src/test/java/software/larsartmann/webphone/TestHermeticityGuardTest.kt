@@ -22,8 +22,7 @@ import kotlin.test.assertTrue
 class TestHermeticityGuardTest {
     private val testRoot: File = File("src/test/java")
 
-    private fun kotlinSources(): Sequence<File> =
-        testRoot.walkTopDown().filter { it.isFile && it.extension == "kt" }
+    private fun kotlinSources(): Sequence<File> = testRoot.walkTopDown().filter { it.isFile && it.extension == "kt" }
 
     private fun requiresWiringOff(source: String): Boolean =
         listOf(

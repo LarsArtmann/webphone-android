@@ -9,8 +9,8 @@ import androidx.test.core.app.ApplicationProvider
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallEngine
