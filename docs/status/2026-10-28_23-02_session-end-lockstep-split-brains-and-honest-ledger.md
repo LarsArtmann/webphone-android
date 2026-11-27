@@ -92,7 +92,7 @@ covers the close-out and what the close-out's cross-checking surfaced).
 2. **Verify-gate per logical unit, not per session** — the wrapper is **→ TODO_LIST.md Ready row "Pre-push hook (opt-in) running verify-gate.sh"**
    ~5 min up-to-date-cached; running it per unit means the
    "final tree never saw the whole gate" class (§b #1) cannot exist.
-   ~~3. **Claim-drift grep**: before finishing ANY commit that changes a~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"
+   3. **Claim-drift grep**: before finishing ANY commit that changes a **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
    number or behavior claim (test count, trigger set, version,
    API level), grep the living docs (AGENTS, README, FEATURES,
    TODO_LIST, CHANGELOG) for the old value. Both of today's split
@@ -101,7 +101,7 @@ covers the close-out and what the close-out's cross-checking surfaced).
    ~~before ANY reset (applied today, worked), meta-test every wedge-pin~~
    ~~(caught yesterday's vacuous design). They are recorded now — reread~~
    ~~them at session start.~~
-   ~~5. **Self-staling report prose**: when a report is KNOWN to be~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"
+   5. **Self-staling report prose**: when a report is KNOWN to be **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
    superseded minutes later by the same session's own next step, say so
    inline instead of shipping a sentence that is false before the push
    output finishes printing.
