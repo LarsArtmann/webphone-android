@@ -1,5 +1,7 @@
 # SUPERB Agent Track Executed: J05-J16, webphone#21, M050 Wedged (2026-10-28 22:31)
 
+> **Live remainder:** open §f items live in TODO_LIST.md and ROADMAP.md (every row and item routed or struck 2026-11-27; archived 2026-11-27).
+
 Session window: 2026-10-28 ~10:32 → 22:31 CET. Mission: execute the
 02:56 SUPERB plan's agent-executable rows (the two prior sessions only
 planned and filed bookkeeping — this one finally wrote code). Order of
@@ -87,7 +89,7 @@ committed** — 7 real commits on top of `befe000`, nothing pushed yet
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Verify-gate the COMMIT, not the session**: the full wrapper should **→ TODO_LIST.md:35 'Pre-push hook (opt-in) running verify-gate.sh — gate the COMMIT'**
+1. **Verify-gate the COMMIT, not the session**: the full wrapper should **→ routed: TODO_LIST.md:35 'Pre-push hook (opt-in) running verify-gate.sh — gate the COMMIT'**
    run once per logical unit (it is ~5 min up-to-date-cached), so the
    "final tree never saw the whole gate" class cannot exist.
 2. ~~**Meta-test every new test that pins a fix**: one red-run per pin,~~ done — AGENTS.md:900 'A new test that pins a fix is VACUOUS until meta-proven'
@@ -102,9 +104,9 @@ committed** — 7 real commits on top of `befe000`, nothing pushed yet
 6. ~~**Robolectric + real-socket tests**: close-handshake latency under~~ done — AGENTS.md:905 'Drive test seams directly; never wait on network events under Robolectric'
    ~~the looper is seconds-scale and non-deterministic — drive seams~~
    ~~directly instead of waiting on network events.~~
-7. **Test-count claims must come from the XML, not memory** (same **→ TODO_LIST.md:37 'Test-count honesty as a gate step'**
+7. **Test-count claims must come from the XML, not memory** (same **→ routed: TODO_LIST.md:37 'Test-count honesty as a gate step'**
    discipline as the coverage cross-check lesson from the last report).
-8. **Emulator hygiene**: the smoke script should `timeout`-bound its **→ TODO_LIST.md:33 'Emulator smoke/train script hardening'**
+8. **Emulator hygiene**: the smoke script should `timeout`-bound its **→ routed: TODO_LIST.md:33 'Emulator smoke/train script hardening'**
    boot + install phases itself, so a wedged script self-reports
    instead of parking a qemu for 7 h.
 
@@ -145,18 +147,18 @@ committed** — 7 real commits on top of `befe000`, nothing pushed yet
 
 ## g) QUESTIONS FOR THE OPERATOR (cannot self-answer)
 
-1. **Daemon policy**: the auto-commit daemon blobbed me five times **→ TODO_LIST.md:95 'Operator: answer the three §g questions' + ROADMAP.md Open questions 'Auto-commit daemon policy'**
+1. **Daemon policy**: the auto-commit daemon blobbed me five times **→ routed: TODO_LIST.md:95 'Operator: answer the three §g questions' + ROADMAP.md Open questions 'Auto-commit daemon policy'**
    today; the amend remedy worked every time (and once bit me via the
    over-broad squash). Do you want the daemon DISABLED or paced for
    this repo while agent sessions run (a SystemNix knob), or is the
    amend remedy + faster hand-commit cadence the accepted steady state?
-2. **Release-first?**: `version.txt` still claims 0.2.0 while the **→ TODO_LIST.md:95 'Operator: answer the three §g questions' + ROADMAP.md Open questions 'Release-first for v0.2.0'**
+2. **Release-first?**: `version.txt` still claims 0.2.0 while the **→ routed: TODO_LIST.md:95 'Operator: answer the three §g questions' + ROADMAP.md Open questions 'Release-first for v0.2.0'**
    release lane is unpublished and M021-M053 just landed as code. Do
    you want the first release cut (M032/M033, needs the Forgejo token)
    to happen BEFORE further code accumulates — so Obtainium's first
    update cycle starts from a real baseline — or is more agent-track
    work fine to pile onto 0.2.0?
-3. **M050's expected end-state**: when the consent Cancel fires and the **→ TODO_LIST.md:95 'Operator: answer the three §g questions' + ROADMAP.md Open questions 'M050's Android end-state'**
+3. **M050's expected end-state**: when the consent Cancel fires and the **→ routed: TODO_LIST.md:95 'Operator: answer the three §g questions' + ROADMAP.md Open questions 'M050's Android end-state'**
    IdP errors back to the origin, the CURRENT design commits the
    origin, clears the detour, and shows the IdP's error page in-shell.
    Do you want that (error page rendered in the shell, detour cleared),

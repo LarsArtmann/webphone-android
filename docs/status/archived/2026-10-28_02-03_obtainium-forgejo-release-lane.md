@@ -1,5 +1,7 @@
 <!-- Status report — point-in-time snapshot. History lives in CHANGELOG.md. -->
 
+> **Live remainder:** open §f items live in TODO_LIST.md and ROADMAP.md (every row and item routed or struck 2026-11-27; archived 2026-11-27).
+
 # Status: Obtainium-via-Forgejo release lane (session 2026-10-28 02:03)
 
 **Ask:** "How can we support Obtainium based updates via forgejo, so I do not
@@ -47,7 +49,7 @@ touched, +1314/−37 lines. No Kotlin source changed.
 | ~~1~~  | ~~Version single-source: `version.txt` → `versionName`, and `versionCode = major*10000 + minor*100 + patch` (0.2.0 → 200). Loud `check()` failures for malformed/overflowing versions.~~ done at `601ce57`                                                                                                                                                                  | ~~`app/build.gradle.kts:8-31`, `version.txt`~~                 |
 | ~~2~~  | ~~Release signing wired from `~/.config/webphone-android/release.properties` (keystore path + credentials), with a **loud error** on half-configuration and a silent no-op (unsigned) when absent, so CI/fresh checkouts keep building.~~ done at `601ce57`                                                                                                                 | ~~`app/build.gradle.kts:33-56`, `:75-99`~~                     |
 | ~~3~~  | ~~Dedicated RSA-4096 release key created (10 000 d validity), keystore + props `chmod 600`, fingerprint printed in assetlinks-ready form.~~ done at `b5fc373`                                                                                                                                                                                                               | ~~`scripts/release.sh:85-139`; `~/.config/webphone-android/`~~ |
-| ~~4~~  | ~~``scripts/release.sh``: ``--init-key``, ``bump patch\~~ done at ``b5fc373`                                                                                                                                                                                                                                                                                                | ~~minor\~~                                                     | ~~major``, ``--doctor``, ``--dry-run``, and the full release path. Preflight refuses: wrong branch, dirty tree (except dry-run/doctor), concurrent gradle build, missing changelog section, existing tag (local or on the forge), local ``main``behind``origin/main`, missing token.~~ | ~~`scripts/release.sh`~~ |
+| ~~4~~  | ~~`scripts/release.sh`: `--init-key`, `bump patch` (also minor, major), `--doctor`, `--dry-run`, and the full release path. Preflight refuses: wrong branch, dirty tree (except dry-run/doctor), concurrent gradle build, missing changelog section, existing tag (local or on the forge), local `main` behind `origin/main`, missing token.~~ done at `b5fc373`            | ~~`scripts/release.sh`~~                                       |
 | ~~5~~  | ~~The gate is the repo's own: `assembleRelease` + `testDebugUnitTest` + `ktlintCheck`, then `zipalign -c -P 16 4` on the **signed** artifact, `apksigner verify`, `scripts/contrast-check.py`.~~ done at `b5fc373`                                                                                                                                                          | ~~`scripts/release.sh:236-263`~~                               |
 | ~~6~~  | ~~Release notes are derived from `CHANGELOG.md` (the `## [X.Y.Z]` section), plus version, versionCode and the signing fingerprint appended — no hand-written notes drift.~~ done at `b5fc373`                                                                                                                                                                               | ~~`scripts/release.sh:266-301`~~                               |
 | ~~7~~  | ~~`scripts/forgejo-release.py` (stdlib only — the devShell has no `curl`/`tea`): `--check`, idempotent release reuse, asset replacement, streaming multipart upload, uploaded-vs-local size verification, and 401/403/404/409/413/422 hints mapped to actions.~~ done at `b5fc373`                                                                                          | ~~`scripts/forgejo-release.py`~~                               |
@@ -91,7 +93,7 @@ touched, +1314/−37 lines. No Kotlin source changed.
 | ~~2~~ | ~~**Stale gotcha left in AGENTS.md**~~                                                                                          | ~~Med~~  | ~~`AGENTS.md:219-222` still says "**No release signing config**: … Adding a signing config is a deliberate future step". It is now half-true at best and directly contradicts `:326-336`. I added new bullets without retiring the old one — exactly the "replace silently deletes/keeps memory" failure mode.~~ done — AGENTS.md:319-323 — now says "Release signing is opt-in by file presence"; the "No release signing config" text is gone (rg in AGENTS.md: 0 hi                                                                                           |
 | ~~3~~ | ~~**Upload path shipped unexercised**~~ done — FEATURES.md:110 — the upload ran for real on v0.2.1 (2026-11-11), asset verified | ~~High~~ | ~~I shipped ~90 lines of multipart HTTP with a hand-computed `Content-Length` and a streamed body, tested only against a 401. If the field name, boundary framing or length is wrong, the first real publish fails — on the one run that matters. A 30-line `http.server` mock in `/tmp` would have proven it without a token.~~                                                                                                                                                                                                                                 |
 | ~~4~~ | ~~**Two script bugs of my own making, caught only by manual testing**~~ done at `b5fc373`                                       | ~~Med~~  | ~~`bump` never set `MODE`, so `scripts/release.sh bump patch` fell through into the **full release** branch (stopped only by the changelog gate — luck, not design). `read_version` used `printf '%s'` (no newline), so `IFS=. read` hit EOF and `set -e` killed `bump` silently. Both are proof that the script had no test at all.~~                                                                                                                                                                                                                           |
-| ~~5~~ | ~~**`set -euo pipefail` traps I wrote and then fixed the hard way**~~ done at `b5fc373`                                         | ~~Low~~  | ~~`tr </dev/urandom \~~                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | ~~head -c 32``(SIGPIPE 141),``pgrep … && die``(exit-on-no-match),``[ … ] && arr=(…)``(exit 1 when false),``awk … { exit }` (SIGPIPE). Each was a silent abort until traced.~~ |
+| ~~5~~ | ~~**`set -euo pipefail` traps I wrote and then fixed the hard way**~~ done at `b5fc373`                                         | ~~Low~~  | ~~`tr </dev/urandom` piped into `head -c 32` (SIGPIPE 141), `pgrep … && die` (exit-on-no-match), `[ … ] && arr=(…)` (exit 1 when false), `awk … { exit }` (SIGPIPE). Each was a silent abort until traced.~~                                                                                                                                                                                                                                                                                                                                                     |
 
 ## e) WHAT WE SHOULD IMPROVE
 
@@ -99,63 +101,63 @@ touched, +1314/−37 lines. No Kotlin source changed.
 
 **What did I forget?**
 
-~~1. The emulator train (`--release`) — I changed the artifact layout and never~~ v: scripts/emulator-train.sh:42-70 — --release boots app-release.apk when present, unsigned + debug-signed path as fallback; CHANGELOG entry owed
+~~1. The emulator train (`--release`) — I changed the artifact layout and never~~ done — `scripts/emulator-train.sh` lines 42-70 boot `app-release.apk` when present, 2026-11-27
 re-read the one script that consumes it.
-~~2. Retiring the now-wrong AGENTS gotcha while adding the new ones.~~ v: AGENTS.md:319-323 — "Release signing is opt-in by file presence"; the old "No release signing config" gotcha is gone
-~~3. Actually exercising the upload code (mock server, or a scratch forge repo).~~ done — the upload ran for real on v0.2.1 (FEATURES.md:110)
-3. Proving the Obtainium **version-comparison** assumption (`v0.2.0` tag vs
+~~2. Retiring the now-wrong AGENTS gotcha while adding the new ones.~~ done — AGENTS.md "Release signing is opt-in by file presence", 2026-11-27
+~~3. Actually exercising the upload code (mock server, or a scratch forge repo).~~ done — the real publishes v0.2.1 and v0.2.2 ran the upload path (FEATURES.md "Obtainium update lane")
+4. Proving the Obtainium **version-comparison** assumption (`v0.2.0` tag vs
 `0.2.0` installed). I could not read Obtainium's `standardizeVersion`
 (Sourcegraph returned nothing) and shipped on convention. If it does not
 strip the `v`, the phone sees a permanently "new" version — the first
 symptom would be an update loop, and the fix is a one-line extraction
-regex in Obtainium or a tag-scheme change. **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)**
-4. `version.txt` left pointing at the version being released (post-publish
-bump is manual).
-~~5. No `scripts/assetlinks.sh` run for the release key — a 30-second artifact~~ r: TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)
-that R18 needs anyway. **→ TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)**
-~~6. Nothing in CI guards the new files (`bash -n`, `py_compile`, version ↔~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-changelog pairing).
-~~7. Cleaning `work/release/0.2.0/` (44 MB of staged copy) after the dry runs.~~ v: `ls work/release` lists only 0.2.1 and 0.2.2 — work/release/0.2.0 is gone
+regex in Obtainium or a tag-scheme change. **→ TODO_LIST.md "Connect the phone to Obtainium"**
+5. `version.txt` left pointing at the version being released (post-publish
+bump is manual). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+6. No `scripts/assetlinks.sh` run for the release key — a 30-second artifact
+that R18 needs anyway. **→ TODO_LIST.md "Cross-repo: serve assetlinks.json from the stack"**
+7. Nothing in CI guards the new files (`bash -n`, `py_compile`, version ↔
+changelog pairing). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+~~8. Cleaning `work/release/0.2.0/` (44 MB of staged copy) after the dry runs.~~ done — `ls work/release` shows 0.2.1 and 0.2.2 only, 2026-11-27
 
 **What could I have done better?**
 
-~~1. **Test the lane before polishing the prose.** The README/AGENTS work is~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"
-~40% of the diff; the untested 90-line HTTP client is the part that can
-actually lose the user's time.
-~~2. **Write the mock test first**: an `http.server` in `/tmp` that accepts~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-`POST /api/v1/repos/x/y/releases`, returns a plausible JSON, then asserts
-the multipart body parses and the size matches. That single test would
-have de-risked the whole publish step.
-~~3. **Never mix "make the artifact signed" with "keep the old artifact path~~ r: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"
-assumptions alive"** — I should have grepped every consumer of
-`app-release-unsigned.apk` in the same edit.
-~~4. **Use a scratch repo for a real end-to-end publish.** Forgejo has~~ done — a real publish happened instead: v0.2.1, 2026-11-11 (FEATURES.md:110)
-push-to-create over SSH; a throwaway repo + a token would have proven the
-upload for real. Blocked only by token creation (UI/API with credentials).
-~~4. **Configuration-cache hygiene**: reading env + file existence at~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-configuration time (`app/build.gradle.kts:39-56`) is exactly the pattern
-that can produce a stale signed/unsigned decision. Either use
-`providers.*` inputs or document `--no-configuration-cache` for signing
-troubleshooting. I did neither.
-~~5. **Make the script testable** from the start (`release.sh` is one 390-line~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-file with `set -euo pipefail` and no seam) — that is why two of its bugs
-needed tracing instead of a test.
+1. **Test the lane before polishing the prose.** The README/AGENTS work is
+   ~40% of the diff; the untested 90-line HTTP client is the part that can
+   actually lose the user's time. **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
+2. **Write the mock test first**: an `http.server` in `/tmp` that accepts
+   `POST /api/v1/repos/x/y/releases`, returns a plausible JSON, then asserts
+   the multipart body parses and the size matches. That single test would
+   have de-risked the whole publish step. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+3. **Never mix "make the artifact signed" with "keep the old artifact path
+   assumptions alive"** — I should have grepped every consumer of
+   `app-release-unsigned.apk` in the same edit. **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
+   ~~4. **Use a scratch repo for a real end-to-end publish.** Forgejo has~~ done — the real publish v0.2.1 ran instead, 2026-11-11 (FEATURES.md)
+   push-to-create over SSH; a throwaway repo + a token would have proven the
+   upload for real. Blocked only by token creation (UI/API with credentials).
+4. **Configuration-cache hygiene**: reading env + file existence at
+   configuration time (`app/build.gradle.kts:39-56`) is exactly the pattern
+   that can produce a stale signed/unsigned decision. Either use
+   `providers.*` inputs or document `--no-configuration-cache` for signing
+   troubleshooting. I did neither. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+5. **Make the script testable** from the start (`release.sh` is one 390-line
+   file with `set -euo pipefail` and no seam) — that is why two of its bugs
+   needed tracing instead of a test. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
 
 **What could I still improve?**
 
-~~1. Give `release.sh` a `--post-publish` behaviour: auto-bump `version.txt`,~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-auto-cut the CHANGELOG heading, print the exact commit command.
-~~2. Add a `scripts/release-selftest.sh` (or a Makefile-free flake check) that~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-runs `bash -n`, `py_compile`, a mock-server upload test, and the
-version/changelog pairing check.
-~~3. Make the update path work on mobile data (public endpoint) instead of~~ r: ROADMAP.md theme 3 raw idea "Release-mode UX and endpoint"
-LAN/VPN only.
-~~4. Show the installed version inside the app (Settings), so a sideloaded~~ r: ROADMAP.md theme 3 raw idea "Release-mode UX and endpoint"
-phone can answer "what am I running?" without adb.
-~~5. Consider certificate trust properly: the "Allow insecure HTTP requests"~~ r: ROADMAP.md theme 3 raw idea "Release-mode UX and endpoint"
-toggle is a workaround for an internal CA, not a design. A publicly-trusted
-forge vhost would let Obtainium verify TLS and would also let the app's
-WebView reach the forge without special cases.
+1. Give `release.sh` a `--post-publish` behaviour: auto-bump `version.txt`,
+   auto-cut the CHANGELOG heading, print the exact commit command. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+2. Add a `scripts/release-selftest.sh` (or a Makefile-free flake check) that
+   runs `bash -n`, `py_compile`, a mock-server upload test, and the
+   version/changelog pairing check. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+3. Make the update path work on mobile data (public endpoint) instead of
+   LAN/VPN only. **→ ROADMAP.md theme 3 "Release-mode UX and endpoint"**
+4. Show the installed version inside the app (Settings), so a sideloaded
+   phone can answer "what am I running?" without adb. **→ ROADMAP.md theme 3 "Release-mode UX and endpoint"**
+5. Consider certificate trust properly: the "Allow insecure HTTP requests"
+   toggle is a workaround for an internal CA, not a design. A publicly-trusted
+   forge vhost would let Obtainium verify TLS and would also let the app's
+   WebView reach the forge without special cases. **→ ROADMAP.md theme 3 "Release-mode UX and endpoint"**
 
 ---
 
@@ -163,65 +165,65 @@ WebView reach the forge without special cases.
 
 **P0 — unblock the ask (owner + agent, ~30 min total)**
 
-1. ~~Create the Forgejo token (`write:repository`) and export it / write `~/.config/webphone-android/forgejo-token` (chmod 600).~~ done — FEATURES.md:110 — v0.2.1 PUBLISHED 2026-11-11, so a write token exists
-2. ~~Run `nix develop -c bash scripts/release.sh` to publish `v0.2.0`.~~ **Superseded — v0.2.1 and v0.2.2 were published instead (FEATURES.md:110, git tags v0.2.1/v0.2.2); no v0.2.0 tag was ever cut.**
-3. ~~**Verify the asset on the forge**: `python3 scripts/forgejo-release.py --check` must list `v0.2.0: webphone-android-0.2.0.apk`.~~ done — FEATURES.md:110 — v0.2.1 with webphone-android-0.2.1.apk verified anonymously
-4. Create the phone-side token (`read:repository`) and add the app in Obtainium (Override Source → Forgejo (Codeberg)). **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)**
-5. Enable the per-app "Allow insecure HTTP requests" toggle; confirm the release list loads. **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)**
-6. Uninstall the current debug-signed build, install 0.2.0 from Obtainium, grant permissions, log in, verify REGISTERED. **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)**
-   ~~7. **Fix `scripts/emulator-train.sh --release`** to use `app-release.apk` (and only sign the unsigned artifact when it actually exists).~~ v: scripts/emulator-train.sh:42-70 — fixed exactly as asked; the CHANGELOG entry (#35) is owed and routed to the TODO_LIST.md Release-lane hardening row
-   ~~8. **Retire the stale AGENTS gotcha** (`:219-222`) and fold its still-true half into the new signing bullet.~~ v: AGENTS.md:319-323 — retired; now "Release signing is opt-in by file presence" with the still-true half folded in
-   ~~9. Back up `release.keystore` + `release.properties`; record where (and that losing them forces uninstalls).~~ r: TODO_LIST.md "Owner: back up `~/.config/webphone-android/release.keystore`"
-7. Confirm Obtainium's version comparison with the `v` tag (if it misbehaves: extraction regex `^v?(.*)$`). **→ TODO_LIST.md "Connect the phone to Obtainium" (BLOCKED, owner device)**
+~~1. Create the Forgejo token (`write:repository`) and export it / write `~/.config/webphone-android/forgejo-token` (chmod 600).~~ done — AGENTS.md "Update lane": the release-lane token is minted and stored
+~~2. Run `nix develop -c bash scripts/release.sh` to publish `v0.2.0`.~~ **Superseded — v0.2.1 and v0.2.2 were published 2026-11-11 (CHANGELOG).**
+~~3. **Verify the asset on the forge**: `python3 scripts/forgejo-release.py --check` must list `v0.2.0: webphone-android-0.2.0.apk`.~~ done — `forgejo-release.py --check`; v0.2.2 verified anonymously from the outside (AGENTS.md status paragraph)
+4. Create the phone-side token (`read:repository`) and add the app in Obtainium (Override Source → Forgejo (Codeberg)). **→ TODO_LIST.md "Connect the phone to Obtainium"**
+5. Enable the per-app "Allow insecure HTTP requests" toggle; confirm the release list loads. **→ TODO_LIST.md "Connect the phone to Obtainium"**
+6. Uninstall the current debug-signed build, install 0.2.0 from Obtainium, grant permissions, log in, verify REGISTERED. **→ TODO_LIST.md "Connect the phone to Obtainium"**
+~~7. **Fix `scripts/emulator-train.sh --release`** to use `app-release.apk` (and only sign the unsigned artifact when it actually exists).~~ done — `scripts/emulator-train.sh` lines 42-70, 2026-11-27
+~~8. **Retire the stale AGENTS gotcha** (`:219-222`) and fold its still-true half into the new signing bullet.~~ done — AGENTS.md "Release signing is opt-in by file presence", 2026-11-27
+9. Back up `release.keystore` + `release.properties`; record where (and that losing them forces uninstalls). **→ TODO_LIST.md "Owner: back up ~/.config/webphone-android/release.keystore"**
+10. Confirm Obtainium's version comparison with the `v` tag (if it misbehaves: extraction regex `^v?(.*)$`). **→ TODO_LIST.md "Connect the phone to Obtainium"**
 
 **P1 — harden what shipped**
 
-~~11. Mock-server test for `scripts/forgejo-release.py` (multipart framing, size check, idempotent replace).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~12. Add the mock test + `bash -n` + `py_compile` + version↔CHANGELOG pairing to CI (or a flake check).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~13. Decide the configuration-cache story for signing inputs (`providers.*` vs documented `--no-configuration-cache`).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-14. Run `scripts/assetlinks.sh ~/.config/webphone-android/release.keystore` and paste the output into TODO_LIST R18 / the webphone repo. **→ TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)**
-15. Update R18's wording from "debug/install signing key" to "release signing key". **→ TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)**
-~~16. Add a post-publish auto-bump (or a `--after-publish` helper) so the tree never claims a published version.~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~17. Add an optional auto-changelog cut (`[Unreleased]` → `[X.Y.Z] - date`) behind a flag.~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~18. Expose `--prerelease` through `release.sh` (the python client already supports it).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~19. Push the release APK through the release smoke on the emulator (post-fix #7) to prove R8 output installs while release-signed.~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-20. ~~Re-run `testDebugUnitTest` without the build cache (`--rerun-tasks`) once, for a real green.~~ done — TODO_LIST.md:18 — the suite has since re-executed (97-test gate) on changed Kotlin
-~~21. Add a `--doctor` check that compares `version.txt` against the last built APK's versionCode (catches a stale build dir).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~22. Delete or document `work/release/*` staging (44 MB per version; add a `--clean` or a README note).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~23. Document the release-key rotation story (what happens when the key must change).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~24. Record the exact Obtainium screens/fields in README with a screenshot (reproducible setup).~~ r: ROADMAP.md theme 3 raw idea "Release-mode UX and endpoint"
+11. Mock-server test for `scripts/forgejo-release.py` (multipart framing, size check, idempotent replace). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+12. Add the mock test + `bash -n` + `py_compile` + version↔CHANGELOG pairing to CI (or a flake check). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+13. Decide the configuration-cache story for signing inputs (`providers.*` vs documented `--no-configuration-cache`). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+14. Run `scripts/assetlinks.sh ~/.config/webphone-android/release.keystore` and paste the output into TODO_LIST R18 / the webphone repo. **→ TODO_LIST.md "Cross-repo: serve assetlinks.json from the stack"**
+15. Update R18's wording from "debug/install signing key" to "release signing key". **→ TODO_LIST.md "Cross-repo: serve assetlinks.json from the stack"**
+16. Add a post-publish auto-bump (or a `--after-publish` helper) so the tree never claims a published version. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+17. Add an optional auto-changelog cut (`[Unreleased]` → `[X.Y.Z] - date`) behind a flag. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+18. Expose `--prerelease` through `release.sh` (the python client already supports it). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+    ~~19. Push the release APK through the release smoke on the emulator (post-fix #7) to prove R8 output installs while release-signed.~~ done — the release-keyed APK booted on the API 36 emulator, 2026-11-27
+    ~~20. Re-run `testDebugUnitTest` without the build cache (`--rerun-tasks`) once, for a real green.~~ done — the whole gate ran green on the final tree, 2026-11-27
+19. Add a `--doctor` check that compares `version.txt` against the last built APK's versionCode (catches a stale build dir). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+20. Delete or document `work/release/*` staging (44 MB per version; add a `--clean` or a README note). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+21. Document the release-key rotation story (what happens when the key must change). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+22. Record the exact Obtainium screens/fields in README with a screenshot (reproducible setup). **→ ROADMAP.md theme 3 "Release-mode UX and endpoint"**
 
 **P2 — make updates work everywhere**
 
-25. Build a publicly-trusted endpoint for releases (LE cert vhost, or publish the APK to the `pbx.artmann.tech` static root) so Obtainium works on mobile data. **→ ROADMAP.md §3 Distribution raw idea "A public update endpoint"**
-    ~~26. Decide whether that endpoint needs auth (APK is not secret; the repo is).~~ r: ROADMAP.md theme 3 raw idea "Release-mode UX and endpoint"
-26. Mirror releases/tags to GitHub so the mirror is a usable fallback source (needs the PAT/billing fixes). **→ ROADMAP.md §3 Distribution raw idea "GitHub releases as a second mirror"**
-    ~~28. Fix the invalid `gh` token (owner) — `gh auth login`.~~ r: ROADMAP.md §3 Distribution raw idea "GitHub releases as a second mirror" (owner: `gh auth login`; that row records the invalid token)
-27. Regenerate the sync PAT with `repo`+`workflow` (owner) so CI and future workflow edits stop being a manual push. **→ TODO_LIST.md "Owner: regenerate the sync PAT with repo+workflow scope"**
-28. Fix GitHub Actions billing (owner) so CI actually runs. **→ TODO_LIST.md "Owner: fix GitHub Actions billing"**
-29. Revisit `autoVerify` App Links once #14 lands (R18). **→ TODO_LIST.md "Cross-repo: serve /.well-known/assetlinks.json from the stack" (R18)**
-    ~~32. Consider a monochrome/GitHub-release-free single source of truth statement in README (avoid two divergent update stories).~~ v: README.md:124-126 "`version.txt` is the single source of the version" + AGENTS.md:452 "version.txt is the version; versionCode is derived" — the single source-of-truth statement exists
+25. Build a publicly-trusted endpoint for releases (LE cert vhost, or publish the APK to the `pbx.artmann.tech` static root) so Obtainium works on mobile data. **→ ROADMAP.md theme 3 "Release-mode UX and endpoint"**
+26. Decide whether that endpoint needs auth (APK is not secret; the repo is). **→ ROADMAP.md theme 3 "Release-mode UX and endpoint"**
+27. Mirror releases/tags to GitHub so the mirror is a usable fallback source (needs the PAT/billing fixes). **→ ROADMAP.md theme 3 "GitHub releases as a second mirror"**
+28. Fix the invalid `gh` token (owner) — `gh auth login`. **→ ROADMAP.md theme 3 "GitHub releases as a second mirror"**
+29. Regenerate the sync PAT with `repo`+`workflow` (owner) so CI and future workflow edits stop being a manual push. **→ TODO_LIST.md "Owner: regenerate the sync PAT"**
+30. Fix GitHub Actions billing (owner) so CI actually runs. **→ TODO_LIST.md "Owner: fix GitHub Actions billing"**
+31. Revisit `autoVerify` App Links once #14 lands (R18). **→ TODO_LIST.md "Cross-repo: serve assetlinks.json from the stack"**
+    ~~32. Consider a monochrome/GitHub-release-free single source of truth statement in README (avoid two divergent update stories).~~ done — README.md "Build and verify" and AGENTS.md "version.txt is the version; versionCode is derived"
 
 **P3 — polish and honesty**
 
-~~33. Show the installed version (and signing fingerprint?) in the app's Settings.~~ r: ROADMAP.md theme 3 raw idea "Release-mode UX and endpoint"
-~~34. Add a "check for updates" affordance in the app that deep-links to Obtainium (no silent self-update; single-call product decision stays).~~ r: ROADMAP.md theme 3 raw idea "Release-mode UX and endpoint"
-~~35. Add a CHANGELOG entry for the emulator-train fix (#7) when it lands.~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)" (CHANGELOG entry owed — add to [Unreleased] Fixed)
-36. ~~Extend the release gate with `dprint check` (only skipped because it needs `npx` network).~~ done — .github/workflows/ci.yml:107 (Formatting gate (dprint) step)
-~~37. Add a flake check for the release key's presence in `--doctor` only (never fail a plain build).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-38. ~~Document the attachment `allowed_types` risk + the exact SystemNix knob (`attachment.MAX_SIZE`, and `.apk` in `ALLOWED_TYPES` if ever enforced).~~ done — AGENTS.md:486-493 (Forgejo facts that bite the upload: MAX_SIZE knob + allowed_types risk)
-~~39. Add a `scripts/release.sh --notes` example to the README (custom notes path).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~40. Record in AGENTS that the forge is Forgejo 15.0.10 and that `--check` output is the fastest health probe.~~ done — AGENTS.md:486-487 (forge version 15.0.10 + the --check probe recorded)
-~~41. Add a status-report/README link so the next session finds this report.~~ done — docs/status/README.md live index links this report
-~~40. Consider making `version.txt` the tag source of truth in CI (`git describe --tags` sanity check).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~41. Evaluate whether `bump` should also open a CHANGELOG stub section automatically.~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-42. ~~Reconsider `versionCode` layout if `patch` ever reaches 100 (currently a hard error — good, but document the escalation).~~ done — app/build.gradle.kts:26-28 (hard check with the overflow message naming the layout)
-~~43. Add a second signature check: verify the APK's signer equals `release.properties`' expected cert (keystore vs artifact, the AGENTS lesson).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~44. Keep `work/dryrun*.log` out of the repo tree or delete after a run.~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~45. Add `shellcheck` to the devShell so `release.sh` gets a real linter (not just `bash -n`).~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-~~46. Add a `docs/` note on how Obtainium resolves versions (tag vs title) next to the setup steps.~~ r: TODO_LIST.md "Release-lane hardening (02-03 §b3-4, §b6, §f1-2, 11-13, 16-24, 37-49)"
-47. Reconcile the two "status" narratives: README's "v0.1 scaffold" header vs the 0.2.0 version now in `version.txt`. **→ TODO_LIST.md "Reconcile the v0.1 scaffold status line"**
-~~48. Sweep the remaining `app-release-unsigned.apk` references (`README.md:61`, `AGENTS.md:220`, `AGENTS.md:335`) so every mention states the conditional correctly.~~ v: README.md:69 and AGENTS.md:322/464 all state the conditional (signed when release.properties exists, unsigned otherwise); `rg "No release signing config" AGENTS.md` → 0 hits
+33. Show the installed version (and signing fingerprint?) in the app's Settings. **→ ROADMAP.md theme 3 "Release-mode UX and endpoint"**
+34. Add a "check for updates" affordance in the app that deep-links to Obtainium (no silent self-update; single-call product decision stays). **→ ROADMAP.md theme 3 "Release-mode UX and endpoint"**
+    ~~35. Add a CHANGELOG entry for the emulator-train fix (#7) when it lands.~~ done — CHANGELOG.md [Unreleased] Fixed, 2026-11-27
+    ~~36. Extend the release gate with `dprint check` (only skipped because it needs `npx` network).~~ done — `dprint check` is gate step 8 and a CI step
+35. Add a flake check for the release key's presence in `--doctor` only (never fail a plain build). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+    ~~38. Document the attachment `allowed_types` risk + the exact SystemNix knob (`attachment.MAX_SIZE`, and `.apk` in `ALLOWED_TYPES` if ever enforced).~~ done — AGENTS.md "Forgejo facts that bite the upload"
+36. Add a `scripts/release.sh --notes` example to the README (custom notes path). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+    ~~40. Record in AGENTS that the forge is Forgejo 15.0.10 and that `--check` output is the fastest health probe.~~ done — AGENTS.md "Forgejo facts that bite the upload" (Forgejo 15.0.10, `--check`)
+    ~~41. Add a status-report/README link so the next session finds this report.~~ done — docs/status/README.md indexes this report
+37. Consider making `version.txt` the tag source of truth in CI (`git describe --tags` sanity check). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+38. Evaluate whether `bump` should also open a CHANGELOG stub section automatically. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+    ~~44. Reconsider `versionCode` layout if `patch` ever reaches 100 (currently a hard error — good, but document the escalation).~~ done — `app/build.gradle.kts` refuses patch >= 100 (check at the versionCode derivation)
+39. Add a second signature check: verify the APK's signer equals `release.properties`' expected cert (keystore vs artifact, the AGENTS lesson). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+40. Keep `work/dryrun*.log` out of the repo tree or delete after a run. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+41. Add `shellcheck` to the devShell so `release.sh` gets a real linter (not just `bash -n`). **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+42. Add a `docs/` note on how Obtainium resolves versions (tag vs title) next to the setup steps. **→ TODO_LIST.md "Release-lane hardening (02-03 …)"**
+43. Reconcile the two "status" narratives: README's "v0.1 scaffold" header vs the 0.2.0 version now in `version.txt`. **→ TODO_LIST.md "Reconcile the v0.1 scaffold status line"**
+    ~~50. Sweep the remaining `app-release-unsigned.apk` references (`README.md:61`, `AGENTS.md:220`, `AGENTS.md:335`) so every mention states the conditional correctly.~~ done — README.md and AGENTS.md state the signed/unsigned conditional, 2026-11-27
 
 ---
 
@@ -231,14 +233,14 @@ WebView reach the forge without special cases.
    per-app "Allow insecure HTTP requests" toggle) acceptable as the permanent
    story, or should I build a publicly-trusted release endpoint (LE-cert vhost,
    or publishing the APK to the `pbx.artmann.tech` root) so updates also work
-   on mobile data? **→ ROADMAP.md §3 Distribution raw idea "A public update endpoint"**
-   ~~2. **Release automation:** do you want `scripts/release.sh` to auto-bump~~ r: ROADMAP.md Open questions "Release automation"
+   on mobile data? **→ ROADMAP.md theme 3 "Release-mode UX and endpoint"**
+2. **Release automation:** do you want `scripts/release.sh` to auto-bump
    `version.txt` and auto-cut the CHANGELOG heading after a successful publish
    (fewer gates, less ritual), or keep both as manual steps that a human
-   confirms (current behaviour, harder to get wrong silently)?
-2. **Mirror parity:** should the GitHub mirror carry the same tags/releases
+   confirms (current behaviour, harder to get wrong silently)? **→ ROADMAP.md Open questions "Release automation"**
+3. **Mirror parity:** should the GitHub mirror carry the same tags/releases
    (a second Obtainium source, and better off-site durability), or stay a
-   code-only mirror until the PAT/billing issues are fixed? **→ ROADMAP.md §3 Distribution raw idea "GitHub releases as a second mirror"**
+   code-only mirror until the PAT/billing issues are fixed? **→ ROADMAP.md theme 3 "GitHub releases as a second mirror"**
 
 ---
 

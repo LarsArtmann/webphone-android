@@ -59,7 +59,9 @@ def main() -> int:
         )
         return 1
 
-    print(f"ABI gate green: {LOAD_BEARING_LIB} present for {', '.join(REQUIRED_ABIS)} in {apk_path}")
+    print(
+        f"ABI gate green: {LOAD_BEARING_LIB} present for {', '.join(REQUIRED_ABIS)} in {apk_path}"
+    )
     return 0
 
 

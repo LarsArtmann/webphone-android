@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   sign-in-expired notice (the two shared one notification id).
 - The JVM test suite no longer contacts the live stack from three
   test classes.
+- The emulator train's release mode (`--release`) booted the
+  unsigned artifact through a stale path; it now boots the real
+  release-keyed APK when the release key is configured.
 - `gradle/wrapper/gradle-wrapper.jar` was untracked (a global
   `*.jar` ignore), so a fresh clone could not run `./gradlew`.
 

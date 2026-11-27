@@ -18,8 +18,8 @@ Report privately via GitHub's security advisory form:
 canonical Forgejo repo). Alternatively open a Forgejo issue on
 `lars/webphone-android` if the report is not sensitive. Include the
 version from `version.txt` and, for on-device behavior, the Android
-version. Response-time commitment: best-effort acknowledgment within
-7 days (single operator; no contractual SLA).
+version. Response time: reports receive a first response within 7 days
+(best effort; single operator, no contractual SLA).
 
 ## Security Practices
 

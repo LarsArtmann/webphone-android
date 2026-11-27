@@ -1,0 +1,8 @@
+# deadnix's auto-fix deletes `self` from the flake's `outputs` argument
+# pattern (it is unused under flake-utils), and nix then refuses to
+# evaluate the flake because the pattern has no `...`. Checked 2026-11-27.
+skip_steps:
+  - deadnix
+  # No Python test suite exists: the four scripts are checked by
+  # ruff, mypy and bandit, and the repo's tests are the JVM suite.
+  - pytest-test

@@ -34,7 +34,9 @@ DEFAULT_REPORT = REPO / "app/build/reports/lint-results-debug.txt"
 
 # A finding line is the only unindented "location: Severity: message
 # [CheckId]" line of its block; everything beneath it is explanation.
-FINDING = re.compile(r"^(?P<location>.+?): (?P<severity>Fatal|Error|Warning|Hint|Information): (?P<message>.*) \[(?P<check>[A-Za-z0-9]+)\]$")
+FINDING = re.compile(
+    r"^(?P<location>.+?): (?P<severity>Fatal|Error|Warning|Hint|Information): (?P<message>.*) \[(?P<check>[A-Za-z0-9]+)\]$"
+)
 SUMMARY = re.compile(r"^(\d+) errors?, (\d+) warnings?(?:, (\d+) hints?)?$")
 
 BLOCKING = ("Fatal", "Error", "Warning")
@@ -70,7 +72,10 @@ def main(argv: list[str]) -> int:
             findings.append(finding)
 
     if summary is None:
-        print("lint-lag-report: the report carries no '<n> errors, <n> warnings' summary line", file=sys.stderr)
+        print(
+            "lint-lag-report: the report carries no '<n> errors, <n> warnings' summary line",
+            file=sys.stderr,
+        )
         return 1
 
     errors, warnings, hints = summary
@@ -85,14 +90,21 @@ def main(argv: list[str]) -> int:
     lag = [f for f in findings if f["severity"] in ("Hint", "Information")]
     strays = [f for f in findings if f["severity"] in BLOCKING]
     if strays:
-        print("lint-lag-report: findings above hint severity with a zero summary; refusing to pass", file=sys.stderr)
+        print(
+            "lint-lag-report: findings above hint severity with a zero summary; refusing to pass",
+            file=sys.stderr,
+        )
         return 1
 
     if not lag:
-        print("Version lag: none. Dependencies, the Gradle wrapper, AGP and targetSdk are at their newest releases.")
+        print(
+            "Version lag: none. Dependencies, the Gradle wrapper, AGP and targetSdk are at their newest releases."
+        )
         return 0
 
-    print("Version lag (deliberate, non-fatal; see the lint block in app/build.gradle.kts):")
+    print(
+        "Version lag (deliberate, non-fatal; see the lint block in app/build.gradle.kts):"
+    )
     for finding in lag:
         location = finding["location"]
         try:

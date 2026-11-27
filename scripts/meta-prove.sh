@@ -21,57 +21,72 @@ break_cmd=""
 restore_cmd=""
 paths=""
 while [ "$#" -gt 0 ]; do
-  case "$1" in
-    --tests) tests="$2"; shift 2 ;;
-    --break-cmd) break_cmd="$2"; shift 2 ;;
-    --restore-cmd) restore_cmd="$2"; shift 2 ;;
-    --paths) paths="$2"; shift 2 ;;
-    *) echo "unknown argument: $1" >&2; exit 2 ;;
-  esac
+    case "$1" in
+    --tests)
+        tests="$2"
+        shift 2
+        ;;
+    --break-cmd)
+        break_cmd="$2"
+        shift 2
+        ;;
+    --restore-cmd)
+        restore_cmd="$2"
+        shift 2
+        ;;
+    --paths)
+        paths="$2"
+        shift 2
+        ;;
+    *)
+        echo "unknown argument: $1" >&2
+        exit 2
+        ;;
+    esac
 done
 [ -n "$tests" ] && [ -n "$break_cmd" ] && [ -n "$restore_cmd" ] || {
-  echo "usage: meta-prove.sh --tests <filter> --break-cmd <cmd> --restore-cmd <cmd> [--paths <files>]" >&2
-  exit 2
+    echo "usage: meta-prove.sh --tests <filter> --break-cmd <cmd> --restore-cmd <cmd> [--paths <files>]" >&2
+    exit 2
 }
 
 cd "$(dirname "$0")/.."
-if pgrep -f 'Gradle[W]orkerMain' > /dev/null; then
-  echo "another Gradle process is alive; not starting a concurrent build" >&2
-  exit 1
+if pgrep -f 'Gradle[W]orkerMain' >/dev/null; then
+    echo "another Gradle process is alive; not starting a concurrent build" >&2
+    exit 1
 fi
 
 snapshot() {
-  if [ -n "$paths" ]; then
-    # shellcheck disable=SC2086  # several paths, split on purpose
-    cat $paths | sha256sum
-  else
-    git diff HEAD | sha256sum
-  fi
+    if [ -n "$paths" ]; then
+        # shellcheck disable=SC2086  # several paths, split on purpose
+        cat $paths | sha256sum
+    else
+        git diff HEAD | sha256sum
+    fi
 }
 restore() { eval "$restore_cmd"; }
 trap restore EXIT INT TERM
 
 run_pin() {
-  nix develop -c ./gradlew :app:testDebugUnitTest --tests "$tests" --console=plain -q > /dev/null 2>&1
+    nix develop -c ./gradlew :app:testDebugUnitTest --tests "$tests" --console=plain -q >/dev/null 2>&1
 }
 
 before=$(snapshot)
 eval "$break_cmd"
 if run_pin; then
-  echo "VACUOUS: the pin passes with the fix broken ($tests)" >&2
-  exit 1
+    echo "VACUOUS: the pin passes with the fix broken ($tests)" >&2
+    exit 1
 fi
 echo "RED on broken: ok"
 
 restore
 trap - EXIT INT TERM
 if [ "$(snapshot)" != "$before" ]; then
-  echo "RESTORE INCOMPLETE: the tree differs after --restore-cmd; fix by hand" >&2
-  exit 1
+    echo "RESTORE INCOMPLETE: the tree differs after --restore-cmd; fix by hand" >&2
+    exit 1
 fi
 if run_pin; then
-  echo "GREEN on restored: ok — the pin is proven ($tests)"
+    echo "GREEN on restored: ok — the pin is proven ($tests)"
 else
-  echo "RED on restored: the pin does not pass with the fix in place" >&2
-  exit 1
+    echo "RED on restored: the pin does not pass with the fix in place" >&2
+    exit 1
 fi

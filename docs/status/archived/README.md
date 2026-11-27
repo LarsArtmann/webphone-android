@@ -45,3 +45,21 @@ mv. Open routed §f items carry the `> **Live remainder:**` banner.
 | 2026-11-11_11-43 adb deploy 0.2.1 + release recon         | ROUTED → ARCHIVED     | Zero bare rows; §f tail harvested into TODO (device-deploy row) by 13-01 (banner)                                                                                             |
 | 2026-11-11_13-01 both remotes public                      | ROUTED → ARCHIVED     | Freshness-verified green (§f harvested into TODO/ROADMAP) at archive time (banner)                                                                                            |
 | 2026-10-28_02-49 docs-health mega-sweep                   | ROUTED → ARCHIVED     | §b table ledger-marked: 4 rows routed to fresh TODO rows (evidence-path sweep, AGENTS slimming, sibling archives, verify-gate), 1 moot; cadence headroom for the 14-56 report |
+
+## Archive manifest (2026-11-27 sweep)
+
+Cadence-driven (19 unarchived > threshold 15; the seven late-October
+reports, 30 days old). Every remaining bare row and prose item was routed
+to a living-doc row or struck with evidence; `docs-gates rows --bare`,
+`--strict` and the prose scan are clean on all seven. Open items carry
+the `> **Live remainder:**` banner.
+
+| Report                                                                                          | Classification       | Deciding reason                                                                                               |
+| ----------------------------------------------------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------------------- |
+| 2026-10-29_01-40 — Self-critique: gate green, the harvest, and two claim-grep blind spots       | ANNOTATED → ARCHIVED | Resolved 2026-11-27: done items struck with evidence, open items routed to TODO_LIST.md / ROADMAP.md (banner) |
+| 2026-10-28_23-30 — Gate green twice, §f harvest, three more split brains                        | ANNOTATED → ARCHIVED | Resolved 2026-11-27: done items struck with evidence, open items routed to TODO_LIST.md / ROADMAP.md (banner) |
+| 2026-10-28_23-02 — Session-end lockstep, split brains found on sight, honest ledger             | ANNOTATED → ARCHIVED | Resolved 2026-11-27: done items struck with evidence, open items routed to TODO_LIST.md / ROADMAP.md (banner) |
+| 2026-10-28_22-31 — SUPERB agent track executed: J05-J16, webphone#21, M050 wedged               | ANNOTATED → ARCHIVED | Resolved 2026-11-27: done items struck with evidence, open items routed to TODO_LIST.md / ROADMAP.md (banner) |
+| 2026-10-28_10-12 — SUPERB plan completion: TODO re-parent + coverage repair + redemption commit | ANNOTATED → ARCHIVED | Resolved 2026-11-27: done items struck with evidence, open items routed to TODO_LIST.md / ROADMAP.md (banner) |
+| 2026-10-28_02-23 — obtainium lane + phone DNS diagnosis                                         | ANNOTATED → ARCHIVED | Resolved 2026-11-27: done items struck with evidence, open items routed to TODO_LIST.md / ROADMAP.md (banner) |
+| 2026-10-28_02-03 — obtainium + Forgejo release lane                                             | ANNOTATED → ARCHIVED | Resolved 2026-11-27: done items struck with evidence, open items routed to TODO_LIST.md / ROADMAP.md (banner) |

@@ -1,5 +1,7 @@
 # Status: Obtainium release lane + phone DNS / JetBird / cert trust (single session)
 
+> **Live remainder:** open §f items live in TODO_LIST.md and ROADMAP.md (every row and item routed or struck 2026-11-27; archived 2026-11-27).
+
 **Session window:** 2026-10-28 ~01:35 – 02:23 CET (this Crush instance only).
 **Scope discipline:** only what this session did and noticed. No repo-wide sweep, no
 unrelated research. Two work blocks: (1) the Obtainium-via-Forgejo update lane
@@ -149,25 +151,25 @@ authored by a **concurrent** session's sweep, not by me. Read, not touched.
 
 ## e) WHAT WE SHOULD IMPROVE
 
-1. **Baseline before diagnosis, always.** For "X fails through the VPN", the first three **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
+1. **Baseline before diagnosis, always.** For "X fails through the VPN", the first three **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
    checks are peer state, login state, route presence — _then_ the exotic layer. A tunnel
    that is not up makes every downstream theory untestable, and NetBird hides that state
    (client looks connected, no re-auth prompt).
-2. **Turn a category into an instance before answering.** One discriminating question **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
+2. **Turn a category into an instance before answering.** One discriminating question **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
    ("which names, on which network, tunnel up?") beats three plausible essays.
-3. **Identify the client before diagnosing the client.** Official NetBird, JetBird, CLI, **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
+3. **Identify the client before diagnosing the client.** Official NetBird, JetBird, CLI, **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
    macOS app — different DNS surfaces, different patches.
-4. **Never let a provisioner script stand in for live state.** Label it: "the code that **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
+4. **Never let a provisioner script stand in for live state.** Label it: "the code that **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
    creates it says X; I cannot read the dashboard."
-5. **First-party docs or an explicit UNVERIFIED tag.** No community runbooks presented as **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
+5. **First-party docs or an explicit UNVERIFIED tag.** No community runbooks presented as **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
    fact (D5).
-6. **Check the firewall before proposing any "just transfer/curl/serve it" step.** A **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
+6. **Check the firewall before proposing any "just transfer/curl/serve it" step.** A **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
    suggested path that is silently DROPped is worse than no suggestion.
-7. **Persist at discovery, not at report time.** A one-line TODO row costs 30 seconds and **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
+7. **Persist at discovery, not at report time.** A one-line TODO row costs 30 seconds and **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
    would have saved the D5 defect from living only in a chat log.
-8. **Re-verify inherited claims cheaply.** A7 cost one `sed` and retired two stale **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
+8. **Re-verify inherited claims cheaply.** A7 cost one `sed` and retired two stale **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
    "known-bad" items from the previous report. Do that at the start of every session.
-9. **Re-use the repo's own warning list.** The 2026-10-23 report's §f item 4 was exactly **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
+9. **Re-use the repo's own warning list.** The 2026-10-23 report's §f item 4 was exactly **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into `AGENTS.md`"**
    "check the phone first"; I read it and did not act on it. Reading a prior report is not
    the same as obeying it.
 
@@ -235,19 +237,19 @@ Legend: Impact / Effort (S <30 min, M 30 min – 2 h, L >2 h) / category. 🔒 =
 
 ## g) QUESTIONS ONLY THE OWNER CAN ANSWER
 
-1. **What does "DNS problems" actually look like?** Which names fail — only **→ TODO_LIST.md "Owner: phone DNS over NetBird"**
+1. **What does "DNS problems" actually look like?** Which names fail — only **→ routed: TODO_LIST.md "Owner: phone DNS over NetBird"**
    `*.home.lan` / `*.larsartmann.cloud`, or everything including `example.com`? On
    cellular, home Wi-Fi, or both? Before or after the login expiry? Three failure classes
    (dead tunnel, unsupported nameserver shape, Private DNS bypass) produce three different
    fixes, and I answered the middle one first.
 
-2. **What is the live NetBird DNS state?** Is `lan-dns` still `primary: false` with match **→ TODO_LIST.md "Owner: phone DNS over NetBird"**
+2. **What is the live NetBird DNS state?** Is `lan-dns` still `primary: false` with match **→ routed: TODO_LIST.md "Owner: phone DNS over NetBird"**
    domains `home.lan` + `larsartmann.cloud` → `192.168.1.53`, as the provisioner creates
    it, and is it distributed to the phone's peer group? I have no dashboard or API
    credential in-session, so everything I said about the group is inferred from the script
    that created it in October.
 
-3. **Which tradeoff do you want, and was "SSH certs" even SSH?** A primary nameserver **→ TODO_LIST.md "Owner: phone DNS over NetBird"**
+3. **Which tradeoff do you want, and was "SSH certs" even SSH?** A primary nameserver **→ routed: TODO_LIST.md "Owner: phone DNS over NetBird"**
    means _all_ phone DNS rides the tunnel (roaming ad-block, but phone DNS dies whenever
    evo-x2 is rebooting); matched-domain-only means `*.home.lan` never resolves on Android
    at all. Separately: did you mean SSH host-key trust (Termux/JuiceSSH → evo-x2), or the

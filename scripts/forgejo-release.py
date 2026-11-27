@@ -39,6 +39,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
+from typing import BinaryIO
 
 DEFAULT_BASE_URL = os.environ.get("FORGEJO_BASE_URL", "https://forgejo.home.lan")
 DEFAULT_REPO = os.environ.get("FORGEJO_REPO", "lars/webphone-android")
@@ -133,7 +134,7 @@ def upload_asset(opener, url: str, path: Path) -> dict:
 
     class MultipartBody:
         def __init__(self) -> None:
-            self.parts = [head, path.open("rb"), tail]
+            self.parts: list[bytes | BinaryIO] = [head, path.open("rb"), tail]
 
         def __iter__(self):
             for part in self.parts:

@@ -1,5 +1,7 @@
 # SUPERB Plan Completed — TODO Re-Parent, Coverage Repair, Redemption Commit (2026-10-28 10:12)
 
+> **Live remainder:** open §f items live in TODO_LIST.md and ROADMAP.md (every row and item routed or struck 2026-11-27; archived 2026-11-27).
+
 > **Session verdict:** the planning/bookkeeping mission is DONE and pushed
 > (`7574c79`, both remotes, SHA-lockstep) — but this session executed ZERO
 > of the plan's own work items. Two consecutive sessions produced docs and
@@ -145,7 +147,7 @@ with zero plan execution. Default next sessions to EXECUTION
 ~~1. M021 task-level fence on `testDebugUnitTest`~~ done — J05 wedge-proof fence shipped (timeout=20min + forkEvery=1), commit 97e6929 (docs/status/2026-10-28_22-31 row 2)
 ~~2. M022 per-test timeouts (MockWebServer/WebSocket suites)~~ done at `97e6929` — 90 s per-test JUnit rule + injected fence client (CHANGELOG.md `[Unreleased]` "Wedge-proof JVM suite (J05)")
 ~~3. M023 `forkEvery`/fresh-executor policy~~ **→ TODO_LIST.md "`forkEvery` cost audit: fresh-JVM-per-class is wedge-proof but slow"** (forkEvery=1 shipped at `97e6929`; the cost verdict is open)
-4. M024 shared test OkHttp dispatcher; migrate sockets **→ TODO_LIST.md "M024: one shared OkHttp dispatcher for the test sources"**
+4. M024 shared test OkHttp dispatcher; migrate sockets **→ routed: TODO_LIST.md "M024: one shared OkHttp dispatcher for the test sources"**
 ~~5. M025 gate run: 94+ green with fence armed~~ done at `97e6929` — CHANGELOG.md `[Unreleased]`: the J05-J16 track ran at the 97-test gate
 ~~6. M026 write `scripts/verify-gate.sh`~~ done at `fec6741` — `scripts/verify-gate.sh` exists (CHANGELOG.md `[Unreleased]` "scripts/verify-gate.sh (J06)")
 ~~7. M027 wire wrapper into AGENTS + end-to-end run~~ done — AGENTS.md names `bash scripts/verify-gate.sh` as the one-command gate; first end-to-end green run recorded in `docs/status/2026-10-28_23-30_…md` row 2
@@ -173,14 +175,14 @@ with zero plan execution. Default next sessions to EXECUTION
 
 **Session metallurgy (new, grounded in this session):**
 
-29. TODO↔plan parent cross-check lint script (see e1); wire into the gate **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
+29. TODO↔plan parent cross-check lint script (see e1); wire into the gate **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
     ~~30. Hand-commit each finished unit immediately (starve the daemon)~~ done — recorded in AGENTS.md "Daemon-blob remedy": "hand-commit finished units immediately so the daemon never gets the chance"
     ~~31. Make `mirror-lag` fetch+rev-parse a fixed session-end checklist item~~ **→ TODO_LIST.md "Push `main` to both remotes + `scripts/mirror-lag.sh` after the next hand commit"**
     ~~32. Index every new status report in `docs/status/README.md` at write time~~ done — `docs/status/README.md` indexes this report (line 29) and every later report
-30. Run `check-rows` over TODO_LIST after structural table edits too **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
+30. Run `check-rows` over TODO_LIST after structural table edits too **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
     ~~34. Keep AGENTS lessons to compact bullets (net-zero growth toward M082)~~ **→ TODO_LIST.md "M082: AGENTS slim-down below 30 KB"**
-31. Optional plan appendix: f-list↔M-row provenance map for auditors **→ TODO_LIST.md "TODO↔plan parent cross-check lint script"**
-32. Re-verify after ANY daemon commit: `git status` must be clean and **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
+31. Optional plan appendix: f-list↔M-row provenance map for auditors **→ routed: TODO_LIST.md "TODO↔plan parent cross-check lint script"**
+32. Re-verify after ANY daemon commit: `git status` must be clean and **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
     `git log` must not contain new blobs eating finished work
 
 **Waiting on the operator (gated highlights; the full 43 are in the plan):**
@@ -212,7 +214,7 @@ pre-push tree, is amend-in-place (this session's remedy, `7574c79`)
 the blessed standard — or do you want blob PREVENTION instead
 (hand-commit immediately after each unit, and/or pace/scope the daemon
 in SystemNix)? I can repair blobs; only you can retire them.
-2. **ID canon:** should J-/M-IDs become the project's canonical task **→ ROADMAP.md Open questions "Task vocabulary"**
+2. **ID canon:** should J-/M-IDs become the project's canonical task **→ routed: ROADMAP.md Open questions "Task vocabulary"**
 vocabulary — TODO rows, CHANGELOG entries, and future reports CITE
 M-IDs instead of re-describing work? That cements today's re-parent as
 the last retroactive one.

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import json
 import sys
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec B405 - this repo's own resource XML, never untrusted input
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -29,8 +29,9 @@ PAIRS = REPO / "scripts/contrast-pairs.json"
 
 
 def parse_colors(path: Path) -> dict[str, str]:
-    root = ET.parse(path).getroot()
-    return {el.get("name"): el.text.strip() for el in root.findall("color")}
+    # bandit B314: the file is this repo's own resource XML, never untrusted input.
+    root = ET.parse(path).getroot()  # nosec B314
+    return {el.get("name", ""): (el.text or "").strip() for el in root.findall("color")}
 
 
 def channels(hex_value: str) -> tuple[int, int, int, int]:

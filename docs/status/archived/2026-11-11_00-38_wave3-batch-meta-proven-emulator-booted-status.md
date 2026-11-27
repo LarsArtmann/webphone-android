@@ -239,7 +239,7 @@ TODO_LIST/FEATURES mention the same number).
 39. M050 re-run with the hardened harness.
 40. Restore Actions billing (OWNER; CI red is billing, not code).
 41. Mirror PAT regeneration (OWNER; the `domains`-style drift risk).
-42. Warning-freeze gate step.
+42. ~~Warning-freeze gate step.~~ done at `1ced5f2` — `allWarningsAsErrors` in `app/build.gradle.kts` (every compiler warning fails the build).
 43. Pre-push hook running verify-gate (opt-in).
 44. `assetlinks.json` draft + cross-repo filing (F75–F76, needs the
 release publish).

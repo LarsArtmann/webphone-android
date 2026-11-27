@@ -1,5 +1,7 @@
 # Session-End Lockstep, Split Brains Found On Sight, and the Honest Ledger (2026-10-28 23:02)
 
+> **Live remainder:** open §f items live in TODO_LIST.md and ROADMAP.md (every row and item routed or struck 2026-11-27; archived 2026-11-27).
+
 Session window: 2026-10-28 22:31 → 23:02 CET — the completion of the
 session-end procedure the previous report shipped mid-flight, plus the
 self-critique pass the operator ordered. Companion to
@@ -89,10 +91,10 @@ covers the close-out and what the close-out's cross-checking surfaced).
 1. ~~**Hand-commit the moment a unit is finished** — the drafts file's~~ done — AGENTS.md: "hand-commit finished units immediately so the daemon never gets the chance"
    ~~7 h nap invited both blobs; today's immediate-commit habit produced~~
    ~~zero blobs. Make it reflexive, not occasional.~~
-2. **Verify-gate per logical unit, not per session** — the wrapper is **→ TODO_LIST.md Ready row "Pre-push hook (opt-in) running verify-gate.sh"**
+2. **Verify-gate per logical unit, not per session** — the wrapper is **→ routed: TODO_LIST.md Ready row "Pre-push hook (opt-in) running verify-gate.sh"**
    ~5 min up-to-date-cached; running it per unit means the
    "final tree never saw the whole gate" class (§b #1) cannot exist.
-   3. **Claim-drift grep**: before finishing ANY commit that changes a **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
+   3. **Claim-drift grep**: before finishing ANY commit that changes a **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
    number or behavior claim (test count, trigger set, version,
    API level), grep the living docs (AGENTS, README, FEATURES,
    TODO_LIST, CHANGELOG) for the old value. Both of today's split
@@ -101,11 +103,11 @@ covers the close-out and what the close-out's cross-checking surfaced).
    ~~before ANY reset (applied today, worked), meta-test every wedge-pin~~
    ~~(caught yesterday's vacuous design). They are recorded now — reread~~
    ~~them at session start.~~
-   5. **Self-staling report prose**: when a report is KNOWN to be **→ TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
+   5. **Self-staling report prose**: when a report is KNOWN to be **→ routed: TODO_LIST.md "Adopt the process rules the 10-28/29 reports named into AGENTS.md"**
    superseded minutes later by the same session's own next step, say so
    inline instead of shipping a sentence that is false before the push
    output finishes printing.
-4. **The "v0.1 scaffold" status line** (README + AGENTS) vs `version.txt` **→ TODO_LIST.md Low Impact row "Reconcile the v0.1 scaffold status line" (ROADMAP Open question Release-first)**
+4. **The "v0.1 scaffold" status line** (README + AGENTS) vs `version.txt` **→ routed: TODO_LIST.md Low Impact row "Reconcile the v0.1 scaffold status line" (ROADMAP Open question Release-first)**
    0.2.0: still unreconciled — deliberately, because writing it
    truthfully depends on the release-first answer (§g #2). Queued, not
    forgotten (the sibling report's §f #49 tracks it too).
@@ -151,18 +153,18 @@ covers the close-out and what the close-out's cross-checking surfaced).
 
 ## g) QUESTIONS FOR THE OPERATOR (cannot self-answer — carried from 22-31, still open)
 
-1. **Daemon policy**: the daemon blobbed the arc five times and my **→ ROADMAP Open question "Auto-commit daemon policy (§g)" + TODO_LIST.md "Operator: answer the three §g questions"**
+1. **Daemon policy**: the daemon blobbed the arc five times and my **→ routed: ROADMAP Open question "Auto-commit daemon policy (§g)" + TODO_LIST.md "Operator: answer the three §g questions"**
    uncommitted files twice more tonight. Is the amend/squash remedy +
    faster hand-commit cadence the accepted steady state, or do you want
    the daemon disabled/paced for this repo (a SystemNix knob) while
    agent sessions run?
-2. **Release-first?**: `version.txt` claims 0.2.0 while the release lane **→ ROADMAP Open question "Release-first for v0.2.0 (§g)" + the same TODO_LIST.md row**
+2. **Release-first?**: `version.txt` claims 0.2.0 while the release lane **→ routed: ROADMAP Open question "Release-first for v0.2.0 (§g)" + the same TODO_LIST.md row**
    is unpublished and the whole agent-track just landed as code. Cut
    v0.2.0 NOW (needs the Forgejo token, M032/M033) so Obtainium's first
    update cycle starts from a real baseline — or let more work pile
    onto 0.2.0 first? (Also decides when the "v0.1 scaffold" status line
    can be rewritten truthfully.)
-3. **M050's expected end-state**: when the consent Cancel fires and the **→ ROADMAP Open question "M050 Android end-state (§g)" + the same TODO_LIST.md row**
+3. **M050's expected end-state**: when the consent Cancel fires and the **→ routed: ROADMAP Open question "M050 Android end-state (§g)" + the same TODO_LIST.md row**
    IdP errors back to the origin, the CURRENT design commits the
    origin, clears the detour, and renders the IdP's error page
    in-shell. Keep that, or auto-retry/return to the island home
