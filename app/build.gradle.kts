@@ -165,10 +165,6 @@ android {
     // built-in Kotlin: jvmTarget follows compileOptions.targetCompatibility
     // (17). Compiler options would move to a top-level `kotlin {}` block
     // if this project ever needs non-defaults.
-    buildFeatures {
-        viewBinding = true
-    }
-
     // JVM unit tests ride the host JVM: android.jar method stubs must
     // not throw, and Robolectric (T15's smoke tests) needs resources.
     testOptions {
