@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCE_ROOT = ROOT / "app" / "src" / "test"
 RESULTS_ROOT = ROOT / "app" / "build" / "test-results" / "testDebugUnitTest"
 TEST_ANNOTATION = re.compile(r"^\s*@Test\b", re.MULTILINE)
-FUN_NAME = re.compile(r"^\s*(?:private\s+|internal\s+)?fun\s+`?([A-Za-z0-9_ ]+?)`?\s*\(", re.MULTILINE)
+FUN_NAME = re.compile(r"^\s*(?:private\s+|internal\s+)?fun\s+(?:`([^`]+)`|([A-Za-z0-9_]+))\s*\(", re.MULTILINE)
 
 
 def source_tests() -> dict[str, list[str]]:
@@ -35,7 +35,7 @@ def source_tests() -> dict[str, list[str]]:
             fun = FUN_NAME.search(text, match.end())
             if fun is None:
                 raise SystemExit(f"{path}: @Test with no following fun — parse the file by hand")
-            names.append(fun.group(1).strip())
+            names.append((fun.group(1) or fun.group(2) or "").strip())
         if names:
             tests[path.relative_to(ROOT).as_posix()] = names
     return tests
@@ -59,9 +59,12 @@ def main() -> int:
         return 1
     tests = source_tests()
     executed = executed_cases()
-    missing = {
-        f"{path}: {name}": None for path, names in tests.items() for name in names if name not in executed
-    }
+    missing = [
+        f"{path}: {name}"
+        for path, names in tests.items()
+        for name in names
+        if name not in executed
+    ]
     annotated = sum(len(names) for names in tests.values())
     total = sum(executed.values())
     print(f"tests: {annotated} @Test in source, {total} JUnit cases executed (multi-SDK classes run once per SDK)")
