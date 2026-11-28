@@ -1,5 +1,6 @@
 package software.larsartmann.webphone.shell
 
+import android.webkit.CookieManager
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -10,7 +11,6 @@ import org.robolectric.annotation.Config
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.shell.SessionApi.HandoffRedemption
 import software.larsartmann.webphone.shell.SessionApi.HandoffSupport
-import android.webkit.CookieManager
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -162,8 +162,8 @@ class SessionApiHandoffTest {
                 "short",
                 "has spaces has spaces has spaces",
                 "t".repeat(129),
-                "${ticket}==",
-                "${ticket}&extra=1",
+                "$ticket==",
+                "$ticket&extra=1",
             )
         for (bad in forged) {
             assertEquals(HandoffRedemption.Failed, SessionApi.redeemSignInHandoff(bad), "'$bad'")

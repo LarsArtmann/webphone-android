@@ -1,12 +1,14 @@
 package software.larsartmann.webphone.shell
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -145,7 +147,10 @@ class SignInHandoffTest {
         val nonce = openAttempt()
         App.origin = otherOrigin
 
-        assertNull(SignInHandoff.takeTicket(context, "t".repeat(43), nonce), "never redeem on a stack switched away from")
+        assertNull(
+            SignInHandoff.takeTicket(context, "t".repeat(43), nonce),
+            "never redeem on a stack switched away from",
+        )
         assertNull(SignInAttempt.of(context), "the stale attempt is dropped")
     }
 
@@ -252,25 +257,45 @@ class SignInHandoffTest {
 
     @Test
     fun `the real launcher reports a device without any browser`() {
-        val controller = Robolectric.buildActivity(Activity::class.java).setup()
-        val instrumentation = shadowOf(InstrumentationRegistry.getInstrumentation())
-        try {
-            // Robolectric accepts every activity start by default; with
-            // the check on, an intent nothing resolves throws exactly
-            // what a device without a browser throws.
-            instrumentation.checkActivities(true)
+        // Robolectric accepts every activity start, so the device is
+        // modeled at the seam a real one fails at: nothing resolves, and
+        // the framework throws.
+        val deviceWithoutBrowser =
+            object : ContextWrapper(context) {
+                override fun startActivity(intent: Intent): Unit =
+                    throw ActivityNotFoundException("no browser on this device")
+            }
 
-            assertFalse(SignInHandoff.begin(controller.get(), entry()), "no browser took it")
-            assertNull(SignInAttempt.of(context), "a hand-off that never happened opens no attempt")
-        } finally {
-            instrumentation.checkActivities(false)
-            controller.pause().stop().destroy()
-        }
+        assertFalse(SignInHandoff.begin(deviceWithoutBrowser, entry()), "no browser took it")
+        assertNull(SignInAttempt.of(context), "a hand-off that never happened opens no attempt")
+    }
+
+    @Test
+    fun `the real launcher falls back to a plain browser tab when no Custom Tab answers`() {
+        val plainLaunches = mutableListOf<Intent>()
+        val onlyPlainBrowser =
+            object : ContextWrapper(context) {
+                override fun startActivity(intent: Intent) {
+                    if (intent.hasExtra(CustomTabsIntent.EXTRA_SESSION)) {
+                        throw ActivityNotFoundException("no Custom Tabs provider")
+                    }
+                    plainLaunches += intent
+                }
+            }
+
+        assertTrue(SignInHandoff.begin(onlyPlainBrowser, entry()), "the plain tab takes the entry")
+
+        val plain = plainLaunches.single()
+        assertEquals(Intent.ACTION_VIEW, plain.action)
+        assertTrue(Intent.CATEGORY_BROWSABLE in plain.categories, "a browser only claims BROWSABLE view intents")
+        assertEquals(SessionApi.SIGN_IN_ENTRY_PATH, plain.data?.path)
+        assertNotNull(SignInAttempt.of(context))
     }
 
     @Test
     fun `the manifest routes the return address to the shell and nothing else`() {
         val facts = "ticket=${"t".repeat(43)}&app_state=${"n".repeat(43)}"
+
         fun handlersOf(link: String): List<String> =
             context
                 .packageManager

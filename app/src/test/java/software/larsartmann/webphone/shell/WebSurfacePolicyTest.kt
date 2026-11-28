@@ -4,16 +4,22 @@ import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Looper
 import android.webkit.WebResourceRequest
 import androidx.test.core.app.ActivityScenario
 import org.junit.Before
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 import software.larsartmann.webphone.App
+import java.time.Duration
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -26,6 +32,7 @@ import kotlin.test.assertTrue
  * cookie; foreign → system hand-off, never a cookie leak).
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [31, 34])
 class WebSurfacePolicyTest {
     private val origin = "https://pbx.artmann.tech"
 

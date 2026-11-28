@@ -118,4 +118,47 @@ class DeepLinkTargetTest {
         assertEquals(DeepLinkTarget.None, deepLinkTarget(Uri.parse("geo:53,9"), origin))
         assertEquals(DeepLinkTarget.None, deepLinkTarget(null, origin))
     }
+
+    @Test
+    fun `the handoff return link carries its ticket and nonce`() {
+        val ticket = "t".repeat(43)
+        val nonce = "n".repeat(43)
+        assertEquals(
+            DeepLinkTarget.SignInReturn(ticket, nonce),
+            deepLinkTarget(
+                Uri.parse("cloud.larsartmann.webphone://auth/finish?ticket=$ticket&app_state=$nonce"),
+                origin,
+            ),
+        )
+        // A scheme is case-insensitive; the link still is the handoff's.
+        assertEquals(
+            DeepLinkTarget.SignInReturn(ticket, nonce),
+            deepLinkTarget(
+                Uri.parse("CLOUD.LARSARTMANN.WEBPHONE://auth/finish?ticket=$ticket&app_state=$nonce"),
+                origin,
+            ),
+        )
+    }
+
+    @Test
+    fun `a handoff lookalike is nothing`() {
+        val ticket = "t".repeat(43)
+        val nonce = "n".repeat(43)
+        val facts = "ticket=$ticket&app_state=$nonce"
+        val lookalikes =
+            listOf(
+                "cloud.larsartmann.webphone://auth/finish/extra?$facts",
+                "cloud.larsartmann.webphone://auth/finishx?$facts",
+                "cloud.larsartmann.webphone://evil/finish?$facts",
+                "xcloud.larsartmann.webphone://auth/finish?$facts",
+                "cloud.larsartmann.webphone://auth/finish?ticket=$ticket",
+                "cloud.larsartmann.webphone://auth/finish?app_state=$nonce",
+                "cloud.larsartmann.webphone://auth/finish?ticket=short&app_state=$nonce",
+                "cloud.larsartmann.webphone://auth/finish?ticket=$ticket&app_state=${"n".repeat(129)}",
+                "cloud.larsartmann.webphone://auth/finish",
+            )
+        for (link in lookalikes) {
+            assertEquals(DeepLinkTarget.None, deepLinkTarget(Uri.parse(link), origin), link)
+        }
+    }
 }
