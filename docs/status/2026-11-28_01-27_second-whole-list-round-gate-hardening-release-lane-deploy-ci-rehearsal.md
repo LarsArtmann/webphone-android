@@ -6,7 +6,8 @@ same time). My last whole-gate proof is `78a90da`, `GATE GREEN`, clean tree.
 A gate run on `3b101e5` passed steps 1-7 (244 JUnit cases) and failed step 8
 (dprint: an unformatted `TODO_LIST.md` table). The fix is `nix run nixpkgs#dprint -- fmt`;
 it is applied right after this report is written and the gate is re-run
-(read `.gate-last-green` for the verdict).
+(read `.gate-last-green` for the verdict). RESULT of that re-run: `GATE
+GREEN` on `3b101e5` (244 JUnit cases, lint 0/0), marker written 01:28.
 
 Scope: this session's run only (2026-11-27 ~17:00 to 2026-11-28 01:27),
 continuing the 16:59 report.
@@ -180,7 +181,7 @@ Docs:
 
 1. Run `dprint fmt` + the whole gate on the merged tree; read
    `.gate-last-green`.
-2. One session per checkout, or give the second session a worktree.
+2. One session per checkout, or give the second session a worktree **→ ROADMAP "One agent session per checkout"**
 3. Re-run `emulator-train.sh --release` and `emulator-verify.sh` after the
    timeout changes.
 4. Remove hard-coded test counts from AGENTS.md and FEATURES.md.
@@ -193,7 +194,7 @@ Docs:
 10. Device train for the 2026-11-25 batch.
 11. `ring-diagnose.sh` on the Edge 60.
 12. Phone notification inventory (four lock-screen icons).
-13. Cut and publish 0.2.3 (owner).
+13. Cut and publish 0.2.3 (owner) **→ TODO_LIST "Owner: cut and publish 0.2.3"**
 14. Back up the release key and prove a restore (owner).
 15. webphone#21 acceptance check in the webphone repo.
 16. Serve `assetlinks.json` on both hosts (cross-repo draft exists).
@@ -215,12 +216,12 @@ Docs:
     the gate; one negative run per step).
 29. GitHub Actions billing (owner) and one real CI log.
 30. Push `main` to both remotes and check `scripts/mirror-lag.sh`.
-31. Obtainium on the phone (owner).
+31. Obtainium on the phone (owner) **→ TODO_LIST "Connect the phone to Obtainium"**
 32. Reconcile the "v0.1 scaffold" status line with `version.txt` 0.2.3.
 33. `META-INF`/proguard keep-rule review after the AGP bump (release
     smoke).
 34. ntfy read-auth decision (owner).
-35. The eight ROADMAP open questions (owner).
+35. The eight ROADMAP open questions (owner) **→ TODO_LIST "Owner: review the 8 ROADMAP Open questions"**
 36. Prerelease lane dry run: publish a `0.2.3-rc` as prerelease to prove
     Obtainium ignores it (needs a version scheme decision).
 37. Add `scripts/ci-rehearsal.sh` to AGENTS "Build and verify" block.

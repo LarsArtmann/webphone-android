@@ -218,6 +218,11 @@ Unresolved questions route here until an answer turns them into bounded work
   out on the island, does the server KEEP the `/api/push-devices` rows (the
   native side must deregister BEFORE the cookie dies → JS bridge needed), or
   PURGE them (the shipped cookie-poll watcher suffices)?
+- **One agent session per checkout (2026-11-28):** the auto-commit daemon
+  commits whatever is on disk, so two agent sessions in one checkout fold
+  half-written files into each other's green trees (seen 2026-11-27: a
+  broken test source and an unformatted table from the second session).
+  Rule going forward, or a worktree per session?
 - **Icon parity:** the native launcher leads with the handset glyph; the PWA
   uses a link glyph. Keep them diverged, or adopt the handset in both (change
   both or neither)?
