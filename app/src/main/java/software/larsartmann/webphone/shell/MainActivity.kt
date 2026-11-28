@@ -32,7 +32,9 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.call.CallActivity
@@ -399,16 +401,20 @@ class MainActivity : AppCompatActivity() {
     /** The single exported VIEW intake (the manifest's tel:/sip:/App
      *  Link filters all hang off this activity): tel:/sip: open the
      *  dialer PRE-FILLED (the user still taps Call — the registration
-     *  gate holds); a stack App Link opens that path in the shell;
-     *  anything foreign falls through to the app's home state — never
-     *  the session-cookie-bearing WebView, and never a re-hand-off
-     *  (the system already had its chance to keep the link).
+     *  gate holds); a stack App Link opens that path in the shell; the
+     *  sign-in handoff's return link redeems the ticket the browser
+     *  bounced back ([completeSignInHandoff]); anything foreign falls
+     *  through to the app's home state — never the session-cookie-bearing
+     *  WebView, and never a re-hand-off (the system already had its
+     *  chance to keep the link).
      *  Internal: the intake is unit-tested through this seam;
      *  onCreate and onNewIntent are one-line delegates. */
     internal fun routeDeepLink(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
         when (val target = deepLinkTarget(intent.data, App.origin.toUri())) {
             is DeepLinkTarget.ShellPath -> webSurface.loadUri(target.uri)
+
+            is DeepLinkTarget.SignInReturn -> completeSignInHandoff(target)
 
             is DeepLinkTarget.Dial -> {
                 val phase = CallEngine.state.value.phase
@@ -428,6 +434,42 @@ class MainActivity : AppCompatActivity() {
 
             DeepLinkTarget.None -> Unit
         }
+    }
+
+    /** The sign-in handoff's return link (the browser bounced the ticket
+     *  back and the system launched the shell with it): claim it against
+     *  the open attempt, then redeem it off the UI thread. A link that is
+     *  not the answer to this shell's own attempt is dropped before any
+     *  network — see [SignInHandoff.takeTicket]. */
+    internal fun completeSignInHandoff(
+        handoff: DeepLinkTarget.SignInReturn,
+        redeem: (String) -> SessionApi.HandoffRedemption = handoffRedeemer,
+    ) {
+        val ticket = SignInHandoff.takeTicket(this, handoff.ticket, handoff.appState) ?: return
+        lifecycleScope.launch {
+            applySignInHandoff(withContext(Dispatchers.IO) { redeem(ticket) })
+        }
+    }
+
+    /** The redemption's consequence (internal so the pin drives it
+     *  without the thread): the stack named the page to land on, so the
+     *  WebView lands there — `/` signed in, or the login page carrying
+     *  the stack's own refusal sentence — and the call layer is
+     *  re-decided from the cookie up either way (a refusal simply finds
+     *  no session). With no usable answer the shell returns to the origin
+     *  root and SAYS so: silence after a sign-in the user just completed
+     *  is the one thing this surface must never show. */
+    internal fun applySignInHandoff(verdict: SessionApi.HandoffRedemption) {
+        when (verdict) {
+            is SessionApi.HandoffRedemption.Landed ->
+                webSurface.loadUri((App.origin.trimEnd('/') + verdict.landing).toUri())
+
+            SessionApi.HandoffRedemption.Failed -> {
+                webSurface.retry()
+                Toast.makeText(this, R.string.signin_handoff_failed, Toast.LENGTH_LONG).show()
+            }
+        }
+        CallLayer.rewire(this)
     }
 
     override fun onPause() {
@@ -758,7 +800,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private companion object {
-        const val KEY_BATTERY_ASKED = "battery_exemption_asked"
+    companion object {
+        private const val KEY_BATTERY_ASKED = "battery_exemption_asked"
+
+        /** The handoff redemption seam (the pins substitute a recorder —
+         *  a unit test must not phone the live stack). */
+        @Volatile
+        internal var handoffRedeemer: (String) -> SessionApi.HandoffRedemption = { SessionApi.redeemSignInHandoff(it) }
     }
 }

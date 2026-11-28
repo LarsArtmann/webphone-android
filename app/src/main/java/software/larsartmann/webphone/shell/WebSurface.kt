@@ -227,8 +227,10 @@ internal fun signInLane(
  *   login (the "OAuth broken / fingerprint won't work" diagnosis,
  *   2026-11-11). Support exists in the WebView provider since M131 but
  *   is off unless the embedding app turns it on via androidx.webkit,
- *   and even then the IdP's host must prove this app via Digital Asset
- *   Links (see [optInToPasskeys] for the cross-repo dependency).
+ *   and even then only a relying party that accepts this app's origin
+ *   can complete a ceremony here — which Pocket ID does not, so the
+ *   Pocket ID login rides the system browser instead ([SignInHandoff];
+ *   see [optInToPasskeys] for the full verdict).
  * - **Dark-mode seam** (API 33+): the web app is dark-first and
  *   declares `color-scheme: dark light` with `prefers-color-scheme`
  *   blocks plus its own manual override — with algorithmic darkening
@@ -360,11 +362,18 @@ internal class WebSurface(
      * must list this package + the RELEASE cert fingerprint under the
      * `delegate_permission/common.get_login_creds` relation. For the
      * IdP that host is `auth.larsartmann.cloud` (Pocket ID's RP ID =
-     * its public URL host) — the stack does NOT serve it yet (404,
-     * verified 2026-11-11), so until the stack lands the statement the
-     * ceremony still fails at the RP check. That half is cross-repo
-     * (webphone/SystemNix — `scripts/assetlinks.sh` emits the relation;
-     * TODO_LIST tracks the row). The app-side prerequisite is DONE here.
+     * its public URL host) — the stack does NOT serve it (404, verified
+     * 2026-11-11). But serving it would not finish the job for Pocket
+     * ID: in FOR_APP mode Android signs the ceremony with the APP's
+     * origin (`android:apk-key-hash:…`), and Pocket ID accepts exactly
+     * its own App URL as an origin (`RPOrigins: []string{deps.AppURL}`
+     * in backend/internal/webauthn/service.go; the request to widen it,
+     * pocket-id/pocket-id#1845, was closed NOT_PLANNED on 2026-10-15
+     * with "open the login page in an external browser"). The Pocket
+     * ID login therefore rides the SYSTEM browser — [SignInHandoff].
+     * This opt-in stays for what it does enable: a relying party whose
+     * accepted-origins list the operator controls could complete a
+     * ceremony in this WebView once its host serves the statement.
      *
      * Guarded + swallowed on purpose: `isFeatureSupported` answers for
      * the INSTALLED WebView provider (M131+ needed), and Robolectric has
