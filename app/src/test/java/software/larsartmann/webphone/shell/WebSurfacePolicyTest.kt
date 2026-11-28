@@ -32,12 +32,20 @@ class WebSurfacePolicyTest {
     @Before
     fun keepTheShellUnwired() {
         CallLayer.wiringEnabled = false
+        // One classloader per test CLASS: a sibling test's handoff state
+        // must not leak into this one. A verdict for another origin reads
+        // as UNKNOWN for the current one, and the probe seam must never
+        // reach the real stack (a held tap re-asks it).
+        SignInHandoff.teach("https://stale.invalid", SessionApi.HandoffSupport.UNSUPPORTED)
+        SignInHandoff.probe = { SessionApi.HandoffSupport.UNSUPPORTED }
+        SignInHandoff.openBrowser = SignInHandoff::openInBrowser
     }
 
     private class FakeRequest(
         private val uri: Uri,
         private val mainFrame: Boolean = true,
         private val redirect: Boolean = false,
+        private val method: String = "GET",
     ) : WebResourceRequest {
         override fun getUrl(): Uri = uri
 
@@ -49,7 +57,7 @@ class WebSurfacePolicyTest {
 
         override fun getRequestHeaders(): MutableMap<String, String> = mutableMapOf()
 
-        override fun getMethod(): String = "GET"
+        override fun getMethod(): String = method
     }
 
     /** MainActivity's battery-exemption ask fires at launch — drain it
@@ -127,6 +135,10 @@ class WebSurfacePolicyTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 App.origin = origin
+                // The DETOUR lane, stated, not inherited: this stack does
+                // not speak the sign-in handoff, so the begin hop is an
+                // ordinary same-origin navigation.
+                SignInHandoff.teach(origin, SessionApi.HandoffSupport.UNSUPPORTED)
                 val surface = activity.webSurface
                 val client = surface.currentWebView().webViewClient
                 drainStartedActivities(activity)
@@ -431,6 +443,490 @@ class WebSurfacePolicyTest {
                     surface.downloadFileName("attachment; filename=\"..\\/evil.txt\"", "$origin/"),
                     "path separators are stripped from the title",
                 )
+            }
+        }
+    }
+
+    /** A browser stand-in for the lane tests: records what the shell
+     *  handed over and answers whatever the test needs. */
+    private fun recordingBrowser(answer: Boolean = true): MutableList<Uri> {
+        val opened = mutableListOf<Uri>()
+        SignInHandoff.openBrowser = { _, url ->
+            opened += url
+            answer
+        }
+        return opened
+    }
+
+    @Test
+    fun `a stack that speaks the handoff sends the begin tap to the browser`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                SignInHandoff.teach(origin, SessionApi.HandoffSupport.SUPPORTED)
+                val opened = recordingBrowser()
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+                val before = shadowOf(surface.currentWebView()).lastLoadedUrl
+
+                assertTrue(
+                    client.shouldOverrideUrlLoading(surface.currentWebView(), FakeRequest(signInEntryUri(origin))),
+                    "the begin tap is consumed — the system browser takes it",
+                )
+
+                val launch = opened.single()
+                assertEquals("https", launch.scheme)
+                assertEquals("pbx.artmann.tech", launch.host)
+                assertEquals(SessionApi.SIGN_IN_ENTRY_PATH, launch.path)
+                assertEquals(HANDOFF_SHELL, launch.getQueryParameter(SessionApi.HANDOFF_PARAM_SHELL))
+                assertEquals(
+                    SignInAttempt.of(activity)?.nonce,
+                    launch.getQueryParameter(HANDOFF_PARAM_APP_STATE),
+                    "the launch carries the nonce of the attempt it opened",
+                )
+                assertEquals(
+                    before,
+                    shadowOf(surface.currentWebView()).lastLoadedUrl,
+                    "the WebView never loads the begin hop on this lane",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `without a browser even a supported stack keeps the begin in the shell`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                SignInHandoff.teach(origin, SessionApi.HandoffSupport.SUPPORTED)
+                recordingBrowser(answer = false)
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+
+                assertFalse(
+                    client.shouldOverrideUrlLoading(surface.currentWebView(), FakeRequest(signInEntryUri(origin))),
+                    "no browser took it — the WebView lane loads the entry after all",
+                )
+                assertNull(SignInAttempt.of(activity), "a hand-off that never happened opens no attempt")
+            }
+        }
+    }
+
+    @Test
+    fun `a stack without the handoff keeps the begin tap in the shell`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                val opened = recordingBrowser()
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+
+                for (verdict in listOf(SessionApi.HandoffSupport.UNSUPPORTED, SessionApi.HandoffSupport.UNREACHABLE)) {
+                    SignInHandoff.teach(origin, verdict)
+                    assertFalse(
+                        client.shouldOverrideUrlLoading(surface.currentWebView(), FakeRequest(signInEntryUri(origin))),
+                        "$verdict must load the begin hop in the WebView",
+                    )
+                }
+                assertTrue(opened.isEmpty(), "no verdict but SUPPORTED may open a browser")
+            }
+        }
+    }
+
+    @Test
+    fun `only a main-frame GET to the exact begin hop is a sign-in entry`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                SignInHandoff.teach(origin, SessionApi.HandoffSupport.SUPPORTED)
+                val opened = recordingBrowser()
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+                val web = surface.currentWebView()
+                val entry = signInEntryUri(origin)
+
+                assertFalse(
+                    client.shouldOverrideUrlLoading(web, FakeRequest(entry, method = "POST")),
+                    "the begin hop is a GET navigation; a POST is the form lane",
+                )
+                assertFalse(
+                    client.shouldOverrideUrlLoading(web, FakeRequest(entry, mainFrame = false)),
+                    "a sub-frame request is never the user's tap",
+                )
+                for (lookalike in listOf(
+                    "$origin${SessionApi.SIGN_IN_ENTRY_PATH}/extra",
+                    "$origin${SessionApi.SIGN_IN_ENTRY_PATH}x",
+                    "https://evil.example${SessionApi.SIGN_IN_ENTRY_PATH}",
+                )) {
+                    assertFalse(
+                        client.shouldOverrideUrlLoading(web, FakeRequest(Uri.parse(lookalike))),
+                        "$lookalike is not the begin hop",
+                    )
+                }
+                assertTrue(opened.isEmpty(), "nothing but the exact begin hop may open a browser")
+            }
+        }
+    }
+
+    @Test
+    fun `a tap before the stack answered waits for the verdict instead of guessing the lane`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val release = CountDownLatch(1)
+            SignInHandoff.probe = {
+                release.await(5, TimeUnit.SECONDS)
+                SessionApi.HandoffSupport.UNSUPPORTED
+            }
+            try {
+                var opened: MutableList<Uri> = mutableListOf()
+                scenario.onActivity { activity ->
+                    App.origin = origin
+                    opened = recordingBrowser()
+                    val surface = activity.webSurface
+                    val client = surface.currentWebView().webViewClient
+                    val web = surface.currentWebView()
+                    val entry = signInEntryUri(origin)
+                    val before = shadowOf(web).lastLoadedUrl
+
+                    assertTrue(
+                        client.shouldOverrideUrlLoading(web, FakeRequest(entry)),
+                        "the tap is consumed while the verdict is outstanding",
+                    )
+                    assertTrue(
+                        client.shouldOverrideUrlLoading(web, FakeRequest(entry)),
+                        "a second tap during the hold is consumed too, never queued",
+                    )
+                    assertTrue(opened.isEmpty(), "no lane is chosen before the stack answers")
+                    assertEquals(before, shadowOf(web).lastLoadedUrl, "the WebView is idle during the hold")
+
+                    // The stack answers: the held tap resumes on the main
+                    // thread (this one) once the posted continuation runs.
+                    SignInHandoff.teach(origin, SessionApi.HandoffSupport.SUPPORTED)
+                }
+                shadowOf(Looper.getMainLooper()).idle()
+
+                assertEquals(1, opened.size, "exactly one hand-off for the held tap")
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        signInEntryUri(origin).path,
+                        opened.single().path,
+                        "a SUPPORTED verdict takes the browser lane",
+                    )
+                    assertNotNull(SignInAttempt.of(activity), "the held tap opens its attempt once handed over")
+                }
+            } finally {
+                release.countDown()
+            }
+        }
+    }
+
+    @Test
+    fun `a late no from the stack releases the held tap to the WebView lane`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val release = CountDownLatch(1)
+            SignInHandoff.probe = {
+                release.await(5, TimeUnit.SECONDS)
+                SessionApi.HandoffSupport.UNSUPPORTED
+            }
+            try {
+                scenario.onActivity { activity ->
+                    App.origin = origin
+                    val opened = recordingBrowser()
+                    val surface = activity.webSurface
+                    val client = surface.currentWebView().webViewClient
+                    val web = surface.currentWebView()
+                    val entry = signInEntryUri(origin)
+                    assertTrue(client.shouldOverrideUrlLoading(web, FakeRequest(entry)))
+
+                    SignInHandoff.teach(origin, SessionApi.HandoffSupport.UNSUPPORTED)
+                }
+                shadowOf(Looper.getMainLooper()).idle()
+
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        signInEntryUri(origin).toString(),
+                        shadowOf(activity.webSurface.currentWebView()).lastLoadedUrl,
+                        "an UNSUPPORTED verdict loads the entry in the WebView, on the main thread",
+                    )
+                    assertNull(SignInAttempt.of(activity), "the WebView lane opens no attempt")
+                }
+            } finally {
+                release.countDown()
+            }
+        }
+    }
+
+    @Test
+    fun `a stack that never answers releases the held tap after the bound`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val release = CountDownLatch(1)
+            SignInHandoff.probe = {
+                release.await(5, TimeUnit.SECONDS)
+                SessionApi.HandoffSupport.UNSUPPORTED
+            }
+            try {
+                scenario.onActivity { activity ->
+                    App.origin = origin
+                    recordingBrowser()
+                    val surface = activity.webSurface
+                    val client = surface.currentWebView().webViewClient
+                    assertTrue(
+                        client.shouldOverrideUrlLoading(surface.currentWebView(), FakeRequest(signInEntryUri(origin))),
+                    )
+                }
+                shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(WebSurface.SIGN_IN_SUPPORT_WAIT_MS / 1000 + 1))
+
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        signInEntryUri(origin).toString(),
+                        shadowOf(activity.webSurface.currentWebView()).lastLoadedUrl,
+                        "a dead stack must not eat the tap forever",
+                    )
+                }
+            } finally {
+                release.countDown()
+            }
+        }
+    }
+    /** A browser stand-in for the lane tests: records what the shell
+     *  handed over and answers whatever the test needs. */
+    private fun recordingBrowser(answer: Boolean = true): MutableList<Uri> {
+        val opened = mutableListOf<Uri>()
+        SignInHandoff.openBrowser = { _, url ->
+            opened += url
+            answer
+        }
+        return opened
+    }
+
+    /** The hold variant's probe: blocks until the test releases it, so
+     *  the verdict is the TEST's to time. */
+    private fun heldProbe(): CountDownLatch {
+        val release = CountDownLatch(1)
+        SignInHandoff.probe = {
+            release.await(5, TimeUnit.SECONDS)
+            SessionApi.HandoffSupport.UNSUPPORTED
+        }
+        return release
+    }
+
+    @Test
+    fun `a stack that speaks the handoff sends the begin tap to the browser`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                SignInHandoff.teach(origin, SessionApi.HandoffSupport.SUPPORTED)
+                val opened = recordingBrowser()
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+                val before = shadowOf(surface.currentWebView()).lastLoadedUrl
+
+                assertTrue(
+                    client.shouldOverrideUrlLoading(surface.currentWebView(), FakeRequest(signInEntryUri(origin))),
+                    "the begin tap is consumed — the system browser takes it",
+                )
+
+                val launch = opened.single()
+                assertEquals("https", launch.scheme)
+                assertEquals("pbx.artmann.tech", launch.host)
+                assertEquals(SessionApi.SIGN_IN_ENTRY_PATH, launch.path)
+                assertEquals(HANDOFF_SHELL, launch.getQueryParameter(SessionApi.HANDOFF_PARAM_SHELL))
+                assertEquals(
+                    SignInAttempt.of(activity)?.nonce,
+                    launch.getQueryParameter(HANDOFF_PARAM_APP_STATE),
+                    "the launch carries the nonce of the attempt it opened",
+                )
+                assertEquals(
+                    before,
+                    shadowOf(surface.currentWebView()).lastLoadedUrl,
+                    "the WebView never loads the begin hop on this lane",
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `without a browser even a supported stack keeps the begin in the shell`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                SignInHandoff.teach(origin, SessionApi.HandoffSupport.SUPPORTED)
+                recordingBrowser(answer = false)
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+
+                assertFalse(
+                    client.shouldOverrideUrlLoading(surface.currentWebView(), FakeRequest(signInEntryUri(origin))),
+                    "no browser took it — the WebView lane loads the entry after all",
+                )
+                assertNull(SignInAttempt.of(activity), "a hand-off that never happened opens no attempt")
+            }
+        }
+    }
+
+    @Test
+    fun `a stack without the handoff keeps the begin tap in the shell`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                val opened = recordingBrowser()
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+
+                val verdicts = listOf(SessionApi.HandoffSupport.UNSUPPORTED, SessionApi.HandoffSupport.UNREACHABLE)
+                for (verdict in verdicts) {
+                    SignInHandoff.teach(origin, verdict)
+                    assertFalse(
+                        client.shouldOverrideUrlLoading(surface.currentWebView(), FakeRequest(signInEntryUri(origin))),
+                        "$verdict must load the begin hop in the WebView",
+                    )
+                }
+                assertTrue(opened.isEmpty(), "no verdict but SUPPORTED may open a browser")
+            }
+        }
+    }
+
+    @Test
+    fun `only a main-frame GET to the exact begin hop is a sign-in entry`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                App.origin = origin
+                SignInHandoff.teach(origin, SessionApi.HandoffSupport.SUPPORTED)
+                val opened = recordingBrowser()
+                val surface = activity.webSurface
+                val client = surface.currentWebView().webViewClient
+                val web = surface.currentWebView()
+                val entry = signInEntryUri(origin)
+
+                assertFalse(
+                    client.shouldOverrideUrlLoading(web, FakeRequest(entry, method = "POST")),
+                    "the begin hop is a GET navigation; a POST is the form lane",
+                )
+                assertFalse(
+                    client.shouldOverrideUrlLoading(web, FakeRequest(entry, mainFrame = false)),
+                    "a sub-frame request is never the user's tap",
+                )
+                val lookalikes =
+                    listOf(
+                        "$origin${SessionApi.SIGN_IN_ENTRY_PATH}/extra",
+                        "$origin${SessionApi.SIGN_IN_ENTRY_PATH}x",
+                        "https://evil.example${SessionApi.SIGN_IN_ENTRY_PATH}",
+                    )
+                for (lookalike in lookalikes) {
+                    assertFalse(
+                        client.shouldOverrideUrlLoading(web, FakeRequest(Uri.parse(lookalike))),
+                        "$lookalike is not the begin hop",
+                    )
+                }
+                assertTrue(opened.isEmpty(), "nothing but the exact begin hop may open a browser")
+            }
+        }
+    }
+
+    @Test
+    fun `a tap before the stack answered waits for the verdict instead of guessing the lane`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val release = heldProbe()
+            var opened = mutableListOf<Uri>()
+            try {
+                scenario.onActivity { activity ->
+                    App.origin = origin
+                    opened = recordingBrowser()
+                    val surface = activity.webSurface
+                    val client = surface.currentWebView().webViewClient
+                    val web = surface.currentWebView()
+                    val entry = signInEntryUri(origin)
+                    val before = shadowOf(web).lastLoadedUrl
+
+                    assertTrue(
+                        client.shouldOverrideUrlLoading(web, FakeRequest(entry)),
+                        "the tap is consumed while the verdict is outstanding",
+                    )
+                    assertTrue(
+                        client.shouldOverrideUrlLoading(web, FakeRequest(entry)),
+                        "a second tap during the hold is consumed too, never queued",
+                    )
+                    assertTrue(opened.isEmpty(), "no lane is chosen before the stack answers")
+                    assertEquals(before, shadowOf(web).lastLoadedUrl, "the WebView is idle during the hold")
+
+                    // The stack answers. The held tap resumes on the main
+                    // thread — this one — once its continuation is posted.
+                    SignInHandoff.teach(origin, SessionApi.HandoffSupport.SUPPORTED)
+                }
+                shadowOf(Looper.getMainLooper()).idle()
+
+                assertEquals(1, opened.size, "exactly one hand-off for the held tap")
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        SessionApi.SIGN_IN_ENTRY_PATH,
+                        opened.single().path,
+                        "a SUPPORTED verdict takes the browser lane",
+                    )
+                    assertNotNull(SignInAttempt.of(activity), "the held tap opens its attempt once handed over")
+                }
+            } finally {
+                release.countDown()
+            }
+        }
+    }
+
+    @Test
+    fun `a late no from the stack releases the held tap to the WebView lane`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val release = heldProbe()
+            try {
+                scenario.onActivity { activity ->
+                    App.origin = origin
+                    recordingBrowser()
+                    val surface = activity.webSurface
+                    val client = surface.currentWebView().webViewClient
+                    assertTrue(
+                        client.shouldOverrideUrlLoading(surface.currentWebView(), FakeRequest(signInEntryUri(origin))),
+                    )
+
+                    SignInHandoff.teach(origin, SessionApi.HandoffSupport.UNSUPPORTED)
+                }
+                shadowOf(Looper.getMainLooper()).idle()
+
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        signInEntryUri(origin).toString(),
+                        shadowOf(activity.webSurface.currentWebView()).lastLoadedUrl,
+                        "an UNSUPPORTED verdict loads the entry in the WebView, on the main thread",
+                    )
+                    assertNull(SignInAttempt.of(activity), "the WebView lane opens no attempt")
+                }
+            } finally {
+                release.countDown()
+            }
+        }
+    }
+
+    @Test
+    fun `a stack that never answers releases the held tap after the bound`() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            val release = heldProbe()
+            try {
+                scenario.onActivity { activity ->
+                    App.origin = origin
+                    recordingBrowser()
+                    val surface = activity.webSurface
+                    val client = surface.currentWebView().webViewClient
+                    assertTrue(
+                        client.shouldOverrideUrlLoading(surface.currentWebView(), FakeRequest(signInEntryUri(origin))),
+                    )
+                }
+                val bound = Duration.ofMillis(WebSurface.SIGN_IN_SUPPORT_WAIT_MS + 1_000)
+                shadowOf(Looper.getMainLooper()).idleFor(bound)
+
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        signInEntryUri(origin).toString(),
+                        shadowOf(activity.webSurface.currentWebView()).lastLoadedUrl,
+                        "a dead stack must not eat the tap forever",
+                    )
+                }
+            } finally {
+                release.countDown()
             }
         }
     }
