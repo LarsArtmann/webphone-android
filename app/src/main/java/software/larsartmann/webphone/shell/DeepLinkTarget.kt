@@ -17,6 +17,15 @@ internal sealed interface DeepLinkTarget {
         val number: String,
     ) : DeepLinkTarget
 
+    /** The sign-in handoff's return link (the stack's OIDC callback
+     *  bounced its one-time ticket off the shell's return address): the
+     *  ticket to redeem and the nonce the shell's open attempt must
+     *  echo. Redemption itself is MainActivity's (network). */
+    data class SignInReturn(
+        val ticket: String,
+        val appState: String,
+    ) : DeepLinkTarget
+
     /** Anything else — a foreign https link that slipped through the
      *  manifest, a schemeless intent, a blank tel:. The app opens its
      *  home state; a foreign page is NEVER rendered (the WebView
@@ -38,7 +47,10 @@ internal sealed interface DeepLinkTarget {
  *   transport are the server's business, the extension is the
  *   dialable);
  * - `http(s):` → a stack path only when the authority matches the
- *   configured origin; every other host is [DeepLinkTarget.None].
+ *   configured origin; every other host is [DeepLinkTarget.None];
+ * - the shell's own return scheme → the sign-in handoff's ticket, only
+ *   on the exact host and path the manifest pins, and only when both
+ *   facts are present and of the handoff's shape.
  */
 internal fun deepLinkTarget(
     uri: Uri?,
@@ -70,6 +82,31 @@ internal fun deepLinkTarget(
                 DeepLinkTarget.None
             }
 
+        // The handoff's scheme is claimable by any app, so the link is
+        // trusted for NOTHING here: the nonce check in SignInHandoff
+        // decides whether it is the answer to an attempt this shell
+        // opened. This only decides it is worth asking.
+        HANDOFF_RETURN_SCHEME ->
+            if (uri.host.equals(HANDOFF_RETURN_HOST, ignoreCase = true) && uri.path == HANDOFF_RETURN_PATH) {
+                signInReturn(uri)
+            } else {
+                DeepLinkTarget.None
+            }
+
         else -> DeepLinkTarget.None
     }
+}
+
+/** The return link's two facts, or [DeepLinkTarget.None] when either is
+ *  missing or outside the handoff's token shape: a link that cannot be
+ *  complete is not a handoff. */
+internal fun signInReturn(uri: Uri): DeepLinkTarget {
+    val ticket = uri.getQueryParameter(HANDOFF_PARAM_TICKET)
+    val appState = uri.getQueryParameter(HANDOFF_PARAM_APP_STATE)
+    val complete =
+        ticket != null &&
+            appState != null &&
+            HANDOFF_TOKEN_SHAPE.matches(ticket) &&
+            HANDOFF_TOKEN_SHAPE.matches(appState)
+    return if (complete) DeepLinkTarget.SignInReturn(ticket, appState) else DeepLinkTarget.None
 }

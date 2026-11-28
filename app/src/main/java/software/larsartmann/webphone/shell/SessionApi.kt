@@ -30,6 +30,18 @@ object SessionApi {
     private const val TAG = "SessionApi"
     private val json = "application/json".toMediaType()
 
+    /** The sign-in handoff's wire names (webphone `internal/server/auth/
+     *  sso_handoff.go` owns them; drift surfaces at the first device boot,
+     *  not at compile time — the same seam discipline as every other
+     *  path here): the OIDC begin hop the shell may hand to the browser,
+     *  the `shell` marker it carries, the capability probe, the ticket
+     *  redemption, and the header that names the redeeming shell. */
+    internal const val SIGN_IN_ENTRY_PATH = "/api/auth/oauth2/begin"
+    internal const val HANDOFF_PARAM_SHELL = "shell"
+    internal const val HANDOFF_PROBE_PATH = "/api/auth/oauth2/shell"
+    internal const val HANDOFF_FINISH_PATH = "/api/auth/oauth2/finish"
+    internal const val HANDOFF_SHELL_HEADER = "X-WebPhone-Shell"
+
     /** ONE cookie store: the WebView's CookieManager. The island login
      *  mints there; OkHttp reads and writes the same jar so the
      *  session is genuinely shared (no second, drift-prone store that
@@ -60,6 +72,17 @@ object SessionApi {
             .Builder()
             .cookieJar(cookieJar)
             .followRedirects(true)
+            .build()
+
+    /** The same jar and pool, but a redirect is RETURNED, not followed:
+     *  the handoff ticket's redemption is a one-request exchange whose
+     *  `Location` is the page the WebView must render — fetching it here
+     *  would only pull the island's HTML into a throwaway response. */
+    private val redirectFreeClient =
+        client
+            .newBuilder()
+            .followRedirects(false)
+            .followSslRedirects(false)
             .build()
 
     /** One owned line of the signed-in account (the sessionIdentity
@@ -94,6 +117,25 @@ object SessionApi {
      *  never tear the ring lane down because a tunnel flapped (the
      *  flap would have silenced the phone forever). */
     enum class SessionProbe { ALIVE, DEAD, UNREACHABLE }
+
+    /** The sign-in handoff capability probe's verdict. SUPPORTED: the
+     *  stack delivers a finished OIDC login back to the shell through a
+     *  one-time ticket. UNSUPPORTED is the stack's own "no" — the route
+     *  is not there (a stack that predates the contract, or one with the
+     *  OIDC lane off). UNREACHABLE is every non-answer (transport failure,
+     *  a proxy's 5xx) and is never read as a verdict about the stack: it
+     *  only sends this one sign-in down the WebView lane. */
+    enum class HandoffSupport { SUPPORTED, UNSUPPORTED, UNREACHABLE }
+
+    /** Classify one capability probe answer. Pure (the classifier the
+     *  unit test pins); [probeSignInHandoff] supplies the code. */
+    internal fun handoffSupportFromCode(code: Int?): HandoffSupport =
+        when {
+            code == null -> HandoffSupport.UNREACHABLE
+            code in 200..299 -> HandoffSupport.SUPPORTED
+            code == 404 -> HandoffSupport.UNSUPPORTED
+            else -> HandoffSupport.UNREACHABLE
+        }
 
     /** The wake-address registration's verdict, the server's own
      *  contract (webphone internal/server): 204 accepted; 404 the
@@ -180,6 +222,90 @@ object SessionApi {
             Log.i(TAG, "GET /api/session answered $code")
         }
         return probeFromCode(code)
+    }
+
+    /** Ask the stack whether it speaks the sign-in handoff. The shell
+     *  must know BEFORE it hands a login to the browser: on a stack that
+     *  never heard of the contract the browser would sign in and the
+     *  shell never would (the session would mint into the browser's jar). */
+    fun probeSignInHandoff(): HandoffSupport {
+        val request = authedBuilder(HANDOFF_PROBE_PATH).get().build()
+        val code: Int? =
+            runCatching {
+                client.newCall(request).execute().use { response -> response.code }
+            }.getOrNull()
+        val support = handoffSupportFromCode(code)
+        if (support != HandoffSupport.SUPPORTED) {
+            Log.i(TAG, "GET $HANDOFF_PROBE_PATH answered $code -> $support")
+        }
+        return support
+    }
+
+    /** What the stack decided about one handoff ticket. The stack answers
+     *  with a redirect to the page the shell must land on: `/` carrying a
+     *  fresh session cookie for a live ticket, `/login?sso_error=stale`
+     *  ("This sign-in attempt expired; start again.") for a used, expired
+     *  or unknown one. That sentence is the stack's own, so the shell lands
+     *  on it verbatim rather than inventing a second vocabulary. */
+    sealed interface HandoffRedemption {
+        /** The stack consumed the request and named an origin-relative
+         *  page to land on. */
+        data class Landed(
+            val landing: String,
+        ) : HandoffRedemption
+
+        /** No usable answer: a transport failure, a status outside the
+         *  contract, or a landing outside the origin. */
+        data object Failed : HandoffRedemption
+    }
+
+    /** The landing one redemption answer names, or null when the answer is
+     *  not the contract's. Pure (pinned). Only an ORIGIN-RELATIVE path is
+     *  ever accepted: the session-cookie-bearing WebView is never aimed
+     *  anywhere but the stack, whatever a forged or broken answer says. */
+    internal fun handoffLanding(
+        code: Int?,
+        location: String?,
+    ): String? {
+        if (code != 303 || location == null) return null
+        if (!location.startsWith("/") || location.startsWith("//")) return null
+        return location
+    }
+
+    /** Redeem the handoff ticket: the ONE request that turns the ticket
+     *  the browser bounced back into a session cookie in the shell's jar
+     *  (the bridge writes through the WebView's CookieManager, so the
+     *  island boots signed-in on its next load).
+     *
+     *  Out-of-band on purpose ([redirectFreeClient]): the shell presents
+     *  the ticket itself, with the header that names it — the stack
+     *  refuses a redemption without that header, which is what keeps a
+     *  cross-site page from spending someone else's ticket in a
+     *  browser's jar. A ticket of the wrong shape is never presented at
+     *  all: it cannot have come from the stack. */
+    fun redeemSignInHandoff(ticket: String): HandoffRedemption {
+        if (!HANDOFF_TOKEN_SHAPE.matches(ticket)) {
+            Log.w(TAG, "sign-in handoff: ticket outside the stack's shape — not presented")
+            return HandoffRedemption.Failed
+        }
+        val request =
+            authedBuilder("$HANDOFF_FINISH_PATH?$HANDOFF_PARAM_TICKET=$ticket")
+                .header(HANDOFF_SHELL_HEADER, HANDOFF_SHELL)
+                .get()
+                .build()
+        val answer =
+            runCatching {
+                redirectFreeClient.newCall(request).execute().use { response ->
+                    response.code to response.header("Location")
+                }
+            }.getOrNull()
+        val landing = handoffLanding(answer?.first, answer?.second)
+        if (landing == null) {
+            Log.i(TAG, "sign-in handoff: redemption answered ${answer?.first} -> failed")
+            return HandoffRedemption.Failed
+        }
+        Log.i(TAG, "sign-in handoff: redeemed, landing on $landing")
+        return HandoffRedemption.Landed(landing)
     }
 
     /** Resume the session cookie into SIP credentials (the island's

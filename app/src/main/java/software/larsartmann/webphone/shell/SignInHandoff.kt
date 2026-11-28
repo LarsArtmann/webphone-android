@@ -3,6 +3,7 @@ package software.larsartmann.webphone.shell
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
@@ -39,14 +40,93 @@ internal const val HANDOFF_PARAM_TICKET = "ticket"
 internal const val HANDOFF_PARAM_APP_STATE = "app_state"
 
 /** The value naming this shell on the wire: the `shell` query parameter
- *  of the OIDC begin hop and the `X-WebPhone-Shell` header of the
- *  ticket redemption. */
+ *  of the OIDC begin hop and the `X-WebPhone-Shell` header of the ticket
+ *  redemption. */
 internal const val HANDOFF_SHELL = "android"
 
 /** The nonce alphabet the stack accepts for `app_state` — the shell only
- *  ever sends values of this shape, and only ever accepts a ticket of it
- *  (a ticket is minted by the stack from the same alphabet). */
+ *  ever sends values of this shape, and only ever presents a ticket of it
+ *  (the stack mints tickets from the same alphabet). */
 internal val HANDOFF_TOKEN_SHAPE = Regex("[A-Za-z0-9_-]{16,128}")
+
+/** What a return link means for the attempt on disk. */
+internal enum class ReturnVerdict { ACCEPTED, OTHER_STACK, EXPIRED, OTHER_ATTEMPT }
+
+/**
+ * One open sign-in attempt: the nonce the return link must echo, the
+ * stack it was opened on, and when. Lives on disk, not in a field: a
+ * process kill during the dance (the shell sits behind the browser)
+ * must not void a sign-in the user has already completed.
+ */
+internal data class SignInAttempt(
+    val nonce: String,
+    val origin: String,
+    val issuedAtMs: Long,
+) {
+    companion object {
+        private const val KEY_NONCE = "nonce"
+        private const val KEY_ORIGIN = "origin"
+        private const val KEY_ISSUED_AT_MS = "issued_at_ms"
+
+        /** 32 random bytes → 43 base64url characters: unguessable, and
+         *  inside the stack's accepted `app_state` shape. */
+        private const val NONCE_BYTES = 32
+
+        /** The stack's own OIDC attempt cookies expire after ten minutes,
+         *  so a return link older than that could not be redeemed anyway. */
+        private val ATTEMPT_TTL_MS = 10 * 60 * 1000L
+
+        /** Open a fresh attempt on the current stack. A second tap while
+         *  one is open simply supersedes it: the older dance's return link
+         *  then fails the nonce check below. */
+        fun issue(clock: () -> Long): SignInAttempt {
+            val bytes = ByteArray(NONCE_BYTES)
+            SecureRandom().nextBytes(bytes)
+            return SignInAttempt(
+                nonce = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes),
+                origin = App.origin,
+                issuedAtMs = clock(),
+            )
+        }
+
+        /** The attempt on disk, or null when none is open. */
+        fun of(preferences: SharedPreferences): SignInAttempt? =
+            SignInAttempt(
+                nonce = preferences.getString(KEY_NONCE, "").orEmpty(),
+                origin = preferences.getString(KEY_ORIGIN, "").orEmpty(),
+                issuedAtMs = preferences.getLong(KEY_ISSUED_AT_MS, 0L),
+            ).takeIf { it.nonce.isNotEmpty() }
+    }
+
+    fun persist(context: Context) {
+        preferences(context).edit {
+            putString(KEY_NONCE, nonce)
+            putString(KEY_ORIGIN, origin)
+            putLong(KEY_ISSUED_AT_MS, issuedAtMs)
+        }
+    }
+
+    /** Judge a return link against this attempt. Pure (pinned). */
+    fun verdictFor(
+        currentOrigin: String,
+        appState: String?,
+        nowMs: Long,
+    ): ReturnVerdict =
+        when {
+            origin != currentOrigin -> ReturnVerdict.OTHER_STACK
+            nowMs - issuedAtMs > ATTEMPT_TTL_MS -> ReturnVerdict.EXPIRED
+            appState != nonce -> ReturnVerdict.OTHER_ATTEMPT
+            else -> ReturnVerdict.ACCEPTED
+        }
+}
+
+/** What the shell learned about ONE stack's handoff support. Keyed by
+ *  origin: a verdict learned on the old stack must not follow the user
+ *  onto a stack they just switched to. */
+internal data class HandoffSupportVerdict(
+    val origin: String,
+    val support: SessionApi.HandoffSupport,
+)
 
 /**
  * The sign-in handoff: the shell hands the stack's OIDC dance to the
@@ -92,55 +172,23 @@ internal val HANDOFF_TOKEN_SHAPE = Regex("[A-Za-z0-9_-]{16,128}")
  * finishes a handoff dance can obtain one — for their OWN account. A
  * forged return link carrying such a ticket would otherwise sign the
  * shell into the attacker's account. So the shell opens every attempt
- * with a random nonce, requires the return link to echo it, and keeps
- * the pending attempt on disk: a process kill during the dance (the
- * shell sits behind the browser) must not void a sign-in the user has
- * already completed. An attempt dies with its stack (never redeem on an
- * origin the user switched away from mid-dance) and with its TTL (the
- * stack's own attempt cookies live ten minutes).
+ * with a random nonce and requires the return link to echo it.
  *
  * An object like the other engines and seams: the attempt and the
  * learned support are per-process facts about ONE stack origin.
  */
 internal object SignInHandoff {
     private const val TAG = "SignInHandoff"
-    private const val PREFS = "webphone-signin-handoff"
-    private const val KEY_NONCE = "nonce"
-    private const val KEY_ORIGIN = "origin"
-    private const val KEY_ISSUED_AT_MS = "issued_at_ms"
-
-    /** 32 random bytes → 43 base64url characters: unguessable, and
-     *  inside the stack's accepted `app_state` shape. */
-    private const val NONCE_BYTES = 32
-
-    /** The stack's own OIDC attempt cookies expire after ten minutes, so
-     *  a return link older than that could not be redeemed anyway. */
-    private val ATTEMPT_TTL_MS = 10 * 60 * 1000L
-
-    /** One open sign-in attempt: the nonce the return link must echo, the
-     *  stack it was opened on, and when. */
-    internal data class Attempt(
-        val nonce: String,
-        val origin: String,
-        val issuedAtMs: Long,
-    )
-
-    /** What the shell learned about ONE stack's handoff support. Keyed by
-     *  origin: a verdict learned on the old stack must not follow the
-     *  user onto a stack they just switched to. */
-    internal data class Learned(
-        val origin: String,
-        val support: SessionApi.HandoffSupport,
-    )
+    private const val PREFERENCES = "webphone-signin-handoff"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val _learned = MutableStateFlow<Learned?>(null)
+    private val _learned = MutableStateFlow<HandoffSupportVerdict?>(null)
     private var learningOrigin: String? = null
     private var learning: Job? = null
 
-    /** Test seams (production defaults are the real wire and the real
-     *  browser): the capability probe and the browser launch, plus the
-     *  wall clock the attempt TTL reads. */
+    /** Test seams (the production defaults are the real wire and the real
+     *  browser): the capability probe, the browser launch, and the wall
+     *  clock the attempt TTL reads. */
     internal var probe: () -> SessionApi.HandoffSupport = { SessionApi.probeSignInHandoff() }
     internal var openBrowser: (Context, Uri) -> Boolean = ::openInBrowser
     internal var nowMs: () -> Long = { System.currentTimeMillis() }
@@ -149,9 +197,9 @@ internal object SignInHandoff {
      *  asked, still in flight, or asked of a different stack). */
     fun support(): SessionApi.HandoffSupport? = supportOf(_learned.value, App.origin)
 
-    /** Suspend until the current origin has a verdict (the caller bounds
-     *  the wait — an unreachable stack answers UNREACHABLE, a dead one
-     *  never answers at all). */
+    /** Suspend until the current origin has a verdict. The caller bounds
+     *  the wait: an unreachable stack answers UNREACHABLE, a dead one
+     *  never answers at all. */
     suspend fun awaitSupport(): SessionApi.HandoffSupport =
         _learned
             .map { supportOf(it, App.origin) }
@@ -159,9 +207,10 @@ internal object SignInHandoff {
             .first()
 
     /** Ask the current stack whether it speaks the handoff. Single-flight
-     *  per origin, safe to call from every resume: the wire path calls it
-     *  whenever the session resume comes back signed-out, so the verdict
-     *  is normally in hand long before the user reaches the login card. */
+     *  per origin and safe to call from every resume: the wire path calls
+     *  it whenever the session resume comes back signed-out, so the
+     *  verdict is normally in hand long before the user reaches the login
+     *  card. */
     fun learnSupport() {
         val origin = App.origin
         if (learning?.isActive == true && learningOrigin == origin) return
@@ -171,18 +220,18 @@ internal object SignInHandoff {
                 val support =
                     runCatching { probe() }
                         .getOrDefault(SessionApi.HandoffSupport.UNREACHABLE)
-                _learned.value = Learned(origin, support)
+                _learned.value = HandoffSupportVerdict(origin, support)
                 Log.i(TAG, "sign-in handoff: $origin answered $support")
             }
     }
 
-    /** The writer's single seam (the learning path and the pins that
+    /** The writer's single seam (the learning path, and the pins that
      *  drive it without a wire). */
     internal fun teach(
         origin: String,
         support: SessionApi.HandoffSupport,
     ) {
-        _learned.value = Learned(origin, support)
+        _learned.value = HandoffSupportVerdict(origin, support)
     }
 
     /** Hand one sign-in entry to the browser and open an attempt for it.
@@ -192,11 +241,11 @@ internal object SignInHandoff {
         context: Context,
         entry: Uri,
     ): Boolean {
-        val attempt = Attempt.issue()
+        val attempt = SignInAttempt.issue(nowMs)
         val launch =
             entry
                 .buildUpon()
-                .appendQueryParameter(HANDOFF_PARAM_SHELL, HANDOFF_SHELL)
+                .appendQueryParameter(SessionApi.HANDOFF_PARAM_SHELL, HANDOFF_SHELL)
                 .appendQueryParameter(HANDOFF_PARAM_APP_STATE, attempt.nonce)
                 .build()
         if (!openBrowser(context, launch)) {
@@ -210,69 +259,50 @@ internal object SignInHandoff {
 
     /** Claim the ticket of the attempt THIS shell opened. Null — and no
      *  network — for every return link that is not the answer to a live
-     *  attempt of the current stack. A link that echoes the wrong nonce
-     *  leaves the open attempt alone: a forged or replayed link must not
-     *  void a dance the user is still in the middle of. */
+     *  attempt of the current stack. */
     fun takeTicket(
         context: Context,
         ticket: String?,
         appState: String?,
     ): String? {
-        val preferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val attempt = Attempt.of(preferences)
+        val preferences = preferences(context)
+        val attempt = SignInAttempt.of(preferences)
         if (attempt == null) {
             Log.i(TAG, "sign-in handoff: return link without an open attempt — ignored")
             return null
         }
-        if (attempt.origin != App.origin) {
-            attempt.drop(preferences)
-            Log.i(TAG, "sign-in handoff: return link for another stack — ignored")
-            return null
+        val verdict = attempt.verdictFor(App.origin, appState, nowMs())
+        if (verdict == ReturnVerdict.ACCEPTED) {
+            // Single use: the ticket dies with its attempt, redeemed or not.
+            attempt.drop(context)
+            Log.i(TAG, "sign-in handoff: return link accepted")
+            return ticket
         }
-        if (nowMs() - attempt.issuedAtMs > ATTEMPT_TTL_MS) {
-            attempt.drop(preferences)
-            Log.i(TAG, "sign-in handoff: return link after the attempt expired — ignored")
-            return null
-        }
-        if (appState != attempt.nonce) {
-            Log.w(TAG, "sign-in handoff: return link does not echo this shell's attempt — ignored")
-            return null
-        }
-        // Single use: the ticket dies with its attempt, redeemed or not.
-        attempt.drop(preferences)
-        return ticket
+        // A foreign link must NOT void the attempt: a forged or replayed
+        // return link may arrive while the user is still mid-dance.
+        if (verdict != ReturnVerdict.OTHER_ATTEMPT) attempt.drop(context)
+        Log.i(TAG, "sign-in handoff: return link ignored ($verdict)")
+        return null
     }
 
     private fun supportOf(
-        learned: Learned?,
+        learned: HandoffSupportVerdict?,
         origin: String,
     ): SessionApi.HandoffSupport? = learned?.takeIf { it.origin == origin }?.support
 
-    private fun Attempt.persist(context: Context) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
-            putString(KEY_NONCE, nonce)
-            putString(KEY_ORIGIN, origin)
-            putLong(KEY_ISSUED_AT_MS, issuedAtMs)
-        }
-    }
+    private fun preferences(context: Context): SharedPreferences =
+        context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
 
-    private fun Attempt.drop(preferences: android.content.SharedPreferences) {
-        preferences.edit { clear() }
+    private fun SignInAttempt.drop(context: Context) {
+        preferences(context).edit { clear() }
     }
-
-    private fun Attempt.Companion.of(preferences: android.content.SharedPreferences): Attempt? =
-        Attempt(
-            nonce = preferences.getString(KEY_NONCE, "").orEmpty(),
-            origin = preferences.getString(KEY_ORIGIN, "").orEmpty(),
-            issuedAtMs = preferences.getLong(KEY_ISSUED_AT_MS, 0L),
-        ).takeIf { it.nonce.isNotEmpty() }
 
     /** Chrome Custom Tabs first (the user's default browser, in the
      *  shell's task); a plain browser tab when the Custom Tab intent has
-     *  no taker; false when the device has no browser at all. Browsers
-     *  that do not implement Custom Tabs simply open the view intent as
-     *  an ordinary tab, so the default browser is always the one that
-     *  answers — the one holding the user's Pocket ID session. */
+     *  no taker; false when the device has no browser at all. A browser
+     *  without Custom Tabs support opens the view intent as an ordinary
+     *  tab, so the default browser is always the one that answers — the
+     *  one holding the user's Pocket ID session and passkeys. */
     private fun openInBrowser(
         context: Context,
         url: Uri,
@@ -283,21 +313,14 @@ internal object SignInHandoff {
                 addCategory(Intent.CATEGORY_BROWSABLE)
             }
         if (runCatching { context.startActivity(customTab) }.isSuccess) return true
-        val browser =
-            Intent(Intent.ACTION_VIEW, url).addCategory(Intent.CATEGORY_BROWSABLE)
+        val browser = Intent(Intent.ACTION_VIEW, url).addCategory(Intent.CATEGORY_BROWSABLE)
         if (context.packageManager.resolveActivity(browser, PackageManager.MATCH_DEFAULT_ONLY) == null) {
             return false
         }
         return runCatching { context.startActivity(browser) }.isSuccess
     }
-
-    private fun Attempt.Companion.issue(): Attempt {
-        val bytes = ByteArray(NONCE_BYTES)
-        SecureRandom().nextBytes(bytes)
-        return Attempt(
-            nonce = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes),
-            origin = App.origin,
-            issuedAtMs = nowMs(),
-        )
-    }
 }
+
+/** The stack's OIDC begin hop on the given origin — the one navigation the
+ *  shell hands to the browser instead of loading itself. */
+internal fun signInEntryUri(origin: String): Uri = (origin.trimEnd('/') + SessionApi.SIGN_IN_ENTRY_PATH).toUri()
