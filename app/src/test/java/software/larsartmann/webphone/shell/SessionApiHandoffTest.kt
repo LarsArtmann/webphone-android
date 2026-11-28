@@ -39,7 +39,7 @@ class SessionApiHandoffTest {
         server = MockWebServer()
         server.start()
         App.origin = server.url("/").toString().trimEnd('/')
-        CookieManager.getInstance().removeAllCookie()
+        CookieManager.getInstance().removeAllCookies(null)
     }
 
     @After
