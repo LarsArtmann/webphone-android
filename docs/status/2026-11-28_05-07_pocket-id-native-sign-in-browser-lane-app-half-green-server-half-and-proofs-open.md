@@ -56,7 +56,7 @@ These changed the plan and invalidate parts of the repo's current docs:
 - **RFC 8252 §8.12**: native apps "MUST NOT use embedded user-agents to
   perform authorization requests". §7.1: a private-use scheme "MUST use a URI
   scheme based on a domain name under their control, expressed in reverse
-   order".
+  order".
 - **The application id's domain is not registered** (as far as this host can
   see): `larsartmann.software` has no A record and answers no NS query;
   `larsartmann.cloud` has NS records. Hence the return scheme
@@ -79,12 +79,12 @@ These changed the plan and invalidate parts of the repo's current docs:
 
 Server side (`~/projects/webphone`): **nothing of this exists yet.**
 
-| Hop | Wire | Purpose |
-| --- | --- | --- |
-| Capability | `GET /api/auth/oauth2/shell` → `204` (404 = stack never heard of it) | The shell must know before it opens a browser |
-| Begin | `GET /api/auth/oauth2/begin?shell=android&app_state=<nonce>` | Names the caller; carries the shell's nonce |
-| Return | callback → `303 cloud.larsartmann.webphone://auth/finish?ticket=<43 chars>&app_state=<nonce>`, no session cookie for the browser | The system launches the shell with the ticket |
-| Redeem | `GET /api/auth/oauth2/finish?ticket=…` + header `X-WebPhone-Shell: android` → `303 /` with the session cookie, or `303 /login?sso_error=stale` | One-time, short-lived ticket becomes a cookie in the shell's jar |
+| Hop        | Wire                                                                                                                                           | Purpose                                                          |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Capability | `GET /api/auth/oauth2/shell` → `204` (404 = stack never heard of it)                                                                           | The shell must know before it opens a browser                    |
+| Begin      | `GET /api/auth/oauth2/begin?shell=android&app_state=<nonce>`                                                                                   | Names the caller; carries the shell's nonce                      |
+| Return     | callback → `303 cloud.larsartmann.webphone://auth/finish?ticket=<43 chars>&app_state=<nonce>`, no session cookie for the browser               | The system launches the shell with the ticket                    |
+| Redeem     | `GET /api/auth/oauth2/finish?ticket=…` + header `X-WebPhone-Shell: android` → `303 /` with the session cookie, or `303 /login?sso_error=stale` | One-time, short-lived ticket becomes a cookie in the shell's jar |
 
 ## a) FULLY DONE
 
