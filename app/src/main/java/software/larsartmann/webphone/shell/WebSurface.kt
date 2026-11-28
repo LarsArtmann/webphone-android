@@ -32,8 +32,12 @@ import androidx.appcompat.widget.AppCompatButton
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.R
 import software.larsartmann.webphone.ui.dp
@@ -119,6 +123,52 @@ private fun effectivePort(uri: Uri): Int =
         443
     }
 
+/** Which lane takes the stack's OIDC begin hop — see [signInLane]. */
+internal enum class SignInLane {
+    /** Not the begin hop: the navigation verdict decides as always. */
+    NOT_ENTRY,
+
+    /** The stack speaks the handoff: the system browser takes the sign-in. */
+    BROWSER,
+
+    /** The stack has not answered yet: hold the tap until it does. */
+    AWAIT_SUPPORT,
+
+    /** The stack said no (or could not be asked): the WebView lane. */
+    DETOUR,
+}
+
+/**
+ * Decides which lane takes a navigation to the stack's OIDC begin hop.
+ * PURE, so the policy is unit-testable without a WebView.
+ *
+ * Only the exact begin hop on the configured origin is an entry (a
+ * sub-path, a foreign host, any other page falls to the verdict). The
+ * stack's own answer names the lane: SUPPORTED hands the sign-in to the
+ * browser; a definite no — and a stack that could not be asked — keep it
+ * in the WebView (the auth detour lane); NO answer yet holds the tap,
+ * because the detour is the one lane a passkey-only IdP cannot complete,
+ * and a slow first probe must not strand the user in it.
+ */
+internal fun signInLane(
+    uri: Uri?,
+    origin: String,
+    support: SessionApi.HandoffSupport?,
+): SignInLane {
+    if (uri == null) return SignInLane.NOT_ENTRY
+    val entry = signInEntryUri(origin)
+    val isEntry =
+        uri.scheme.equals(entry.scheme, ignoreCase = true) &&
+            sameAuthority(uri, entry) &&
+            uri.path == entry.path
+    if (!isEntry) return SignInLane.NOT_ENTRY
+    return when (support) {
+        SessionApi.HandoffSupport.SUPPORTED -> SignInLane.BROWSER
+        null -> SignInLane.AWAIT_SUPPORT
+        else -> SignInLane.DETOUR
+    }
+}
+
 /**
  * The WebView shell surface, hardened for daily-driver use. Owns the
  * one WebView, its clients and the offline overlay — MainActivity owns
@@ -134,6 +184,13 @@ private fun effectivePort(uri: Uri): Int =
  *   landed the shell on the IdP (the origin's own 302 — the only
  *   navigation class the verdict never sees), that one foreign
  *   authority navigates in-shell until the dance returns home.
+ * - **Sign-in lanes** ([signInLane]): the stack's OIDC begin hop is the
+ *   one same-origin navigation the shell may NOT load itself. When the
+ *   stack speaks the sign-in handoff, the tap goes to the system
+ *   browser (Chrome Custom Tabs — where the passkeys live) and the
+ *   stack bounces the finished session back as a one-time ticket; the
+ *   detour above is the fallback for stacks without the handoff. See
+ *   [SignInHandoff] for why the WebView lane is not the Pocket ID path.
  * - **Offline overlay**: a main-frame transport failure (no route to
  *   the PBX) replaces Chromium's ugly error page with a native
  *   "can't reach the stack" panel and a Retry button. Sits BELOW the
@@ -203,6 +260,13 @@ internal class WebSurface(
      *  the foreign page the ORIGIN's own redirect landed the shell on
      *  (the IdP of an OIDC login). Null while the shell is on-origin. */
     private var authDetour: Uri? = null
+
+    /** A tapped sign-in entry held while the stack has not yet answered
+     *  whether it speaks the handoff (see [awaitSupportThenDecide]). One
+     *  at a time — a second tap during the hold is consumed, never
+     *  queued — and abandoned wherever the detour dies (a deliberate
+     *  return to the origin makes the held tap stale). */
+    private var parkedSignIn: Job? = null
 
     /** Whether the CURRENT main-frame load ended in a transport
      *  failure. This is what keeps the offline overlay honest: the
@@ -400,12 +464,24 @@ internal class WebSurface(
         override fun shouldOverrideUrlLoading(
             view: WebView,
             request: WebResourceRequest,
-        ): Boolean =
-            navigateOut(
-                request.url,
+        ): Boolean {
+            val url = request.url
+            if (request.isForMainFrame && request.method.equals("GET", ignoreCase = true)) {
+                when (signInLane(url, App.origin, SignInHandoff.support())) {
+                    SignInLane.NOT_ENTRY -> Unit
+                    // No browser took it: the WebView lane loads the entry
+                    // after all, by falling through to the verdict.
+                    SignInLane.BROWSER -> if (handOffToBrowser(url)) return true
+                    SignInLane.AWAIT_SUPPORT -> return awaitSupportThenDecide(url)
+                    SignInLane.DETOUR -> Unit
+                }
+            }
+            return navigateOut(
+                url,
                 isServerRedirect = request.isRedirect,
                 isMainFrame = request.isForMainFrame,
             )
+        }
 
         override fun onPageStarted(
             view: WebView,
@@ -560,6 +636,7 @@ internal class WebSurface(
             // names a stack the user just switched away from.
             if (offlineVisible()) showOffline()
             authDetour = null
+            abandonParkedSignIn()
             webView.loadUrl(App.origin)
             loadedOrigin = App.origin
         }
@@ -575,8 +652,38 @@ internal class WebSurface(
         if (navigationVerdict(uri, App.origin.toUri()) !is NavigationVerdict.LoadInShell) return
         if (offlineVisible()) showOffline()
         authDetour = null
+        abandonParkedSignIn()
         webView.loadUrl(uri.toString())
         loadedOrigin = App.origin
+    }
+
+    /** The browser lane (see [signInLane]): open a sign-in attempt for
+     *  `entry` and hand it to the system browser. False means no browser
+     *  took it — the caller then lets the WebView load the entry after
+     *  all. */
+    internal fun handOffToBrowser(entry: Uri): Boolean = SignInHandoff.begin(activity, entry)
+
+    /** Hold a tapped sign-in entry until the stack has answered whether
+     *  it speaks the handoff — bounded, because a dead stack must not eat
+     *  the tap forever — then take the lane the answer names. The
+     *  coroutine resumes on the main thread, so the fallback load is on
+     *  the right thread for the WebView. */
+    private fun awaitSupportThenDecide(entry: Uri): Boolean {
+        if (parkedSignIn?.isActive == true) return true
+        SignInHandoff.learnSupport()
+        parkedSignIn =
+            activity.lifecycleScope.launch {
+                val support = withTimeoutOrNull(SIGN_IN_SUPPORT_WAIT_MS) { SignInHandoff.awaitSupport() }
+                if (support != SessionApi.HandoffSupport.SUPPORTED || !handOffToBrowser(entry)) {
+                    webView.loadUrl(entry.toString())
+                }
+            }
+        return true
+    }
+
+    private fun abandonParkedSignIn() {
+        parkedSignIn?.cancel()
+        parkedSignIn = null
     }
 
     fun retry() {
@@ -584,6 +691,7 @@ internal class WebSurface(
         // detour dies HERE (an offline retry never commits, so the
         // commit-side hook alone would leave the blessing stale).
         authDetour = null
+        abandonParkedSignIn()
         // The overlay stays UP through the retry attempt (dismissal is
         // success-gated now — see [mainFrameLoadFailed]); re-resolve
         // the body for the same stale-origin reason as
@@ -632,6 +740,7 @@ internal class WebSurface(
         container.addView(webView, 0)
         loadedOrigin = null
         authDetour = null
+        abandonParkedSignIn()
         mainFrameLoadFailed = false
         loadOriginIfChanged()
     }
@@ -817,6 +926,11 @@ internal class WebSurface(
 
     private companion object {
         const val TAG = "WebSurface"
+
+        /** How long a tapped sign-in waits for the stack's capability
+         *  answer before taking the WebView lane. Generous next to one
+         *  small GET; short next to a human's patience. */
+        const val SIGN_IN_SUPPORT_WAIT_MS = 5_000L
 
         val FORBIDDEN_FILE_CHARS = charArrayOf('/', '\\', ':', '*', '?', '"', '<', '>', '|')
     }

@@ -94,7 +94,7 @@ object CallLayer {
             CallEngine.registrationWiringStarted()
             val identity =
                 SessionApi.resumeSession() ?: run {
-                    CallEngine.registrationWiringFailed()
+                    onSignedOut()
                     return@launch
                 }
             lastIdentity = identity
@@ -134,6 +134,18 @@ object CallLayer {
             }
             startSessionWatch(appContext)
         }
+    }
+
+    /** The signed-out verdict of one wire attempt (one hop off the
+     *  coroutine so the pin drives it directly, no HTTP): the badge says
+     *  so, and the shell learns whether THIS stack speaks the sign-in
+     *  handoff. Learning here — on every resume that comes back
+     *  signed-out — puts the verdict in hand long before the user can
+     *  reach the login card, whose tap must decide SYNCHRONOUSLY which
+     *  lane takes the sign-in. */
+    internal fun onSignedOut() {
+        CallEngine.registrationWiringFailed()
+        SignInHandoff.learnSupport()
     }
 
     /** The verdict-to-ledger mapping (pure, pinned): the register

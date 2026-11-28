@@ -103,10 +103,7 @@ internal fun deepLinkTarget(
 internal fun signInReturn(uri: Uri): DeepLinkTarget {
     val ticket = uri.getQueryParameter(HANDOFF_PARAM_TICKET)
     val appState = uri.getQueryParameter(HANDOFF_PARAM_APP_STATE)
-    val complete =
-        ticket != null &&
-            appState != null &&
-            HANDOFF_TOKEN_SHAPE.matches(ticket) &&
-            HANDOFF_TOKEN_SHAPE.matches(appState)
+    if (ticket == null || appState == null) return DeepLinkTarget.None
+    val complete = HANDOFF_TOKEN_SHAPE.matches(ticket) && HANDOFF_TOKEN_SHAPE.matches(appState)
     return if (complete) DeepLinkTarget.SignInReturn(ticket, appState) else DeepLinkTarget.None
 }
