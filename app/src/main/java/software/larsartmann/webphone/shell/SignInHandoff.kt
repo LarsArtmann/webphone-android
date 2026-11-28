@@ -193,7 +193,7 @@ internal object SignInHandoff {
     private const val TAG = "SignInHandoff"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val _learned = MutableStateFlow<HandoffSupportVerdict?>(null)
+    private val learned = MutableStateFlow<HandoffSupportVerdict?>(null)
     private var learningOrigin: String? = null
     private var learning: Job? = null
 
@@ -206,13 +206,13 @@ internal object SignInHandoff {
 
     /** The CURRENT origin's verdict, or null while it is unknown (never
      *  asked, still in flight, or asked of a different stack). */
-    fun support(): SessionApi.HandoffSupport? = supportOf(_learned.value, App.origin)
+    fun support(): SessionApi.HandoffSupport? = supportOf(learned.value, App.origin)
 
     /** Suspend until the current origin has a verdict. The caller bounds
      *  the wait: an unreachable stack answers UNREACHABLE, a dead one
      *  never answers at all. */
     suspend fun awaitSupport(): SessionApi.HandoffSupport =
-        _learned
+        learned
             .map { supportOf(it, App.origin) }
             .filterNotNull()
             .first()
@@ -231,7 +231,7 @@ internal object SignInHandoff {
                 val support =
                     runCatching { probe() }
                         .getOrDefault(SessionApi.HandoffSupport.UNREACHABLE)
-                _learned.value = HandoffSupportVerdict(origin, support)
+                learned.value = HandoffSupportVerdict(origin, support)
                 Log.i(TAG, "sign-in handoff: $origin answered $support")
             }
     }
@@ -242,7 +242,7 @@ internal object SignInHandoff {
         origin: String,
         support: SessionApi.HandoffSupport,
     ) {
-        _learned.value = HandoffSupportVerdict(origin, support)
+        learned.value = HandoffSupportVerdict(origin, support)
     }
 
     /** Hand one sign-in entry to the browser and open an attempt for it.
@@ -305,7 +305,7 @@ internal object SignInHandoff {
      *  without Custom Tabs support opens the view intent as an ordinary
      *  tab, so the default browser is always the one that answers — the
      *  one holding the user's Pocket ID session and passkeys. */
-    private fun openInBrowser(
+    internal fun openInBrowser(
         context: Context,
         url: Uri,
     ): Boolean {
