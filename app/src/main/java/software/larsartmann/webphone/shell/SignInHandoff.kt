@@ -2,8 +2,8 @@ package software.larsartmann.webphone.shell
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import androidx.browser.customtabs.CustomTabsIntent
@@ -64,6 +64,7 @@ internal data class SignInAttempt(
     val issuedAtMs: Long,
 ) {
     companion object {
+        private const val PREFERENCES = "webphone-signin-handoff"
         private const val KEY_NONCE = "nonce"
         private const val KEY_ORIGIN = "origin"
         private const val KEY_ISSUED_AT_MS = "issued_at_ms"
@@ -90,12 +91,17 @@ internal data class SignInAttempt(
         }
 
         /** The attempt on disk, or null when none is open. */
-        fun of(preferences: SharedPreferences): SignInAttempt? =
-            SignInAttempt(
+        fun of(context: Context): SignInAttempt? {
+            val preferences = preferences(context)
+            return SignInAttempt(
                 nonce = preferences.getString(KEY_NONCE, "").orEmpty(),
                 origin = preferences.getString(KEY_ORIGIN, "").orEmpty(),
                 issuedAtMs = preferences.getLong(KEY_ISSUED_AT_MS, 0L),
             ).takeIf { it.nonce.isNotEmpty() }
+        }
+
+        private fun preferences(context: Context): SharedPreferences =
+            context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
     }
 
     fun persist(context: Context) {
@@ -104,6 +110,12 @@ internal data class SignInAttempt(
             putString(KEY_ORIGIN, origin)
             putLong(KEY_ISSUED_AT_MS, issuedAtMs)
         }
+    }
+
+    /** Close the attempt. Single use by construction: the ticket dies
+     *  with it, redeemed or not. */
+    fun drop(context: Context) {
+        preferences(context).edit { clear() }
     }
 
     /** Judge a return link against this attempt. Pure (pinned). */
@@ -179,7 +191,6 @@ internal data class HandoffSupportVerdict(
  */
 internal object SignInHandoff {
     private const val TAG = "SignInHandoff"
-    private const val PREFERENCES = "webphone-signin-handoff"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _learned = MutableStateFlow<HandoffSupportVerdict?>(null)
@@ -265,15 +276,13 @@ internal object SignInHandoff {
         ticket: String?,
         appState: String?,
     ): String? {
-        val preferences = preferences(context)
-        val attempt = SignInAttempt.of(preferences)
+        val attempt = SignInAttempt.of(context)
         if (attempt == null) {
             Log.i(TAG, "sign-in handoff: return link without an open attempt — ignored")
             return null
         }
         val verdict = attempt.verdictFor(App.origin, appState, nowMs())
         if (verdict == ReturnVerdict.ACCEPTED) {
-            // Single use: the ticket dies with its attempt, redeemed or not.
             attempt.drop(context)
             Log.i(TAG, "sign-in handoff: return link accepted")
             return ticket
@@ -289,13 +298,6 @@ internal object SignInHandoff {
         learned: HandoffSupportVerdict?,
         origin: String,
     ): SessionApi.HandoffSupport? = learned?.takeIf { it.origin == origin }?.support
-
-    private fun preferences(context: Context): SharedPreferences =
-        context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
-
-    private fun SignInAttempt.drop(context: Context) {
-        preferences(context).edit { clear() }
-    }
 
     /** Chrome Custom Tabs first (the user's default browser, in the
      *  shell's task); a plain browser tab when the Custom Tab intent has

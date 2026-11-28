@@ -478,10 +478,13 @@ internal class WebSurface(
             if (request.isForMainFrame && request.method.equals("GET", ignoreCase = true)) {
                 when (signInLane(url, App.origin, SignInHandoff.support())) {
                     SignInLane.NOT_ENTRY -> Unit
+
                     // No browser took it: the WebView lane loads the entry
                     // after all, by falling through to the verdict.
                     SignInLane.BROWSER -> if (handOffToBrowser(url)) return true
+
                     SignInLane.AWAIT_SUPPORT -> return awaitSupportThenDecide(url)
+
                     SignInLane.DETOUR -> Unit
                 }
             }
