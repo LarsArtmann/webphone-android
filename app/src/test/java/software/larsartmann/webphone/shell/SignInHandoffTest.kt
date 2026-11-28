@@ -16,7 +16,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import org.robolectric.android.controller.ActivityController
 import software.larsartmann.webphone.App
 import software.larsartmann.webphone.call.CallEngine
 import software.larsartmann.webphone.shell.SessionApi.HandoffSupport
@@ -36,6 +35,11 @@ import kotlin.test.assertTrue
  * lifecycle (open, echo, single use, TTL, stack), the nonce fence against
  * a forged return link, the per-origin capability verdict, the real
  * browser launcher, and the manifest pairing of the return address.
+ *
+ * The attempt has NO in-memory form — a return link is always matched
+ * against prefs — so a process kill during the dance (the shell sits
+ * behind the browser) costs the user nothing; that is why every test
+ * here goes through begin/takeTicket and never pokes a field.
  *
  * The shell stays unwired: this class names MainActivity (the manifest
  * pin), and the wire path would phone the live stack.
@@ -107,7 +111,7 @@ class SignInHandoffTest {
     }
 
     @Test
-    fun `a return link echoing the attempt yields its ticket exactly once`() {
+    fun `a return link is matched against the attempt on disk and yields its ticket exactly once`() {
         val nonce = openAttempt()
         val ticket = "t".repeat(43)
 
@@ -157,21 +161,6 @@ class SignInHandoffTest {
         clock += 10 * 60 * 1000L + 1
         assertNull(SignInHandoff.takeTicket(context, ticket, SignInAttempt.of(context)!!.nonce), "one instant past it")
         assertNull(SignInAttempt.of(context))
-    }
-
-    @Test
-    fun `the attempt is read from disk, so a killed process loses nothing`() {
-        val nonce = openAttempt()
-        val stored = SignInAttempt.of(context)
-
-        // The process-scoped stand-ins are all this test can clear; the
-        // attempt itself lives in prefs, which is the whole point.
-        assertNotNull(stored)
-        assertEquals(
-            "t".repeat(43),
-            SignInHandoff.takeTicket(context, "t".repeat(43), nonce),
-            "a return link lands against the persisted attempt",
-        )
     }
 
     @Test
@@ -298,8 +287,4 @@ class SignInHandoffTest {
         assertTrue(handlersOf("cloud.larsartmann.webphone://evil/finish?$facts").isEmpty(), "another host")
         assertTrue(handlersOf("cloud.larsartmann.webphone://auth/other?$facts").isEmpty(), "another path")
     }
-}
-
-private fun ActivityController<Activity>.destroy() {
-    destroy()
 }
