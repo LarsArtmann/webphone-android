@@ -123,6 +123,11 @@ private fun effectivePort(uri: Uri): Int =
         443
     }
 
+/** How long a tapped sign-in waits for the stack's capability answer
+ *  before taking the WebView lane. Generous next to one small GET; short
+ *  next to a human's patience. */
+internal const val SIGN_IN_SUPPORT_WAIT_MS = 5_000L
+
 /** Which lane takes the stack's OIDC begin hop — see [signInLane]. */
 internal enum class SignInLane {
     /** Not the begin hop: the navigation verdict decides as always. */
@@ -938,11 +943,6 @@ internal class WebSurface(
 
     private companion object {
         const val TAG = "WebSurface"
-
-        /** How long a tapped sign-in waits for the stack's capability
-         *  answer before taking the WebView lane. Generous next to one
-         *  small GET; short next to a human's patience. */
-        const val SIGN_IN_SUPPORT_WAIT_MS = 5_000L
 
         val FORBIDDEN_FILE_CHARS = charArrayOf('/', '\\', ':', '*', '?', '"', '<', '>', '|')
     }
