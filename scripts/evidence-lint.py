@@ -58,14 +58,19 @@ def report_prefixes() -> list[str]:
 def plan_ids() -> set[str]:
     ids: set[str] = set()
     for path in PLANNING.rglob("*.md"):
-        ids.update(match.rstrip(".,;:") for match in PLAN_ID.findall(path.read_text(encoding="utf-8")))
+        ids.update(
+            match.rstrip(".,;:")
+            for match in PLAN_ID.findall(path.read_text(encoding="utf-8"))
+        )
     return ids
 
 
 def rows() -> list[tuple[int, str]]:
     found: list[tuple[int, str]] = []
     in_table = False
-    for number, line in enumerate(TODO.read_text(encoding="utf-8").splitlines(), start=1):
+    for number, line in enumerate(
+        TODO.read_text(encoding="utf-8").splitlines(), start=1
+    ):
         if line.startswith("| Task") or line.startswith("| ---"):
             in_table = True
             continue
@@ -92,15 +97,21 @@ def main() -> int:
             if VERSION_LIKE.match(token):
                 continue
             if token not in times:
-                problems.append(f"TODO_LIST.md:{number}: cites report '{token}', no such report under docs/status/")
+                problems.append(
+                    f"TODO_LIST.md:{number}: cites report '{token}', no such report under docs/status/"
+                )
             cited = True
         for prefix in STATUS_PATH.findall(evidence):
             if not any(name.startswith(prefix) for name in prefixes):
-                problems.append(f"TODO_LIST.md:{number}: cites docs/status/{prefix}…, no file starts with it")
+                problems.append(
+                    f"TODO_LIST.md:{number}: cites docs/status/{prefix}…, no file starts with it"
+                )
             cited = True
         for plan_id in PLAN_ID.findall(evidence):
             if plan_id not in ids:
-                problems.append(f"TODO_LIST.md:{number}: cites plan id '{plan_id}', absent from docs/planning/")
+                problems.append(
+                    f"TODO_LIST.md:{number}: cites plan id '{plan_id}', absent from docs/planning/"
+                )
             cited = True
         checked += 1
     print(f"evidence-lint: {checked} TODO rows checked, {len(problems)} broken cite(s)")

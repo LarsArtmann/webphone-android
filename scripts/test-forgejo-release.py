@@ -81,7 +81,10 @@ class MockForge:
             send(200, {"login": "lars"})
         elif path == "/api/v1/repos/lars/webphone-android":
             send(200, {"full_name": "webphone-android", "private": False})
-        elif path == "/api/v1/repos/lars/webphone-android/releases" and request.command == "POST":
+        elif (
+            path == "/api/v1/repos/lars/webphone-android/releases"
+            and request.command == "POST"
+        ):
             payload = json.loads(body)
             tag = payload["tag_name"]
             if tag in self.releases:
@@ -91,14 +94,17 @@ class MockForge:
             self.next_id += 1
             self.releases[tag] = release
             send(201, release)
-        elif path == "/api/v1/repos/lars/webphone-android/releases" and request.command == "GET":
+        elif (
+            path == "/api/v1/repos/lars/webphone-android/releases"
+            and request.command == "GET"
+        ):
             send(200, list(self.releases.values()))
         elif path.endswith("/releases/tags/v0.2.3") and request.command == "GET":
             release = self.releases.get("v0.2.3")
             send(200, release) if release else send(404, {"message": "not found"})
         elif "/assets" in path and request.command == "POST":
             match = re.search(rb'filename="([^"]+)"', body)
-            name = (match.group(1).decode() if match else "unknown")
+            name = match.group(1).decode() if match else "unknown"
             apk = body.split(b"\r\n\r\n", 1)[1].rsplit(b"\r\n--", 1)[0]
             self.uploaded[name] = apk
             release = self.releases["v0.2.3"]
@@ -115,10 +121,20 @@ class MockForge:
             send(404, {"message": f"mock does not know {request.command} {path}"})
 
 
-def run(client_args: list[str], base_url: str, token: str) -> subprocess.CompletedProcess[str]:
+def run(
+    client_args: list[str], base_url: str, token: str
+) -> subprocess.CompletedProcess[str]:
     env = {**os.environ, "FORGEJO_TOKEN": token}
     return subprocess.run(
-        [sys.executable, str(CLIENT), "--base-url", base_url, "--repo", "lars/webphone-android", *client_args],
+        [
+            sys.executable,
+            str(CLIENT),
+            "--base-url",
+            base_url,
+            "--repo",
+            "lars/webphone-android",
+            *client_args,
+        ],
         capture_output=True,
         text=True,
         env=env,
@@ -147,40 +163,87 @@ def main() -> int:
         notes.write_text("## notes\n\nuninstall first\n")
 
         probe = run(["--check"], base, "wrong")
-        expect(probe.returncode == 1 and "401" in probe.stderr, "a wrong token fails --check with the 401 hint")
+        expect(
+            probe.returncode == 1 and "401" in probe.stderr,
+            "a wrong token fails --check with the 401 hint",
+        )
 
         first = run(
-            ["--tag", "v0.2.3", "--name", "webphone-android 0.2.3", "--notes-file", str(notes), "--asset", str(apk), "--prerelease"],
+            [
+                "--tag",
+                "v0.2.3",
+                "--name",
+                "webphone-android 0.2.3",
+                "--notes-file",
+                str(notes),
+                "--asset",
+                str(apk),
+                "--prerelease",
+            ],
             base,
             forge.token,
         )
-        expect(first.returncode == 0, f"first publish succeeds ({first.stderr.strip()})")
+        expect(
+            first.returncode == 0, f"first publish succeeds ({first.stderr.strip()})"
+        )
         release = forge.releases.get("v0.2.3", {})
-        expect(release.get("body") == "## notes\n\nuninstall first\n", "the release body is the notes file")
-        expect(release.get("draft") is False and release.get("prerelease") is True, "the release is a non-draft pre-release")
-        expect(forge.uploaded.get(apk.name) == payload, "the asset bytes on the forge equal the local file")
+        expect(
+            release.get("body") == "## notes\n\nuninstall first\n",
+            "the release body is the notes file",
+        )
+        expect(
+            release.get("draft") is False and release.get("prerelease") is True,
+            "the release is a non-draft pre-release",
+        )
+        expect(
+            forge.uploaded.get(apk.name) == payload,
+            "the asset bytes on the forge equal the local file",
+        )
 
         second = run(
-            ["--tag", "v0.2.3", "--name", "webphone-android 0.2.3", "--notes-file", str(notes), "--asset", str(apk)],
+            [
+                "--tag",
+                "v0.2.3",
+                "--name",
+                "webphone-android 0.2.3",
+                "--notes-file",
+                str(notes),
+                "--asset",
+                str(apk),
+            ],
             base,
             forge.token,
         )
         expect(second.returncode == 0, f"re-publish succeeds ({second.stderr.strip()})")
-        expect("reusing it" in second.stdout, "a re-publish reuses the existing release instead of 409-ing")
+        expect(
+            "reusing it" in second.stdout,
+            "a re-publish reuses the existing release instead of 409-ing",
+        )
         expect(len(forge.deleted_assets) == 1, "a re-publish replaces the stale asset")
-        expect(len(release["assets"]) == 1, "exactly one asset remains after the replace")
+        expect(
+            len(release["assets"]) == 1, "exactly one asset remains after the replace"
+        )
 
-        missing = run(["--tag", "v0.2.3", "--asset", str(Path(tmp) / "nope.apk")], base, forge.token)
+        missing = run(
+            ["--tag", "v0.2.3", "--asset", str(Path(tmp) / "nope.apk")],
+            base,
+            forge.token,
+        )
         expect(missing.returncode == 2, "a missing asset stops before any network call")
 
         no_token = run(["--tag", "v0.2.3", "--asset", str(apk)], base, "")
-        expect(no_token.returncode == 2 and "FORGEJO_TOKEN" in no_token.stderr, "no token stops with the token instruction")
+        expect(
+            no_token.returncode == 2 and "FORGEJO_TOKEN" in no_token.stderr,
+            "no token stops with the token instruction",
+        )
 
     server.shutdown()
     if failures:
         print(f"test-forgejo-release: {len(failures)} failure(s)", file=sys.stderr)
         return 1
-    print(f"test-forgejo-release: all green against the mock forge ({len(forge.requests)} API calls)")
+    print(
+        f"test-forgejo-release: all green against the mock forge ({len(forge.requests)} API calls)"
+    )
     return 0
 
 

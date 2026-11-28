@@ -22,7 +22,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCE_ROOT = ROOT / "app" / "src" / "test"
 RESULTS_ROOT = ROOT / "app" / "build" / "test-results" / "testDebugUnitTest"
 TEST_ANNOTATION = re.compile(r"^\s*@Test\b", re.MULTILINE)
-FUN_NAME = re.compile(r"^\s*(?:private\s+|internal\s+)?fun\s+(?:`([^`]+)`|([A-Za-z0-9_]+))\s*\(", re.MULTILINE)
+FUN_NAME = re.compile(
+    r"^\s*(?:private\s+|internal\s+)?fun\s+(?:`([^`]+)`|([A-Za-z0-9_]+))\s*\(",
+    re.MULTILINE,
+)
 
 
 def source_tests() -> dict[str, list[str]]:
@@ -34,7 +37,9 @@ def source_tests() -> dict[str, list[str]]:
         for match in TEST_ANNOTATION.finditer(text):
             fun = FUN_NAME.search(text, match.end())
             if fun is None:
-                raise SystemExit(f"{path}: @Test with no following fun — parse the file by hand")
+                raise SystemExit(
+                    f"{path}: @Test with no following fun — parse the file by hand"
+                )
             names.append((fun.group(1) or fun.group(2) or "").strip())
         if names:
             tests[path.relative_to(ROOT).as_posix()] = names
@@ -55,7 +60,10 @@ def executed_cases() -> dict[str, int]:
 
 def main() -> int:
     if not RESULTS_ROOT.is_dir():
-        print("test-count-check: no JUnit XML under app/build/test-results — did the suite run?", file=sys.stderr)
+        print(
+            "test-count-check: no JUnit XML under app/build/test-results — did the suite run?",
+            file=sys.stderr,
+        )
         return 1
     tests = source_tests()
     executed = executed_cases()
@@ -67,14 +75,21 @@ def main() -> int:
     ]
     annotated = sum(len(names) for names in tests.values())
     total = sum(executed.values())
-    print(f"tests: {annotated} @Test in source, {total} JUnit cases executed (multi-SDK classes run once per SDK)")
+    print(
+        f"tests: {annotated} @Test in source, {total} JUnit cases executed (multi-SDK classes run once per SDK)"
+    )
     if missing:
-        print("test-count-check: @Test functions with NO executed case:", file=sys.stderr)
+        print(
+            "test-count-check: @Test functions with NO executed case:", file=sys.stderr
+        )
         for key in missing:
             print(f"  {key}", file=sys.stderr)
         return 1
     if total < annotated:
-        print(f"test-count-check: {annotated} @Test but only {total} cases executed", file=sys.stderr)
+        print(
+            f"test-count-check: {annotated} @Test but only {total} cases executed",
+            file=sys.stderr,
+        )
         return 1
     return 0
 

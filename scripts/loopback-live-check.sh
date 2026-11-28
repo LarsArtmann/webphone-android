@@ -16,9 +16,18 @@ BIN=""
 PORT=18102
 while [ $# -gt 0 ]; do
     case "$1" in
-        --bin) BIN="$2"; shift 2 ;;
-        --port) PORT="$2"; shift 2 ;;
-        *) echo "unknown arg $1" >&2; exit 2 ;;
+    --bin)
+        BIN="$2"
+        shift 2
+        ;;
+    --port)
+        PORT="$2"
+        shift 2
+        ;;
+    *)
+        echo "unknown arg $1" >&2
+        exit 2
+        ;;
     esac
 done
 
