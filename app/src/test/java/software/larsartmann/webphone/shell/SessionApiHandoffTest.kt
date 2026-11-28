@@ -116,7 +116,10 @@ class SessionApiHandoffTest {
 
     @Test
     fun `the redeemed session lands in the shell's one cookie store`() {
-        server.enqueue(redirect("/", "webphone_session=ticket-session; Path=/; HttpOnly; Secure"))
+        // No `Secure` here on purpose: the scripted stack is plain
+        // loopback http, and a Secure cookie is only ever stored from a
+        // secure origin. The real stack is TLS-fronted and sets it.
+        server.enqueue(redirect("/", "webphone_session=ticket-session; Path=/; HttpOnly"))
 
         redeem()
 

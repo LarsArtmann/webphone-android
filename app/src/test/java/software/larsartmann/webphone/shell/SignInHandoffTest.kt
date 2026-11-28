@@ -234,8 +234,15 @@ class SignInHandoffTest {
             assertEquals(HandoffSupport.SUPPORTED, withTimeout(5_000) { SignInHandoff.awaitSupport() })
         }
 
+    /** The launcher tests opt out of the recorder: the REAL browser
+     *  opener is what they prove. */
+    private fun useRealLauncher() {
+        SignInHandoff.openBrowser = SignInHandoff::openInBrowser
+    }
+
     @Test
     fun `the real launcher opens the entry as a browser view`() {
+        useRealLauncher()
         val controller = Robolectric.buildActivity(Activity::class.java).setup()
         try {
             val activity = controller.get()
@@ -257,6 +264,7 @@ class SignInHandoffTest {
 
     @Test
     fun `the real launcher reports a device without any browser`() {
+        useRealLauncher()
         // Robolectric accepts every activity start, so the device is
         // modeled at the seam a real one fails at: nothing resolves, and
         // the framework throws.
@@ -272,6 +280,7 @@ class SignInHandoffTest {
 
     @Test
     fun `the real launcher falls back to a plain browser tab when no Custom Tab answers`() {
+        useRealLauncher()
         val plainLaunches = mutableListOf<Intent>()
         val onlyPlainBrowser =
             object : ContextWrapper(context) {

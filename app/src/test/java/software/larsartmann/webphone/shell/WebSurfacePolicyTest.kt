@@ -572,18 +572,27 @@ class WebSurfacePolicyTest {
                     client.shouldOverrideUrlLoading(web, FakeRequest(entry, mainFrame = false)),
                     "a sub-frame request is never the user's tap",
                 )
-                val lookalikes =
-                    listOf(
-                        "$origin${SessionApi.SIGN_IN_ENTRY_PATH}/extra",
-                        "$origin${SessionApi.SIGN_IN_ENTRY_PATH}x",
-                        "https://evil.example${SessionApi.SIGN_IN_ENTRY_PATH}",
-                    )
-                for (lookalike in lookalikes) {
+                for (lookalike in listOf(
+                    "$origin${SessionApi.SIGN_IN_ENTRY_PATH}/extra",
+                    "$origin${SessionApi.SIGN_IN_ENTRY_PATH}x",
+                )) {
                     assertFalse(
                         client.shouldOverrideUrlLoading(web, FakeRequest(Uri.parse(lookalike))),
                         "$lookalike is not the begin hop",
                     )
                 }
+                // A foreign host's copy of the path is a foreign page
+                // like any other: the ordinary verdict hands it to the
+                // system, and the handoff never sees it.
+                drainStartedActivities(activity)
+                assertTrue(
+                    client.shouldOverrideUrlLoading(
+                        web,
+                        FakeRequest(Uri.parse("https://evil.example${SessionApi.SIGN_IN_ENTRY_PATH}")),
+                    ),
+                    "a foreign begin hop is a system hand-off, never a sign-in entry",
+                )
+                assertEquals("evil.example", shadowOf(activity).nextStartedActivity?.data?.host)
                 assertTrue(opened.isEmpty(), "nothing but the exact begin hop may open a browser")
             }
         }
