@@ -202,6 +202,12 @@ dependencies {
     // WebView (WebViewFeature.WEB_AUTHENTICATION): without it the shell's
     // login at the passkey-only IdP can never complete (see WebSurface).
     implementation(libs.androidx.webkit)
+    // androidx.browser is the sign-in handoff's transport: Chrome Custom
+    // Tabs put the stack's OIDC dance in the SYSTEM browser (the only
+    // place a passkey-only IdP can complete it — Pocket ID rejects the
+    // WebView's app origin), while staying in the shell's task so Back
+    // returns to the app. See shell/SignInHandoff.kt.
+    implementation(libs.androidx.browser)
 
     testImplementation(libs.kotlin.test)
     testImplementation(libs.coroutines.test)

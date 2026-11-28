@@ -19,6 +19,19 @@
          needs this declaration (sideload lane — no Play policy). -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- The sign-in handoff opens the stack's OIDC entry in the user's
+         browser (Custom Tabs). Package visibility (API 30+) hides every
+         browser from this app unless the VIEW/https intent is declared
+         here: without it the "is there a browser at all?" answer is
+         always no, and the shell could never leave the WebView. -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <uses-feature android:name="android.hardware.microphone" android:required="true" />
 
     <!-- enableOnBackInvokedCallback only acts from API 33 (its
@@ -73,6 +86,22 @@
                 <data android:scheme="tel" />
                 <data android:scheme="callto" />
                 <data android:scheme="sip" />
+            </intent-filter>
+            <!-- The sign-in handoff's RETURN address: the stack's OIDC
+                 callback bounces a one-time ticket off this private-use
+                 URI, and the system launches the shell with it. The
+                 scheme is a domain the app's author controls, reversed
+                 (RFC 8252 §7.1) — larsartmann.cloud, NOT the application
+                 id's larsartmann.software, which is not a registered
+                 domain. Host + path are pinned so nothing but the
+                 handoff can enter here. PAIRED with SignInHandoff's
+                 constants and webphone's AndroidShellFinishURL — change
+                 all or none. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="cloud.larsartmann.webphone" android:host="auth" android:path="/finish" />
             </intent-filter>
         </activity>
 
